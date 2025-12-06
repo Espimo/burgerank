@@ -34,7 +34,15 @@ export const BurgerSearchStep = memo(function BurgerSearchStep({
     setIsLoading(true)
     try {
       const data = await searchBurgersAndRestaurants(debouncedQuery)
-      setResults(data.burgers)
+      // Transform burgers to match store type
+      const transformedBurgers = (data.burgers || []).map((burger: any) => ({
+        id: burger.id,
+        name: burger.name,
+        image_url: burger.image_url,
+        average_rating: burger.average_rating,
+        restaurant_name: burger.restaurant?.name || '',
+      }))
+      setResults(transformedBurgers)
     } catch (error) {
       console.error('Search error:', error)
       setResults([])
@@ -121,7 +129,7 @@ export const BurgerSearchStep = memo(function BurgerSearchStep({
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold line-clamp-1">{burger.name}</h3>
                   <p className="text-sm text-muted-foreground line-clamp-1">
-                    {burger.restaurant?.name || 'Restaurante desconocido'}
+                    {burger.restaurant_name || 'Restaurante desconocido'}
                   </p>
                   <div className="flex items-center gap-1 mt-2">
                     <span className="text-sm font-semibold">
