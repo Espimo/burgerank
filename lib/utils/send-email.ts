@@ -1,4 +1,5 @@
-import nodemailer from 'nodemailer'
+// Email sending utility - uses Resend or SendGrid for production
+// Placeholder for future email integration
 
 type EmailType = 'restaurant-contact' | 'general-contact' | 'welcome' | 'newsletter'
 

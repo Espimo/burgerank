@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabaseServer } from '@/lib/supabase/server'
 import PublicProfileHeader from '@/components/profile/public-profile-header'
 import PublicTopFive from '@/components/profile/public-top-five'
 import PublicReviews from '@/components/profile/public-reviews'
@@ -12,7 +12,7 @@ interface PageProps {
 }
 
 async function getPublicProfile(username: string) {
-  const supabase = createClient()
+  const supabase = getSupabaseServer()
 
   // Get user profile
   const { data: user, error: userError } = await supabase
