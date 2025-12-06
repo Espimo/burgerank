@@ -3,7 +3,6 @@ import { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'Política de Cookies | BurgeRank',
   description: 'Lee nuestra política de cookies y cómo las usamos',
-  canonical: 'https://burgerank.com/legal/cookies',
 }
 
 export default function CookiesPage() {

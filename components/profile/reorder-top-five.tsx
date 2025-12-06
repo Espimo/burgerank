@@ -96,8 +96,8 @@ const ReorderTopFive = React.memo(function ReorderTopFive({
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      distance: 8,
-    })
+      activationConstraint: { distance: 8 }
+    } as any)
   )
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
@@ -133,7 +133,7 @@ const ReorderTopFive = React.memo(function ReorderTopFive({
     visible: {
       opacity: 1,
       y: 0,
-      transition: { type: 'spring', stiffness: 300, damping: 30 },
+      transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
     },
   }
 

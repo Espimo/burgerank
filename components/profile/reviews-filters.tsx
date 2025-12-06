@@ -124,9 +124,9 @@ export const ReviewsFilters = React.memo(function ReviewsFilters({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
                 <option value="">Todos los restaurantes</option>
-                {restaurants.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
+                {restaurants?.map((r) => (
+                  <option key={r?.id} value={r?.id}>
+                    {r?.name}
                   </option>
                 ))}
               </select>

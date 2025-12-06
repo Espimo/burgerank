@@ -96,7 +96,7 @@ const TopFiveSection = React.memo(function TopFiveSection({ userId }: { userId: 
     visible: {
       opacity: 1,
       y: 0,
-      transition: { type: 'spring', stiffness: 300, damping: 30 },
+      transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
     },
   }
 
@@ -126,7 +126,7 @@ const TopFiveSection = React.memo(function TopFiveSection({ userId }: { userId: 
     return (
       <ReorderTopFive
         burgers={topBurgers}
-        onComplete={handleReorderComplete}
+        onComplete={handleReorderComplete as any}
         onCancel={() => setIsReordering(false)}
       />
     )
@@ -152,7 +152,7 @@ const TopFiveSection = React.memo(function TopFiveSection({ userId }: { userId: 
           <TopFiveAutoCalculate
             userId={userId}
             currentBurgers={topBurgers}
-            onComplete={handleAutoCalculate}
+            onComplete={handleAutoCalculate as any}
             isCalculating={isAutoCalculating}
             setIsCalculating={setIsAutoCalculating}
           />

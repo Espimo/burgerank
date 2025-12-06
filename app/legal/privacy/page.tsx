@@ -3,7 +3,6 @@ import { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'Política de Privacidad | BurgeRank',
   description: 'Lee nuestra política de privacidad y cómo protegemos tus datos',
-  canonical: 'https://burgerank.com/legal/privacy',
 }
 
 export default function PrivacyPage() {

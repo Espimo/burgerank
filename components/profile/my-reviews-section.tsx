@@ -46,7 +46,7 @@ export const MyReviewsSection = React.memo(function MyReviewsSection({
     } else if (activeFilters.type === 'restaurant' && activeFilters.restaurant) {
       filtered = filtered.filter((r) => r.restaurant?.id === activeFilters.restaurant)
     } else if (activeFilters.type === 'burger-type' && activeFilters.burgerTypes?.length) {
-      filtered = filtered.filter((r) => activeFilters.burgerTypes?.includes(r.burger?.type))
+      filtered = filtered.filter((r) => r.burger?.type && activeFilters.burgerTypes?.includes(r.burger.type))
     }
 
     // Aplicar ordenamiento
@@ -79,7 +79,7 @@ export const MyReviewsSection = React.memo(function MyReviewsSection({
     visible: {
       opacity: 1,
       y: 0,
-      transition: { type: 'spring', stiffness: 300, damping: 30 },
+      transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
     },
   }
 

@@ -92,7 +92,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 /**
  * Obtener top burgers de la base de datos
  */
-async function fetchTopBurgers(limit: number = 100) {
+async function fetchTopBurgers(limit: number = 100): Promise<{ id: string; rating: number }[]> {
   try {
     // Aquí va la llamada a tu base de datos (Supabase)
     // Ejemplo:
@@ -117,7 +117,7 @@ async function fetchTopBurgers(limit: number = 100) {
 /**
  * Obtener todos los restaurantes
  */
-async function fetchRestaurants() {
+async function fetchRestaurants(): Promise<{ id: string }[]> {
   try {
     // Llamada a base de datos
     /*
@@ -139,7 +139,7 @@ async function fetchRestaurants() {
 /**
  * Obtener posts del blog
  */
-async function fetchBlogPosts() {
+async function fetchBlogPosts(): Promise<{ slug: string }[]> {
   try {
     // Llamada a base de datos o CMS
     /*

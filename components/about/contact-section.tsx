@@ -10,9 +10,10 @@ import { z } from 'zod'
 const contactSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   email: z.string().email('Email inválido'),
-  subject: z.enum(['soporte', 'partnership', 'sugerencia', 'otro'], {
-    errorMap: () => ({ message: 'Selecciona un asunto válido' }),
-  }),
+  subject: z.string().refine(
+    (val) => ['soporte', 'partnership', 'sugerencia', 'otro'].includes(val),
+    'Selecciona un asunto válido'
+  ),
   message: z.string().min(10, 'El mensaje debe tener al menos 10 caracteres'),
   honeypot: z.string().refine((val) => !val, 'Invalid submission'),
 })

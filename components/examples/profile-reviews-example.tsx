@@ -3,11 +3,11 @@
 import React, { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BookOpen, Award, BarChart3 } from 'lucide-react'
-import MyReviewsSection from '@/components/profile/my-reviews-section'
+import { MyReviewsSection } from '@/components/profile/my-reviews-section'
 import TopFiveSection from '@/components/profile/top-five-section'
 import ReviewStatsCard from '@/components/profile/review-stats-card'
 import RatingDistribution from '@/components/profile/rating-distribution'
-import { getMyReviews, getReviewStats } from '@/lib/api/my-reviews'
+import { getMyReviews, getReviewStats, type Review } from '@/lib/api/my-reviews'
 
 /**
  * EXAMPLE: Complete Profile with Reviews and Top 5
@@ -32,13 +32,6 @@ interface ReviewStats {
   mostPopular: any
   mostVisitedRestaurant: string | null
   monthWithMostReviews: [string, number] | null
-}
-
-interface Review {
-  id: string
-  burger_id: string
-  overall_rating: number
-  created_at: string
 }
 
 export default function ProfileReviewsTab({ userId }: { userId: string }) {
@@ -103,7 +96,7 @@ export default function ProfileReviewsTab({ userId }: { userId: string }) {
           </p>
         </div>
 
-        <MyReviewsSection userId={userId} />
+        <MyReviewsSection reviews={reviews} isLoading={isLoadingStats} />
       </TabsContent>
 
       {/* 2. Top 5 Burgers Tab */}

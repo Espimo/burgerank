@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { MainLayout } from '@/components/layout/main-layout'
 import { SearchInput } from '@/components/search/search-input'
@@ -14,7 +14,6 @@ import { useDebounce } from '@/lib/hooks/use-debounce'
 
 export default function SearchPage() {
   const router = useRouter()
-  const searchInputRef = useRef<HTMLInputElement>(null)
   const { searchQuery, setSearchQuery, setResults, setIsSearching, addToHistory, searchHistory, results } = useSearchStore()
   const [popularBurgers, setPopularBurgers] = useState<Burger[]>([])
   const [newRestaurants, setNewRestaurants] = useState<Restaurant[]>([])
@@ -48,7 +47,15 @@ export default function SearchPage() {
       setIsSearching(true)
       try {
         const data = await searchBurgersAndRestaurants(debouncedQuery)
-        setResults(data)
+        // Transform burgers to match store type
+        const transformedBurgers = (data.burgers || []).map((burger: any) => ({
+          id: burger.id,
+          name: burger.name,
+          image_url: burger.image_url,
+          average_rating: burger.average_rating,
+          restaurant_name: burger.restaurant?.name || '',
+        }))
+        setResults({ burgers: transformedBurgers, restaurants: data.restaurants || [] })
       } catch (error) {
         console.error('Search error:', error)
         setResults({ burgers: [], restaurants: [] })
@@ -90,7 +97,6 @@ export default function SearchPage() {
         <div className="sticky top-0 z-40 bg-background border-b">
           <div className="pt-3 pb-2 px-4">
             <SearchInput
-              ref={searchInputRef}
               value={searchQuery}
               onChange={handleSearch}
             />
@@ -133,5 +139,6 @@ export default function SearchPage() {
           )}
         </div>
       </div>
-    )
-  }
+    </MainLayout>
+  )
+}

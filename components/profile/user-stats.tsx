@@ -63,7 +63,7 @@ export const UserStatsComponent = React.memo(function UserStatsComponent({ stats
     visible: {
       opacity: 1,
       y: 0,
-      transition: { type: 'spring', stiffness: 300, damping: 30 },
+      transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
     },
   }
 
@@ -98,7 +98,11 @@ export const UserStatsComponent = React.memo(function UserStatsComponent({ stats
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', stiffness: 100, damping: 15 }}
                 >
-                  {typeof stat.value === 'number' ? stat.value.toLocaleString('es-ES') : stat.value}
+                  {typeof stat.value === 'number' 
+                    ? stat.value.toLocaleString('es-ES') 
+                    : typeof stat.value === 'string' 
+                    ? stat.value 
+                    : JSON.stringify(stat.value)}
                 </motion.p>
               </div>
             </div>

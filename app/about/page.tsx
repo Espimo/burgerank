@@ -40,9 +40,6 @@ export const metadata: Metadata = {
     title: 'Sobre BurgeRank',
     description: 'La comunidad definitiva de amantes de las hamburguesas',
   },
-  alternates: {
-    canonical: 'https://burgerank.com/about',
-  },
 }
 
 export default function AboutPage() {

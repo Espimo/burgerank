@@ -31,7 +31,7 @@ async function getPublicProfile(username: string) {
     `
     )
     .eq('username', username)
-    .single()
+    .single() as { data: any | null; error: any }
 
   if (userError || !user) {
     notFound()
@@ -60,7 +60,7 @@ async function getPublicProfile(username: string) {
     )
     .eq('user_id', user.id)
     .order('position', { ascending: true })
-    .limit(5)
+    .limit(5) as { data: any[] | null }
 
   // Get reviews
   const { data: reviews } = await supabase
@@ -88,7 +88,7 @@ async function getPublicProfile(username: string) {
     .eq('user_id', user.id)
     .eq('is_public', true)
     .order('created_at', { ascending: false })
-    .limit(50)
+    .limit(50) as { data: any[] | null }
 
   return {
     user,
@@ -104,6 +104,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
     .sort((a, b) => a.position - b.position)
     .map((item) => ({
       id: item.burgers?.id || '',
+      restaurant_id: item.burgers?.restaurants?.id || '',
       name: item.burgers?.name || '',
       image_url: item.burgers?.image_url,
       rating: item.burgers?.rating,

@@ -3,7 +3,6 @@ import { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'Términos y Condiciones | BurgeRank',
   description: 'Lee nuestros términos y condiciones de servicio',
-  canonical: 'https://burgerank.com/legal/terms',
 }
 
 export default function TermsPage() {
