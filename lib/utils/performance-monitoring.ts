@@ -99,7 +99,7 @@ function observeCoreWebVitals(): void {
   }
 
   // First Contentful Paint (FCP)
-  if (performance.getEntriesByName) {
+  {
     const fcpEntry = performance
       .getEntriesByType('paint')
       .find((entry) => entry.name === 'first-contentful-paint')
@@ -111,7 +111,7 @@ function observeCoreWebVitals(): void {
   }
 
   // Time to First Byte (TTFB)
-  if (performance.getEntriesByType) {
+  {
     const navigationTiming = performance.getEntriesByType(
       'navigation'
     )[0] as PerformanceNavigationTiming
@@ -132,9 +132,9 @@ function observeCoreWebVitals(): void {
   }
 
   // First Input Delay (FID) - deprecado en favor de INP
-  if ('PerformanceObserver' in window) {
+  if (typeof PerformanceObserver !== 'undefined') {
     try {
-      const inputObserver = new PerformanceObserver((list) => {
+      const inputObserver = new (PerformanceObserver as any)((list: any) => {
         const entries = list.getEntries()
 
         entries.forEach((entry: any) => {

@@ -75,11 +75,11 @@ export async function getUserStats(userId: string): Promise<UserStats> {
       .limit(1)
       .single()
 
-    const favoriteBurger = favoriteBurgerData?.burger
+    const favoriteBurger = favoriteBurgerData?.burger && Array.isArray(favoriteBurgerData.burger) && favoriteBurgerData.burger.length > 0
       ? {
-          id: favoriteBurgerData.burger.id,
-          name: favoriteBurgerData.burger.name,
-          rating: favoriteBurgerData.burger.average_rating,
+          id: favoriteBurgerData.burger[0].id,
+          name: favoriteBurgerData.burger[0].name,
+          rating: favoriteBurgerData.burger[0].average_rating,
         }
       : undefined
 
@@ -100,15 +100,17 @@ export async function getUserStats(userId: string): Promise<UserStats> {
 
     const restaurantCounts = new Map<string, { id: string; name: string; count: number }>()
     favoriteRestaurantData?.forEach((review) => {
-      if (review.burger?.restaurant) {
-        const key = review.burger.restaurant.id
+      const burger = review.burger && Array.isArray(review.burger) && review.burger.length > 0 ? review.burger[0] : null
+      const restaurant = burger?.restaurant && Array.isArray(burger.restaurant) && burger.restaurant.length > 0 ? burger.restaurant[0] : null
+      if (restaurant && restaurant.id) {
+        const key = restaurant.id
         if (restaurantCounts.has(key)) {
           const entry = restaurantCounts.get(key)!
           entry.count += 1
         } else {
           restaurantCounts.set(key, {
-            id: review.burger.restaurant.id,
-            name: review.burger.restaurant.name,
+            id: restaurant.id,
+            name: restaurant.name,
             count: 1,
           })
         }

@@ -123,13 +123,20 @@ export async function submitReview(data: SubmitReviewData): Promise<SubmitReview
     if (imageUrls.length > 0) points += 10 // Con foto verificada
     // TODO: Verificar si es primera del mes para +20 pts
 
+    // Obtener los puntos actuales del usuario
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('total_points, available_points, total_reviews')
+      .eq('id', user.id)
+      .single()
+
     // Actualizar puntos del usuario
     const { error: pointsError } = await supabase
       .from('profiles')
       .update({
-        total_points: supabase.sql`total_points + ${points}`,
-        available_points: supabase.sql`available_points + ${points}`,
-        total_reviews: supabase.sql`total_reviews + 1`,
+        total_points: (profileData?.total_points || 0) + points,
+        available_points: (profileData?.available_points || 0) + points,
+        total_reviews: (profileData?.total_reviews || 0) + 1,
       })
       .eq('id', user.id)
 

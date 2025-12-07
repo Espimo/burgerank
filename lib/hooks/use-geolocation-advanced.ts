@@ -31,10 +31,16 @@ interface NearbyRestaurant {
   address: string
 }
 
-interface GeolocationError {
+export interface GeolocationError {
   code: number
   message: string
   type: 'PERMISSION_DENIED' | 'POSITION_UNAVAILABLE' | 'TIMEOUT' | 'UNKNOWN'
+}
+
+export interface UseGeolocationAdvancedOptions {
+  enableHighAccuracy?: boolean
+  timeout?: number
+  maximumAge?: number
 }
 
 const CACHE_KEY = 'burgerank_geolocation_cache'

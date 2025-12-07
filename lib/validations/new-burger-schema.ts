@@ -13,17 +13,15 @@ export const newBurgerSchema = z.object({
   price: z.number().positive('El precio debe ser positivo'),
   type: z.enum(
     ['Clasica', 'Premium', 'Gourmet', 'Vegana', 'Vegetariana', 'Pollo', 'Cerdo', 'Cordero', 'Mixta'],
-    {
-      errorMap: () => ({ message: 'Selecciona un tipo válido' }),
-    }
+    { message: 'Selecciona un tipo válido' }
   ),
   special_features: z
     .object({
-      sin_gluten: z.boolean().default(false),
-      vegana: z.boolean().default(false),
-      vegetariana: z.boolean().default(false),
-      keto: z.boolean().default(false),
-      picante: z.boolean().default(false),
+      sin_gluten: z.boolean().optional(),
+      vegana: z.boolean().optional(),
+      vegetariana: z.boolean().optional(),
+      keto: z.boolean().optional(),
+      picante: z.boolean().optional(),
     })
     .optional(),
   photo: z

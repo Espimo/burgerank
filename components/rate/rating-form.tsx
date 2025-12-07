@@ -111,7 +111,7 @@ export const RatingForm = memo(function RatingForm({
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="font-semibold line-clamp-2">{burger.name}</h2>
-          <p className="text-sm text-muted-foreground">{burger.restaurant?.name}</p>
+          <p className="text-sm text-muted-foreground">{burger.restaurant_name || burger.name}</p>
         </div>
       </div>
 

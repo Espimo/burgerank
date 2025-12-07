@@ -8,9 +8,9 @@ import { highlightTextSimple } from '@/lib/utils/text-highlight'
 interface RestaurantSearchResultProps {
   id: string
   name: string
-  logo_url?: string
+  image_url?: string
   city: string
-  burgers_count: number
+  burger_count?: number
   query: string
   onClick?: () => void
 }
@@ -18,9 +18,9 @@ interface RestaurantSearchResultProps {
 export const RestaurantSearchResult = memo(function RestaurantSearchResult({
   id,
   name,
-  logo_url,
+  image_url,
   city,
-  burgers_count,
+  burger_count,
   query,
   onClick,
 }: RestaurantSearchResultProps) {
@@ -32,9 +32,9 @@ export const RestaurantSearchResult = memo(function RestaurantSearchResult({
     >
       {/* Logo */}
       <div className="w-20 h-20 rounded-full overflow-hidden bg-muted flex-shrink-0">
-        {logo_url ? (
+        {image_url ? (
           <Image
-            src={logo_url}
+            src={image_url}
             alt={name}
             width={80}
             height={80}
@@ -55,7 +55,7 @@ export const RestaurantSearchResult = memo(function RestaurantSearchResult({
         {/* Burger count */}
         <div className="flex items-center gap-1 mt-2 text-xs">
           <span className="text-lg">🍔</span>
-          <span className="font-semibold">{burgers_count} burgers</span>
+          <span className="font-semibold">{burger_count ?? 0} burgers</span>
         </div>
       </div>
     </motion.button>

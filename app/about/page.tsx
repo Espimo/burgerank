@@ -1,4 +1,3 @@
-import { Metadata } from 'next'
 import HeroSection from '@/components/about/hero-section'
 import AboutUsSection from '@/components/about/about-us-section'
 import HowItWorksSection from '@/components/about/how-it-works-section'
@@ -8,39 +7,6 @@ import ContactSection from '@/components/about/contact-section'
 import FAQsSection from '@/components/about/faqs-section'
 import PressSection from '@/components/about/press-section'
 import SocialLinks from '@/components/about/social-links'
-
-export const metadata: Metadata = {
-  title: 'Sobre BurgeRank | La comunidad definitiva de amantes de las hamburguesas',
-  description:
-    'Descubre cómo BurgeRank está revolucionando la forma en que compartimos opiniones sobre las mejores hamburguesas. Transparencia, comunidad y pasión por el burger perfecto.',
-  keywords: [
-    'hamburguesas',
-    'ranking de burgers',
-    'opiniones de comida',
-    'comunidad foodie',
-    'calificaciones de restaurantes',
-    'best burgers',
-  ],
-  openGraph: {
-    title: 'Sobre BurgeRank - La plataforma definitiva de hamburguesas',
-    description: 'Descubre cómo funcionamos y únete a nuestra comunidad',
-    type: 'website',
-    url: 'https://burgerank.com/about',
-    images: [
-      {
-        url: 'https://burgerank.com/og-image.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'BurgeRank - Rating hamburguesas',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Sobre BurgeRank',
-    description: 'La comunidad definitiva de amantes de las hamburguesas',
-  },
-}
 
 export default function AboutPage() {
   return (

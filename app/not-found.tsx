@@ -1,10 +1,7 @@
+'use client'
+
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-
-export const metadata = {
-  title: 'Página no encontrada | BurgeRank',
-  description: 'La página que buscas no existe',
-}
 
 export default function NotFound() {
   return (

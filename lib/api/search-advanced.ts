@@ -86,14 +86,14 @@ export async function searchByTags(tags: string[], limit = 20) {
     supabase
       .from('burgers')
       .select('*')
-      .containsFilter('tags', tags)
+      .overlaps('tags', tags)
       .order('average_rating', { ascending: false })
       .limit(limit),
 
     supabase
       .from('restaurants')
       .select('*')
-      .containsFilter('categories', tags)
+      .overlaps('categories', tags)
       .order('created_at', { ascending: false })
       .limit(limit),
   ])
@@ -137,7 +137,7 @@ export async function searchByIngredients(ingredients: string[], limit = 20) {
       )
     `
     )
-    .containsFilter('ingredients', ingredients)
+    .overlaps('ingredients', ingredients)
     .order('average_rating', { ascending: false })
     .limit(limit)
 

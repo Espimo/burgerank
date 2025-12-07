@@ -170,7 +170,7 @@ export async function redeemReward(
 
     return {
       success: true,
-      userReward: userReward as UserReward,
+      userReward: userReward as any as UserReward,
     }
   } catch (error) {
     console.error('Redeem reward error:', error)
@@ -215,7 +215,7 @@ export async function getUserRewards(
       return []
     }
 
-    return (data as UserReward[]) || []
+    return (data as any as UserReward[]) || []
   } catch (error) {
     console.error('Get user rewards error:', error)
     return []
@@ -333,7 +333,7 @@ export async function validateAndUseRewardQR(
       return { success: false, error: 'Error al usar el premio' }
     }
 
-    return { success: true, reward: userReward.reward }
+    return { success: true, reward: userReward.reward as any as Reward }
   } catch (error) {
     console.error('Validate and use reward QR error:', error)
     return { success: false, error: 'Error al validar el código QR' }

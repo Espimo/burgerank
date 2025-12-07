@@ -4,7 +4,7 @@ export {
   type UseGeolocationAdvancedOptions,
   type GeolocationError,
 } from '@/lib/hooks/use-geolocation-advanced'
-export { LocationPermissionModal } from '@/components/shared/location-permission-modal'
+export { default as LocationPermissionModal } from '@/components/shared/location-permission-modal'
 
 // 🚀 PWA
 export {

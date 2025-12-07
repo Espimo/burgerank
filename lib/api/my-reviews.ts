@@ -90,7 +90,7 @@ export async function getMyReviews(
       return []
     }
 
-    return (data as Review[]) || []
+    return (data as any as Review[]) || []
   } catch (error) {
     console.error('Get my reviews error:', error)
     return []

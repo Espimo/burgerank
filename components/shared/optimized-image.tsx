@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { CSSProperties, useEffect, useRef, useState } from 'react'
-import { cn } from '@/lib/utils/cn'
+import { cn } from '@/lib/utils'
 
 interface OptimizedImageProps {
   src: string

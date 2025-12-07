@@ -96,9 +96,9 @@ export const SearchSuggestions = memo(function SearchSuggestions({
                 className="w-full p-3 rounded-lg hover:bg-muted transition-colors flex gap-3 text-left"
               >
                 <div className="w-16 h-16 rounded-full bg-muted flex-shrink-0 overflow-hidden">
-                  {restaurant.logo_url ? (
+                  {restaurant.image_url ? (
                     <Image
-                      src={restaurant.logo_url}
+                      src={restaurant.image_url}
                       alt={restaurant.name}
                       width={64}
                       height={64}

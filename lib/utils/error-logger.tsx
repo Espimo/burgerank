@@ -324,7 +324,7 @@ export class ErrorBoundary extends React.Component<
     logError(
       'ReactBoundaryError',
       error.message,
-      errorInfo.componentStack,
+      errorInfo.componentStack ?? 'No component stack',
       'error'
     )
 

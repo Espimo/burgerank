@@ -133,7 +133,7 @@ export function useLongTaskDetector(threshold: number = 50) {
     let longTaskCount = 0
 
     try {
-      const observer = new PerformanceObserver((list) => {
+      const observer = new (PerformanceObserver as any)((list: any) => {
         list.getEntries().forEach((entry: any) => {
           if (entry.duration > threshold) {
             longTaskCount++

@@ -63,7 +63,7 @@ function checkInstallationStatus(): void {
   // Para iOS, verificar modo fullscreen
   if (
     installationState.platform === 'ios' &&
-    window.navigator.standalone === true
+    (window.navigator as any).standalone === true
   ) {
     installationState.isInstalled = true
   }
@@ -197,7 +197,7 @@ export async function registerBackgroundSync(tag: string): Promise<boolean> {
 
   try {
     const registration = await navigator.serviceWorker.ready
-    await registration.sync.register(tag)
+    await (registration as any).sync.register(tag)
     console.log('Background sync registered:', tag)
     return true
   } catch (error) {
@@ -309,7 +309,7 @@ async function openIndexedDB(): Promise<IDBDatabase> {
     request.onsuccess = () => resolve(request.result)
 
     request.onupgradeneeded = (event) => {
-      const db = event.target.result as IDBDatabase
+      const db = (event.target as any)?.result as IDBDatabase
       if (!db.objectStoreNames.contains('reviews')) {
         db.createObjectStore('reviews', { keyPath: 'id' })
       }

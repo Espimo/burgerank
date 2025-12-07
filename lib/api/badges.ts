@@ -242,7 +242,7 @@ export async function getUserBadges(userId: string, onlyUnlocked = false): Promi
       return []
     }
 
-    return (data as UserBadge[]) || []
+    return (data as any as UserBadge[]) || []
   } catch (error) {
     console.error('Get user badges error:', error)
     return []
