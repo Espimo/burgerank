@@ -4,7 +4,7 @@ import { getSupabaseClient } from "./client"
 import { SignUpForm, SignInForm, Profile, AuthError } from "@/types"
 
 /**
- * Registra un nuevo usuario
+ * Registra un nuevo usuario llamando a la API del servidor
  */
 export async function signUp(
   email: string,
@@ -13,44 +13,30 @@ export async function signUp(
   city: string
 ) {
   try {
-    const supabase = getSupabaseClient()
-
-    // 1. Crear usuario en Auth
-    const { data, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username,
-          city,
-        },
+    // Llamar a la API del servidor que tiene SERVICE_ROLE_KEY
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    })
-
-    if (authError) throw authError
-    if (!data.user) throw new Error("No user returned from signup")
-
-    // 2. Crear perfil en profiles table
-    const { error: profileError } = await supabase.from("profiles").insert([
-      {
-        id: data.user.id,
+      body: JSON.stringify({
         email,
+        password,
         username,
         city,
-        level: "beginner",
-        points: 0,
-        total_reviews: 0,
-        followers_count: 0,
-        following_count: 0,
-      },
-    ])
+      }),
+    })
 
-    if (profileError) throw profileError
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to sign up")
+    }
 
     return {
       success: true,
       user: data.user,
-      message: "Account created successfully. Please check your email to verify.",
+      message: data.message || "Account created successfully",
     }
   } catch (error) {
     console.error("Sign up error:", error)
