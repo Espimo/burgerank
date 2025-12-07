@@ -4,7 +4,8 @@ import { getSupabaseClient } from "./client"
 import { SignUpForm, SignInForm, Profile, AuthError } from "@/types"
 
 /**
- * Registra un nuevo usuario llamando a la API del servidor
+ * Registra un nuevo usuario usando Supabase Auth
+ * El perfil se crea automáticamente mediante un trigger de BD
  */
 export async function signUp(
   email: string,
@@ -13,30 +14,31 @@ export async function signUp(
   city: string
 ) {
   try {
-    // Llamar a la API del servidor que tiene SERVICE_ROLE_KEY
-    const response = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const supabase = getSupabaseClient()
+
+    // Crear usuario en Auth con metadata
+    const { data, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username,
+          city,
+        },
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       },
-      body: JSON.stringify({
-        email,
-        password,
-        username,
-        city,
-      }),
     })
 
-    const data = await response.json()
+    if (authError) throw authError
+    if (!data.user) throw new Error("No user returned from signup")
 
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to sign up")
-    }
+    // El perfil se crea automáticamente por el trigger en Supabase
+    // No necesitamos hacer nada aquí
 
     return {
       success: true,
       user: data.user,
-      message: data.message || "Account created successfully",
+      message: "Account created successfully. Please check your email to verify.",
     }
   } catch (error) {
     console.error("Sign up error:", error)

@@ -1,10 +1,11 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
 
-// Usar SERVICE_ROLE_KEY en el servidor para permisos completos
+// Usar ANON_KEY es seguro aquí porque solo llamamos a signUp
+// El perfil se crea automáticamente mediante trigger en la BD
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 export async function POST(request: NextRequest) {
@@ -19,42 +20,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 1. Crear usuario en Auth
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // Crear usuario en Auth con metadata
+    // El perfil se crea automáticamente mediante el trigger handle_new_user()
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      email_confirm: false,
-    })
-
-    if (authError) throw authError
-    if (!authData.user) throw new Error("No user created")
-
-    // 2. Crear perfil en la tabla profiles
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .insert([
-        {
-          id: authData.user.id,
+      options: {
+        data: {
           username,
           city,
-          level: "burger_fan",
-          total_points: 0,
-          available_points: 0,
-          total_reviews: 0,
-          is_moderator: false,
-          is_admin: false,
         },
-      ])
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      },
+    })
 
-    if (profileError) throw profileError
+    if (error) throw error
 
     return NextResponse.json(
       {
         success: true,
         message: "Account created successfully. Please check your email to verify.",
         user: {
-          id: authData.user.id,
-          email: authData.user.email,
+          id: data.user?.id,
+          email: data.user?.email,
         },
       },
       { status: 201 }
