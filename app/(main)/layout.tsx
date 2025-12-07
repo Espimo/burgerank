@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react"
 import { MainLayout } from "@/components/layout/main-layout"
-import { useAuthUser, useAuthActions } from "@/lib/stores/auth-store"
+import { useAuthUser, useAuthStore } from "@/lib/stores/auth-store"
 import { getSupabaseClient } from "@/lib/supabase/client"
 
 export default function RootLayout({
@@ -11,7 +11,6 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   const { user, isLoading } = useAuthUser()
-  const { setAuthState } = useAuthActions()
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -29,13 +28,16 @@ export default function RootLayout({
             .eq("id", data.user.id)
             .single()
 
-          setAuthState(
-            {
+          // Acceder al store directamente sin usar hook, evitando ciclos infinitos
+          useAuthStore.setState({
+            user: {
               id: data.user.id,
               email: data.user.email || "",
             },
-            profile
-          )
+            profile,
+            isAuthenticated: true,
+            error: null,
+          })
         }
       } catch (error) {
         console.error("Auth error:", error)
@@ -43,7 +45,7 @@ export default function RootLayout({
     }
 
     checkAuth()
-  }, [setAuthState])
+  }, [])
 
   return (
     <MainLayout>

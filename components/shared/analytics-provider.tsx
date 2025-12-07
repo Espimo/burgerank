@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useRef } from 'react'
+import React, { createContext, useContext, useEffect, useRef, useMemo } from 'react'
 import {
   initializeAnalytics,
   trackPageView,
@@ -86,7 +86,8 @@ export function AnalyticsProvider({
     }
   }, [pathname, cookieConsent.analytics, enableDebug])
 
-  const contextValue: AnalyticsContextType = {
+  // Memorizar contextValue para evitar recrearlo cada render
+  const contextValue = useMemo<AnalyticsContextType>(() => ({
     trackEvent: (eventName: string, properties?: Record<string, any>) => {
       if (cookieConsent.analytics) {
         // Implementar con la función de tracking de eventos
@@ -111,7 +112,7 @@ export function AnalyticsProvider({
         recordUserEvent(sessionIdRef.current, eventName)
       }
     },
-  }
+  }), [cookieConsent.analytics, enableDebug])
 
   return (
     <AnalyticsContext.Provider value={contextValue}>

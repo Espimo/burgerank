@@ -65,7 +65,7 @@ export function PerformanceObserver({
         clearInterval(intervalRef.current)
       }
     }
-  }, [onMetricsUpdate, onDegradation, customThresholds, enableLogging, reportInterval])
+  }, [enableLogging, reportInterval])
 
   return null
 }

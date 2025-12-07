@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { signUp, checkUsernameAvailability } from "@/lib/supabase/auth-helpers"
-import { useAuthActions } from "@/lib/stores/auth-store"
+import { useAuthStore } from "@/lib/stores/auth-store"
 
 const registerSchema = z
   .object({
@@ -34,7 +34,6 @@ type RegisterFormData = z.infer<typeof registerSchema>
 
 export default function RegisterPage() {
   const router = useRouter()
-  const { setAuthState } = useAuthActions()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [usernameChecking, setUsernameChecking] = useState(false)

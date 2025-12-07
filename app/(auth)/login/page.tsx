@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { signIn } from "@/lib/supabase/auth-helpers"
-import { useAuthActions } from "@/lib/stores/auth-store"
+import { useAuthStore } from "@/lib/stores/auth-store"
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -18,7 +18,6 @@ type LoginFormData = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
   const router = useRouter()
-  const { setAuthState } = useAuthActions()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -43,10 +42,12 @@ export default function LoginPage() {
       }
 
       // Actualizar estado de autenticación
-      setAuthState(
-        { id: result.user.id, email: result.user.email || "" },
-        null // El perfil se cargará en el layout
-      )
+      useAuthStore.setState({
+        user: { id: result.user.id, email: result.user.email || "" },
+        profile: null,
+        isAuthenticated: true,
+        error: null,
+      })
 
       // Redirigir a /ranking
       router.push("/ranking")
