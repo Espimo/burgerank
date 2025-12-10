@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader, AlertCircle } from 'lucide-react'
-import { useAuth } from '@/lib/auth/useAuth'
+import { useAuthUser } from '@/lib/stores/auth-store'
 import { ProfileHeader } from '@/components/profile/profile-header'
 import { AvatarUpload } from '@/components/profile/avatar-upload'
 import { EditProfileModal } from '@/components/profile/edit-profile-modal'
@@ -32,7 +32,7 @@ export default function ProfilePage() {
   const [isOwnProfile, setIsOwnProfile] = useState(true)
   const [isEditingAvatar, setIsEditingAvatar] = useState(false)
 
-  const { user } = useAuth()
+  const { user } = useAuthUser()
   const [error, setError] = useState<string | null>(null)
 
   // Cargar datos del perfil
