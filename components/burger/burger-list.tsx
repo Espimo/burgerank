@@ -116,6 +116,7 @@ export function BurgerList({ onSelectBurger }: BurgerListProps) {
               average_rating={burger.average_rating || 0}
               review_count={0}
               price={burger.price}
+              burger_type={burger.burger_type}
               is_new={
                 burger.created_at
                   ? new Date(burger.created_at) >

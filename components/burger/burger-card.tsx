@@ -16,6 +16,7 @@ interface BurgerCardProps {
   average_rating: number
   review_count: number
   price?: number
+  burger_type?: string
   is_trending?: boolean
   is_new?: boolean
   onViewDetails?: () => void
@@ -30,6 +31,7 @@ export const BurgerCard = memo(function BurgerCard({
   average_rating,
   review_count,
   price,
+  burger_type,
   is_trending,
   is_new,
   onViewDetails,
@@ -81,7 +83,12 @@ export const BurgerCard = memo(function BurgerCard({
           )}
 
           {/* Badges */}
-          <div className="absolute top-2 left-2 right-2 flex gap-2">
+          <div className="absolute top-2 left-2 right-2 flex gap-2 flex-wrap">
+            {burger_type && (
+              <span className="bg-amber-600 text-white text-xs font-semibold px-2 py-1 rounded-full capitalize">
+                {burger_type}
+              </span>
+            )}
             {is_new && (
               <span className="bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
                 Nuevo

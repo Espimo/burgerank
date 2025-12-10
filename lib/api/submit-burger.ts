@@ -119,20 +119,23 @@ export async function submitNewBurger(data: NewBurgerFormData): Promise<SubmitBu
     }
 
     // Enviar notificación al equipo (webhook)
-    try {
-      await fetch(process.env.NEXT_PUBLIC_WEBHOOK_URL || '', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'new_burger_submitted',
-          burgerId: burger.id,
-          restaurantId,
-          userName: user.user_metadata?.full_name || user.email,
-          timestamp: new Date().toISOString(),
-        }),
-      })
-    } catch (error) {
-      console.error('Webhook error:', error)
+    if (process.env.NEXT_PUBLIC_WEBHOOK_URL) {
+      try {
+        await fetch(process.env.NEXT_PUBLIC_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'new_burger_submitted',
+            burgerId: burger.id,
+            restaurantId,
+            userName: user.user_metadata?.full_name || user.email,
+            timestamp: new Date().toISOString(),
+          }),
+        })
+      } catch (error) {
+        console.error('Webhook error:', error)
+        // No fallar si el webhook falla, la burger ya se creó
+      }
     }
 
     return {

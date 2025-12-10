@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Loader } from 'lucide-react'
+import { Loader, AlertCircle } from 'lucide-react'
+import { useAuth } from '@/lib/auth/useAuth'
 import { ProfileHeader } from '@/components/profile/profile-header'
 import { AvatarUpload } from '@/components/profile/avatar-upload'
 import { EditProfileModal } from '@/components/profile/edit-profile-modal'
@@ -31,18 +32,25 @@ export default function ProfilePage() {
   const [isOwnProfile, setIsOwnProfile] = useState(true)
   const [isEditingAvatar, setIsEditingAvatar] = useState(false)
 
+  const { user } = useAuth()
+  const [error, setError] = useState<string | null>(null)
+
   // Cargar datos del perfil
   useEffect(() => {
     const loadProfileData = async () => {
       try {
         setIsLoading(true)
-        // En producción, obtener userId de useAuth()
-        const userId = 'current-user-id'
+        setError(null)
+        
+        if (!user) {
+          setError('Debes iniciar sesión para ver tu perfil')
+          return
+        }
 
         const [profileData, statsData, badgesData] = await Promise.all([
-          getUserPublicProfile(userId),
-          getUserStats(userId),
-          getUserBadges(userId),
+          getUserPublicProfile(user.id),
+          getUserStats(user.id),
+          getUserBadges(user.id),
         ])
 
         if (profileData) {
@@ -54,13 +62,14 @@ export default function ProfilePage() {
         setBadges(badgesData)
       } catch (error) {
         console.error('Error loading profile:', error)
+        setError('Error al cargar el perfil. Intenta de nuevo.')
       } finally {
         setIsLoading(false)
       }
     }
 
     loadProfileData()
-  }, [])
+  }, [user])
 
   const handleEditProfile = async (data: Partial<UserProfile>) => {
     try {
@@ -104,6 +113,17 @@ export default function ProfilePage() {
         <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}>
           <Loader className="w-8 h-8 text-amber-500" />
         </motion.div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4 p-6 bg-red-500/10 border border-red-500/20 rounded-lg text-red-600 max-w-md">
+          <AlertCircle className="w-8 h-8" />
+          <p className="text-center">{error}</p>
+        </div>
       </div>
     )
   }

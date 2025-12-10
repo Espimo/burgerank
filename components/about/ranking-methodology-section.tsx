@@ -5,10 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
 
 export default function RankingMethodologySection() {
-  const [expandedFactor, setExpandedFactor] = useState<number | null>(0)
+  const [expandedFactor, setExpandedFactor] = useState<string | null>('promedio')
 
   const factors = [
     {
+      id: 'promedio',
       title: 'Promedio Ponderado',
       weight: '40%',
       description:
@@ -18,6 +19,7 @@ export default function RankingMethodologySection() {
         'Se calcula usando la media aritmética de todas las valoraciones, pero con filtros para evitar manipulación.',
     },
     {
+      id: 'verificadas',
       title: 'Reviews Verificadas',
       weight: '25%',
       description:
@@ -27,6 +29,7 @@ export default function RankingMethodologySection() {
         'Las opiniones con evidencia fotográfica o comprobante de compra tienen mayor peso (1.5x más impacto).',
     },
     {
+      id: 'nivel',
       title: 'Nivel del Usuario',
       weight: '20%',
       description:
@@ -36,6 +39,7 @@ export default function RankingMethodologySection() {
         'Los usuarios de nivel alto (críticos verificados) tienen sus opiniones ponderadas hasta 2x más que nuevos usuarios.',
     },
     {
+      id: 'cantidad',
       title: 'Cantidad de Reviews',
       weight: '10%',
       description:
@@ -45,6 +49,7 @@ export default function RankingMethodologySection() {
         'Se penaliza a hamburguesas con menos de 5 reviews para asegurar que el ranking sea confiable.',
     },
     {
+      id: 'temporal',
       title: 'Boost Temporal',
       weight: '3%',
       description:
@@ -54,6 +59,7 @@ export default function RankingMethodologySection() {
         'Las nuevas adiciones reciben un pequeño impulso inicial para darles oportunidad de ganar visibilidad.',
     },
     {
+      id: 'elo',
       title: 'Match Score ELO',
       weight: '2%',
       description:
@@ -132,10 +138,10 @@ export default function RankingMethodologySection() {
           viewport={{ once: true }}
           className="space-y-4"
         >
-          {factors.map((factor, index) => (
-            <motion.div key={index} variants={itemVariants}>
+          {factors.map((factor) => (
+            <motion.div key={factor.id} variants={itemVariants}>
               <div
-                onClick={() => setExpandedFactor(expandedFactor === index ? null : index)}
+                onClick={() => setExpandedFactor(expandedFactor === factor.id ? null : factor.id)}
                 className="group cursor-pointer"
               >
                 {/* Header */}
@@ -155,7 +161,7 @@ export default function RankingMethodologySection() {
                       </div>
                       <ChevronDown
                         className={`text-gray-400 transition-transform ${
-                          expandedFactor === index ? 'rotate-180' : ''
+                          expandedFactor === factor.id ? 'rotate-180' : ''
                         }`}
                       />
                     </div>
@@ -164,7 +170,7 @@ export default function RankingMethodologySection() {
 
                 {/* Expanded Content */}
                 <AnimatePresence>
-                  {expandedFactor === index && (
+                  {expandedFactor === factor.id && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
