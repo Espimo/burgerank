@@ -36,23 +36,18 @@ export default function ProfilePage() {
   const [isBadgeDetailOpen, setIsBadgeDetailOpen] = useState(false)
   const [isOwnProfile, setIsOwnProfile] = useState(true)
   const [isEditingAvatar, setIsEditingAvatar] = useState(false)
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
+  const [showBadgeInfoModal, setShowBadgeInfoModal] = useState(false)
+  const [selectedBadgeInfo, setSelectedBadgeInfo] = useState<any>(null)
+  const [showRewardInfoModal, setShowRewardInfoModal] = useState(false)
+  const [selectedRewardInfo, setSelectedRewardInfo] = useState<any>(null)
 
   const { user } = useAuthUser()
   const [error, setError] = useState<string | null>(null)
 
   // Burger Rank Functions
   const {
-    showProfileSettings,
-    saveSettings,
-    showSettingsModal,
-    showBadgeInfo,
-    showBadgeModal,
-    selectedBadge: badgeInfo,
-    setShowBadgeModal,
-    showRewardInfo,
-    showRewardModal,
-    selectedReward: rewardInfo,
-    setShowRewardModal,
+    markAllRead,
   } = useBurgeRankFunctions()
 
   // Cargar datos del perfil
@@ -119,8 +114,8 @@ export default function ProfilePage() {
   }
 
   const handleBadgeClick = (badge: UserBadge) => {
-    setSelectedBadge(badge)
-    setIsBadgeDetailOpen(true)
+    setSelectedBadgeInfo(badge)
+    setShowBadgeInfoModal(true)
   }
 
   // Calcular nivel
@@ -171,7 +166,7 @@ export default function ProfilePage() {
             isOwnProfile={isOwnProfile}
             onEditClick={() => setIsEditModalOpen(true)}
             onAvatarUpload={() => setIsAvatarUploadOpen(true)}
-            onSettingsClick={showProfileSettings}
+            onSettingsClick={() => setIsSettingsModalOpen(true)}
           />
         </motion.div>
 
@@ -274,24 +269,24 @@ export default function ProfilePage() {
 
       {/* Settings Modal */}
       <ProfileSettingsModal
-        open={showSettingsModal}
-        onOpenChange={setShowSettingsModal}
+        open={isSettingsModalOpen}
+        onOpenChange={setIsSettingsModalOpen}
         userName={profile?.full_name || 'Usuario'}
         userEmail={profile?.email || ''}
       />
 
       {/* Badge Info Modal */}
       <BadgeInfoModal
-        open={showBadgeModal}
-        onOpenChange={setShowBadgeModal}
-        badge={badgeInfo}
+        open={showBadgeInfoModal}
+        onOpenChange={setShowBadgeInfoModal}
+        badge={selectedBadgeInfo}
       />
 
       {/* Reward Info Modal */}
       <RewardInfoModal
-        open={showRewardModal}
-        onOpenChange={setShowRewardModal}
-        reward={rewardInfo}
+        open={showRewardInfoModal}
+        onOpenChange={setShowRewardInfoModal}
+        reward={selectedRewardInfo}
       />
     </div>
   )
