@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Loader, AlertCircle } from 'lucide-react'
+import { Loader, AlertCircle, Settings } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { useAuthUser } from '@/lib/stores/auth-store'
 import { ProfileHeader } from '@/components/profile/profile-header'
 import { AvatarUpload } from '@/components/profile/avatar-upload'
@@ -14,8 +15,12 @@ import { SocialStats } from '@/components/profile/social-stats'
 import { UserStatsComponent } from '@/components/profile/user-stats'
 import { BadgesSection } from '@/components/profile/badges-section'
 import { BadgeDetailModal } from '@/components/profile/badge-detail-modal'
+import { ProfileSettingsModal } from '@/components/profile/profile-settings-modal'
+import { BadgeInfoModal } from '@/components/profile/badge-info-modal'
+import { RewardInfoModal } from '@/components/profile/reward-info-modal'
 import { getUserStats, getUserPublicProfile } from '@/lib/api/user-stats'
 import { getUserBadges } from '@/lib/api/badges'
+import { useBurgeRankFunctions } from '@/lib/hooks/use-burger-rank-functions'
 import type { UserProfile, UserStats } from '@/lib/api/user-stats'
 import type { UserBadge } from '@/lib/api/badges'
 
@@ -34,6 +39,21 @@ export default function ProfilePage() {
 
   const { user } = useAuthUser()
   const [error, setError] = useState<string | null>(null)
+
+  // Burger Rank Functions
+  const {
+    showProfileSettings,
+    saveSettings,
+    showSettingsModal,
+    showBadgeInfo,
+    showBadgeModal,
+    selectedBadge: badgeInfo,
+    setShowBadgeModal,
+    showRewardInfo,
+    showRewardModal,
+    selectedReward: rewardInfo,
+    setShowRewardModal,
+  } = useBurgeRankFunctions()
 
   // Cargar datos del perfil
   useEffect(() => {
@@ -151,6 +171,7 @@ export default function ProfilePage() {
             isOwnProfile={isOwnProfile}
             onEditClick={() => setIsEditModalOpen(true)}
             onAvatarUpload={() => setIsAvatarUploadOpen(true)}
+            onSettingsClick={showProfileSettings}
           />
         </motion.div>
 
@@ -249,6 +270,28 @@ export default function ProfilePage() {
         isOpen={isBadgeDetailOpen}
         badge={selectedBadge}
         onClose={() => setIsBadgeDetailOpen(false)}
+      />
+
+      {/* Settings Modal */}
+      <ProfileSettingsModal
+        open={showSettingsModal}
+        onOpenChange={setShowSettingsModal}
+        userName={profile?.full_name || 'Usuario'}
+        userEmail={profile?.email || ''}
+      />
+
+      {/* Badge Info Modal */}
+      <BadgeInfoModal
+        open={showBadgeModal}
+        onOpenChange={setShowBadgeModal}
+        badge={badgeInfo}
+      />
+
+      {/* Reward Info Modal */}
+      <RewardInfoModal
+        open={showRewardModal}
+        onOpenChange={setShowRewardModal}
+        reward={rewardInfo}
       />
     </div>
   )

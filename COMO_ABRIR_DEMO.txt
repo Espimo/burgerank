@@ -1,0 +1,220 @@
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║  📋 CÓMO ABRIR Y VER LA DEMO (Sin necesidad de servidor) ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════
+  ✅ ARCHIVO LISTO: demo.html
+═══════════════════════════════════════════════════════════════
+
+El archivo:
+  📁 C:\0_CRISTHIAN\burgerank_project\demo.html
+
+Es un archivo HTML estático que:
+  ✅ NO necesita servidor Node.js
+  ✅ NO necesita Supabase
+  ✅ Funciona en cualquier navegador
+  ✅ Cambios en tiempo real
+  ✅ Completamente funcional
+
+═══════════════════════════════════════════════════════════════
+  🚀 FORMAS DE ABRIRLO
+═══════════════════════════════════════════════════════════════
+
+OPCIÓN 1️⃣ - MÁS RÁPIDO (Sin extensiones):
+──────────────────────────────────────────
+
+Paso 1: En VS Code, presiona Ctrl+Shift+E
+        (para abrir el File Explorer)
+
+Paso 2: Busca el archivo "demo.html" en la lista
+
+Paso 3: Haz clic DERECHO sobre el archivo
+
+Paso 4: Selecciona "Open with Default Browser"
+        (O simplemente doble-clic)
+
+Listo: ¡Se abrirá en tu navegador! 🎉
+
+═══════════════════════════════════════════════════════════════
+
+OPCIÓN 2️⃣ - MEJOR (Con Live Server extension):
+──────────────────────────────────────────────
+
+Paso 1: En VS Code, presiona Ctrl+Shift+X
+        (para abrir Extensions)
+
+Paso 2: En el buscador, escribe: Live Server
+
+Paso 3: Haz clic en "Install" (del extension oficial)
+
+Paso 4: Espera a que termine (2-3 segundos)
+
+Paso 5: En el File Explorer, haz clic DERECHO en demo.html
+
+Paso 6: Selecciona "Open with Live Server"
+
+Listo: Se abre en navegador en http://localhost:5500
+
+═══════════════════════════════════════════════════════════════
+
+OPCIÓN 3️⃣ - DESDE EL NAVEGADOR:
+──────────────────────────────
+
+Paso 1: Abre Windows Explorer (Archivo)
+
+Paso 2: Ve a: C:\0_CRISTHIAN\burgerank_project\
+
+Paso 3: Busca el archivo: demo.html
+
+Paso 4: Doble-clic para abrir en navegador
+
+═══════════════════════════════════════════════════════════════
+  📊 QUÉ VERÁS EN LA PÁGINA
+═══════════════════════════════════════════════════════════════
+
+┌──────────────────────────────────────┐
+│ HEADER                               │
+│  🍔 BurgeRank Demo                   │
+│  HTML Estático - Sin Servidor        │
+└──────────────────────────────────────┘
+
+┌──────────────────────────────────────┐
+│ TABS (Haz clic en cada uno)          │
+│                                      │
+│  🍔 RANKING                          │
+│  • 4 burgers de ejemplo              │
+│  • Badges ámbar (burger_type)        │
+│  • Ratings y precios                 │
+│                                      │
+│  📖 ABOUT                            │
+│  • 6 acordeones expandibles          │
+│  • Factores de ranking               │
+│  • Click para expandir               │
+│                                      │
+│  👤 PROFILE                          │
+│  • Perfil de usuario                 │
+│  • Estadísticas                      │
+│  • Badges desbloqueados              │
+└──────────────────────────────────────┘
+
+┌──────────────────────────────────────┐
+│ SIDEBAR (Información útil)           │
+│                                      │
+│  ✅ System Status                    │
+│  💡 Cómo Usar                        │
+│  🔗 Links Útiles                     │
+└──────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════
+  🎮 INTERACTIVIDAD
+═══════════════════════════════════════════════════════════════
+
+Puedes hacer TODO esto:
+
+✅ Cambiar entre tabs
+   (Click en Ranking, About, Profile)
+
+✅ Expandir/contraer acordeones
+   (Click en cada factor de ranking)
+
+✅ Inspeccionar elementos
+   (Clic derecho → Inspect Element)
+
+✅ Abrir DevTools
+   (Presiona F12)
+
+✅ Ver logs en consola
+   (F12 → Console)
+
+✅ Cambiar estilos en vivo
+   (F12 → Elements → Cambiar CSS)
+
+═══════════════════════════════════════════════════════════════
+  🛠️ AHORA PUEDES HACER CAMBIOS
+═══════════════════════════════════════════════════════════════
+
+Cuando tengas el HTML abierto:
+
+1. Abre el archivo demo.html en VS Code
+   (Click en "demo.html" → F1 → "Open")
+
+2. Haz cualquier cambio que quieras:
+   - Cambiar colores
+   - Agregar más burgers
+   - Modificar texto
+   - Etc.
+
+3. Si tienes Live Server:
+   - Los cambios se ven inmediatamente
+   - Automático sin refrescar
+
+4. Si NO tienes Live Server:
+   - Guarda el archivo (Ctrl+S)
+   - Refresh en navegador (F5)
+   - ¡Ves los cambios!
+
+═══════════════════════════════════════════════════════════════
+  ⚡ VENTAJAS DE ESTE ENFOQUE
+═══════════════════════════════════════════════════════════════
+
+✅ NO necesita Node.js corriendo
+✅ NO necesita Supabase
+✅ NO necesita esperar compilación
+✅ Abre directamente en navegador
+✅ Funcionamiento 100% offline
+✅ Puedes compartir el archivo HTML
+✅ Funciona en cualquier computadora
+
+═══════════════════════════════════════════════════════════════
+  ❓ PREGUNTAS FRECUENTES
+═══════════════════════════════════════════════════════════════
+
+P: ¿Por qué no funciona el servidor Node?
+R: El servidor se cayó o no estaba levantado. Pero con HTML
+   no lo necesitas.
+
+P: ¿Los cambios se ven en tiempo real?
+R: Sí, si usas Live Server. Si no, refrescas (F5).
+
+P: ¿Puedo hacer cambios en el código?
+R: Sí, edita demo.html en VS Code y verás cambios.
+
+P: ¿Esto es la app real?
+R: No, es un prototipo/demo. La app real usa Next.js y Supabase.
+   Pero este HTML muestra cómo se vería.
+
+P: ¿Dónde están los datos reales?
+R: Son datos ficticios (mock data) para testing visual.
+   Los datos reales vienen de Supabase en producción.
+
+═══════════════════════════════════════════════════════════════
+  📞 PRÓXIMOS PASOS
+═══════════════════════════════════════════════════════════════
+
+1. Abre el archivo demo.html como se describe arriba
+
+2. Experimenta con la interfaz:
+   - Cambia tabs
+   - Expande acordeones
+   - Inspecciona elementos
+
+3. Cuando veas algo que quieras cambiar:
+   - Edita demo.html en VS Code
+   - Haz los cambios que quieras
+   - Ve los cambios en vivo (con Live Server) o refrescando
+
+4. Cuando esté OK, avísame para:
+   - Pasar a la app real (Next.js)
+   - Hacer más cambios
+   - Deploy a producción
+
+═══════════════════════════════════════════════════════════════
+
+¡AHORA SÍ PUEDES VER LA DEMO FUNCIONANDO! 🎉
+
+Simplemente abre el archivo demo.html en tu navegador
+como se describe arriba.
+
+═══════════════════════════════════════════════════════════════

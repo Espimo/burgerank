@@ -14,12 +14,13 @@ import { type NewBurgerFormData } from '@/lib/validations/new-burger-schema'
 import { submitReview } from '@/lib/api/submit-review'
 import { submitNewBurger } from '@/lib/api/submit-burger'
 import { checkDailyLimit, checkDuplicateReview } from '@/lib/api/anti-spam'
+import { useBurgeRankFunctions } from '@/lib/hooks/use-burger-rank-functions'
 
-type Step = 'search' | 'rating' | 'success'
+type Step = 'context' | 'search' | 'rating' | 'upload' | 'success'
 
 export default function RatePage() {
   const router = useRouter()
-  const [step, setStep] = useState<Step>('search')
+  const [step, setStep] = useState<Step>('context')
   const [selectedBurger, setSelectedBurger] = useState<Burger | null>(null)
   const [newBurgerDialogOpen, setNewBurgerDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -29,6 +30,19 @@ export default function RatePage() {
     unlockedBadges?: string[]
     unlockedRewards?: string[]
   } | null>(null)
+
+  // Burger Rank Functions
+  const {
+    selectedConsumption,
+    selectedAppetizers,
+    advanceStep,
+    selectConsumption,
+    toggleAppetizer,
+    selectBurgerToRate,
+    setSectionRating,
+    toggleSectionTag,
+    setRating,
+  } = useBurgeRankFunctions()
 
   // Valida antes de avanzar al paso 2
   const handleSelectBurger = useCallback(async (burger: Burger) => {
@@ -145,6 +159,7 @@ export default function RatePage() {
   }, [])
 
   const getStepNumber = (): number => {
+    if (step === 'context') return 0
     if (step === 'search') return 1
     if (step === 'rating') return 2
     return 3
@@ -165,19 +180,24 @@ export default function RatePage() {
         {step !== 'success' ? (
           <RateWizard
             currentStep={getStepNumber()}
-            totalSteps={3}
-            stepTitles={['Burger', 'Calificación', 'Éxito']}
-            canGoBack={step === 'rating'}
-            canGoNext={step === 'search' && selectedBurger !== null}
+            totalSteps={4}
+            stepTitles={['Contexto', 'Burger', 'Calificación', 'Éxito']}
+            canGoBack={step === 'search' || step === 'rating'}
+            canGoNext={step === 'context' || (step === 'search' && selectedBurger !== null)}
             isLoading={isSubmitting}
             onPrevious={() => {
-              if (step === 'rating') {
+              if (step === 'search') {
+                setStep('context')
+                setSelectedBurger(null)
+              } else if (step === 'rating') {
                 setStep('search')
                 setSelectedBurger(null)
               }
             }}
             onNext={() => {
-              if (step === 'search' && selectedBurger) {
+              if (step === 'context') {
+                setStep('search')
+              } else if (step === 'search' && selectedBurger) {
                 setStep('rating')
               }
             }}
@@ -185,6 +205,72 @@ export default function RatePage() {
               // Handled in the form submission
             }}
           >
+            {step === 'context' && (
+              <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-2xl mx-auto w-full">
+                <h2 className="text-2xl font-bold mb-8">¿Cómo consumiste la burger? 🍔</h2>
+                
+                {/* Consumption Type */}
+                <div className="w-full mb-8">
+                  <p className="text-sm font-medium text-muted-foreground mb-4">Lugar de consumo</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={() => {
+                        selectConsumption('local')
+                        selectConsumption('local') // Ensure state updates
+                      }}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        selectedConsumption === 'local'
+                          ? 'border-primary bg-primary/10'
+                          : 'border-input hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="text-2xl mb-2">🏪</div>
+                      <div className="font-semibold">Local</div>
+                      <div className="text-xs text-muted-foreground">Comer en el sitio</div>
+                    </button>
+                    <button
+                      onClick={() => selectConsumption('delivery')}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        selectedConsumption === 'delivery'
+                          ? 'border-primary bg-primary/10'
+                          : 'border-input hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="text-2xl mb-2">🚚</div>
+                      <div className="font-semibold">Delivery</div>
+                      <div className="text-xs text-muted-foreground">Entrega a domicilio</div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Appetizers */}
+                <div className="w-full">
+                  <p className="text-sm font-medium text-muted-foreground mb-4">¿Qué acompañamientos incluiste? (opcional)</p>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {[
+                      { id: 'papas', emoji: '🍟', label: 'Papas' },
+                      { id: 'nachos', emoji: '🌽', label: 'Nachos' },
+                      { id: 'alitas', emoji: '🍗', label: 'Alitas' },
+                      { id: 'aros', emoji: '🧅', label: 'Aros' },
+                    ].map((appetizer) => (
+                      <button
+                        key={appetizer.id}
+                        onClick={() => toggleAppetizer(appetizer.id)}
+                        className={`p-3 rounded-lg border-2 transition-all text-center ${
+                          selectedAppetizers.includes(appetizer.id)
+                            ? 'border-primary bg-primary/10'
+                            : 'border-input hover:border-primary/50'
+                        }`}
+                      >
+                        <div className="text-2xl mb-1">{appetizer.emoji}</div>
+                        <div className="text-xs font-medium">{appetizer.label}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {step === 'search' && (
               <BurgerSearchStep
                 onSelectBurger={handleSelectBurger}

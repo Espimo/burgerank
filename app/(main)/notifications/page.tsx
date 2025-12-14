@@ -4,6 +4,7 @@ import React from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useNotificationsStore } from '@/lib/stores/notifications-store'
+import { useBurgeRankFunctions } from '@/lib/hooks/use-burger-rank-functions'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { motion } from 'framer-motion'
@@ -13,6 +14,8 @@ import { Trash2 } from 'lucide-react'
 export default function NotificationsPage() {
   const { notifications, markAsRead, markAllAsRead, removeNotification, clearAll } =
     useNotificationsStore()
+  
+  const { markAllRead } = useBurgeRankFunctions()
 
   const getNotificationIcon = (type: string) => {
     const icons: Record<string, string> = {
@@ -25,6 +28,11 @@ export default function NotificationsPage() {
     return icons[type] || '📢'
   }
 
+  const handleMarkAllRead = () => {
+    markAllAsRead() // Store action
+    markAllRead() // Hook function (for feedback/logging)
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
       {/* Header */}
@@ -35,7 +43,7 @@ export default function NotificationsPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={markAllAsRead}
+              onClick={handleMarkAllRead}
             >
               Marcar todas como leídas
             </Button>

@@ -6,6 +6,7 @@ import { QuickSearch } from '@/components/burger/quick-search'
 import { RankingFilters } from '@/components/burger/ranking-filters'
 import { BurgerList } from '@/components/burger/burger-list'
 import { BurgerDetailModal } from '@/components/burger/burger-detail-modal'
+import { useBurgeRankFunctions } from '@/lib/hooks/use-burger-rank-functions'
 import { Flame } from 'lucide-react'
 
 interface RankingClientProps {}
@@ -13,6 +14,15 @@ interface RankingClientProps {}
 export function RankingClient(props: RankingClientProps) {
   const [selectedBurgerId, setSelectedBurgerId] = useState<string | undefined>()
   const [showDetailModal, setShowDetailModal] = useState(false)
+  
+  const {
+    filterByView,
+    switchRankingView,
+    filterRanking,
+    showCityModal,
+    showTagFiltersModal,
+    showAllergensModal,
+  } = useBurgeRankFunctions()
 
   const handleSelectBurger = useCallback((burgerId: string) => {
     setSelectedBurgerId(burgerId)

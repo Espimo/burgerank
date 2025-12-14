@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
-import { MapPin, Mail, Calendar } from 'lucide-react'
+import { MapPin, Mail, Calendar, Settings } from 'lucide-react'
 import type { UserProfile } from '@/lib/api/user-stats'
 
 interface ProfileHeaderProps {
@@ -13,6 +13,7 @@ interface ProfileHeaderProps {
   onFollowClick?: () => void
   onEditClick?: () => void
   onAvatarUpload?: () => void
+  onSettingsClick?: () => void
 }
 
 export const ProfileHeader = React.memo(function ProfileHeader({
@@ -22,6 +23,7 @@ export const ProfileHeader = React.memo(function ProfileHeader({
   onFollowClick,
   onEditClick,
   onAvatarUpload,
+  onSettingsClick,
 }: ProfileHeaderProps) {
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -96,12 +98,21 @@ export const ProfileHeader = React.memo(function ProfileHeader({
 
           <motion.div className="flex gap-2" variants={itemVariants}>
             {isOwnProfile ? (
-              <button
-                onClick={onEditClick}
-                className="px-4 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 transition-colors"
-              >
-                Editar
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={onEditClick}
+                  className="px-4 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 transition-colors"
+                >
+                  Editar
+                </button>
+                <button
+                  onClick={onSettingsClick}
+                  className="px-4 py-2 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center gap-2"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span className="hidden sm:inline">Configuración</span>
+                </button>
+              </div>
             ) : (
               <button
                 onClick={onFollowClick}
