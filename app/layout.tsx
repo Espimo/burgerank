@@ -1,36 +1,20 @@
-import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
-import "./globals.css"
-import { Toaster } from "sonner"
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-})
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-})
+import './globals.css'
+import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: "BurgeRank - Ranking de Hamburguesas",
-  description: "Plataforma para calificar y valorar las mejores hamburguesas",
-  viewport: "width=device-width, initial-scale=1, viewport-fit=cover",
+  title: 'BurgeRank - Ranking de Hamburguesas',
+  description: 'La mejor plataforma de ranking de hamburguesas'
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="es">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
-      >
+      <body>
         {children}
-        <Toaster position="top-center" richColors />
       </body>
     </html>
   )
