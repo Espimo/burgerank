@@ -4,6 +4,7 @@ import { useState } from 'react'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Sidebar from '@/components/layout/Sidebar'
+import { burgers } from '@/lib/data/mockData'
 
 export default function RatePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -17,6 +18,8 @@ export default function RatePage() {
   const [sauceRating, setSauceRating] = useState(2)
   const [price, setPrice] = useState('8.50')
   const [comment, setComment] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedBurger, setSelectedBurger] = useState<typeof burgers[0] | null>(null)
 
   const handleMenuClick = () => {
     setSidebarOpen(true)
@@ -28,6 +31,11 @@ export default function RatePage() {
 
   const advanceStep = (step: number) => {
     setCurrentStep(step)
+  }
+
+  const selectBurger = (burger: typeof burgers[0]) => {
+    setSelectedBurger(burger)
+    advanceStep(2)
   }
 
   const selectConsumption = (type: string) => {
@@ -77,7 +85,13 @@ export default function RatePage() {
     setSauceRating(2)
     setPrice('8.50')
     setComment('')
+    setSelectedBurger(null)
   }
+
+  const filteredBurgers = burgers.filter(b =>
+    b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    b.restaurant.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   const renderStarButton = (index: number, rating: number, onClick: () => void, fontSize = '1.5rem') => (
     <button
@@ -181,54 +195,43 @@ export default function RatePage() {
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="Escribe el nombre de la hamburguesa..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Escribe el nombre de la hamburguesa o restaurante..."
                 />
               </div>
-              <div id="burgerSearchResults" style={{ marginBottom: '1rem' }}>
-                <div
-                  className="card"
-                  style={{
-                    cursor: 'pointer',
-                    marginBottom: '0.5rem',
-                    padding: '1rem',
-                    display: 'flex',
-                    gap: '1rem',
-                    alignItems: 'center',
-                  }}
-                  onClick={() => advanceStep(2)}
-                >
-                  <div style={{ fontSize: '2rem', flexShrink: 0 }}>🍔</div>
-                  <div style={{ flex: 1 }}>
-                    <div className="burger-name">The King Burger</div>
-                    <div className="burger-restaurant">🏪 Burger Palace</div>
-                    <div className="burger-rating">
-                      <span className="stars">★★★★☆</span>
-                      <span>4.8 (245)</span>
+              <div id="burgerSearchResults" style={{ marginBottom: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
+                {filteredBurgers.length > 0 ? (
+                  filteredBurgers.map(burger => (
+                    <div
+                      key={burger.id}
+                      className="card"
+                      style={{
+                        cursor: 'pointer',
+                        marginBottom: '0.5rem',
+                        padding: '1rem',
+                        display: 'flex',
+                        gap: '1rem',
+                        alignItems: 'center',
+                      }}
+                      onClick={() => selectBurger(burger)}
+                    >
+                      <div style={{ fontSize: '2rem', flexShrink: 0 }}>🍔</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '600', marginBottom: '0.2rem' }}>{burger.name}</div>
+                        <div style={{ fontSize: '0.85rem', color: '#9ca3af', marginBottom: '0.3rem' }}>🏪 {burger.restaurant}</div>
+                        <div style={{ fontSize: '0.8rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <span style={{ color: '#fbbf24' }}>★★★★☆</span>
+                          <span style={{ color: '#9ca3af' }}>{burger.rating.toFixed(1)} ({burger.reviews})</span>
+                        </div>
+                      </div>
                     </div>
+                  ))
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
+                    No se encontraron hamburguesas
                   </div>
-                </div>
-                <div
-                  className="card"
-                  style={{
-                    cursor: 'pointer',
-                    marginBottom: '0.5rem',
-                    padding: '1rem',
-                    display: 'flex',
-                    gap: '1rem',
-                    alignItems: 'center',
-                  }}
-                  onClick={() => advanceStep(2)}
-                >
-                  <div style={{ fontSize: '2rem', flexShrink: 0 }}>🍔</div>
-                  <div style={{ flex: 1 }}>
-                    <div className="burger-name">Smoky BBQ</div>
-                    <div className="burger-restaurant">🏪 Grill House</div>
-                    <div className="burger-rating">
-                      <span className="stars">★★★★★</span>
-                      <span>4.7 (186)</span>
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
               <button className="btn btn-secondary" onClick={() => advanceStep(6)}>
                 ➕ Crear Nueva Hamburguesa
