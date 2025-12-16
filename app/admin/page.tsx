@@ -495,13 +495,13 @@ export default function AdminPanel() {
           <h2>BurgeRank Admin</h2>
         </div>
         <ul className="sidebar-menu">
-          <li><button className={`menu-btn ${activeSection === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveSection('dashboard')}>📊 Dashboard</button></li>
-          <li><button className={`menu-btn ${activeSection === 'restaurants' ? 'active' : ''}`} onClick={() => setActiveSection('restaurants')}>🏪 Restaurantes</button></li>
-          <li><button className={`menu-btn ${activeSection === 'burgers' ? 'active' : ''}`} onClick={() => setActiveSection('burgers')}>🍟 Hamburguesas</button></li>
-          <li><button className={`menu-btn ${activeSection === 'requests' ? 'active' : ''}`} onClick={() => setActiveSection('requests')}>📋 Solicitudes</button></li>
-          <li><button className={`menu-btn ${activeSection === 'ratings' ? 'active' : ''}`} onClick={() => setActiveSection('ratings')}>⭐ Valoraciones</button></li>
-          <li><button className={`menu-btn ${activeSection === 'tickets' ? 'active' : ''}`} onClick={() => setActiveSection('tickets')}>🎫 Tickets</button></li>
-          <li><button className={`menu-btn ${activeSection === 'users' ? 'active' : ''}`} onClick={() => setActiveSection('users')}>👥 Usuarios</button></li>
+          <li><button className={activeSection === 'dashboard' ? 'active' : ''} onClick={() => setActiveSection('dashboard')}>📊 Dashboard</button></li>
+          <li><button className={activeSection === 'restaurants' ? 'active' : ''} onClick={() => setActiveSection('restaurants')}>🏪 Restaurantes</button></li>
+          <li><button className={activeSection === 'burgers' ? 'active' : ''} onClick={() => setActiveSection('burgers')}>🍟 Hamburguesas</button></li>
+          <li><button className={activeSection === 'requests' ? 'active' : ''} onClick={() => setActiveSection('requests')}>📋 Solicitudes</button></li>
+          <li><button className={activeSection === 'ratings' ? 'active' : ''} onClick={() => setActiveSection('ratings')}>⭐ Valoraciones</button></li>
+          <li><button className={activeSection === 'tickets' ? 'active' : ''} onClick={() => setActiveSection('tickets')}>🎫 Tickets</button></li>
+          <li><button className={activeSection === 'users' ? 'active' : ''} onClick={() => setActiveSection('users')}>👥 Usuarios</button></li>
         </ul>
       </div>
 
