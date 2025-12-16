@@ -1700,54 +1700,46 @@
             <div id="restaurant" class="page">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                     <div>
-                        <h2 class="text-2xl font-bold">🏪 Restaurante</h2>
+                        <h2 class="text-2xl font-bold" id="restaurantTitle">🏪 Restaurante</h2>
                     </div>
                     <button style="background: none; border: none; font-size: 1.5rem; cursor: pointer;" onclick="showPage('ranking')" title="Volver">←</button>
                 </div>
 
                 <div class="card mb-4">
-                    <h3 class="text-lg font-bold mb-3" style="color: #fbbf24;">🏪 Burger Palace</h3>
+                    <h3 class="text-lg font-bold mb-3" style="color: #fbbf24;" id="restaurantName">🏪 Burger Palace</h3>
                     <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                        <button class="btn btn-primary" style="flex: 1;">📱 Pedir Online</button>
-                        <button class="btn btn-secondary" style="flex: 1;">🍽️ Reservar Mesa</button>
+                        <button class="btn btn-primary" style="flex: 1; font-size: 0.9rem;" onclick="alert('Redirigiendo a la plataforma de pedidos...')">📱 Pedir Online</button>
+                        <button class="btn btn-secondary" style="flex: 1; font-size: 0.9rem;" onclick="alert('Redirigiendo a reservas...')">🍽️ Reservar Mesa</button>
                     </div>
                     <div style="padding: 1rem; background: rgba(251, 191, 36, 0.1); border-radius: 0.5rem; margin-bottom: 1rem;">
-                        <div style="font-size: 0.9rem; margin-bottom: 0.5rem;"><strong>📍 Ubicación:</strong> Calle Principal 123, Madrid</div>
-                        <div style="font-size: 0.9rem; margin-bottom: 0.5rem;"><strong>📞 Teléfono:</strong> +34 123 456 789</div>
-                        <div style="font-size: 0.9rem;"><strong>🕐 Horario:</strong> 12:00 - 23:00 (Todos los días)</div>
+                        <div style="font-size: 0.9rem; margin-bottom: 0.5rem;"><strong>📍 Ubicación:</strong> <span id="restaurantAddress">Calle Principal 123, Madrid</span></div>
+                        <div style="font-size: 0.9rem; margin-bottom: 0.5rem;"><strong>📞 Teléfono:</strong> <span id="restaurantPhone">+34 123 456 789</span></div>
+                        <div style="font-size: 0.9rem; margin-bottom: 0.5rem;"><strong>🕐 Horario:</strong> <span id="restaurantHours">12:00 - 23:00 (Todos los días)</span></div>
+                        <div style="font-size: 0.9rem;"><strong>⭐ Puntuación:</strong> <span id="restaurantRating">4.7</span> (basado en todas sus hamburguesas)</div>
+                    </div>
+                    <div style="padding: 0.75rem; background: rgba(251, 191, 36, 0.05); border-radius: 0.5rem;">
+                        <div style="font-size: 0.8rem; color: #9ca3af; margin-bottom: 0.5rem;">📊 Estadísticas del Restaurante</div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
+                            <div style="text-align: center; padding: 0.5rem; background: rgba(75, 85, 99, 0.5); border-radius: 0.375rem;">
+                                <div style="font-size: 1.2rem; font-weight: bold; color: #fbbf24;" id="restaurantBurgerCount">3</div>
+                                <div style="font-size: 0.65rem; color: #9ca3af;">Hamburguesas</div>
+                            </div>
+                            <div style="text-align: center; padding: 0.5rem; background: rgba(75, 85, 99, 0.5); border-radius: 0.375rem;">
+                                <div style="font-size: 1.2rem; font-weight: bold; color: #fbbf24;" id="restaurantTotalRatings">850</div>
+                                <div style="font-size: 0.65rem; color: #9ca3af;">Valoraciones</div>
+                            </div>
+                            <div style="text-align: center; padding: 0.5rem; background: rgba(75, 85, 99, 0.5); border-radius: 0.375rem;">
+                                <div style="font-size: 1.2rem; font-weight: bold; color: #fbbf24;" id="restaurantAvgRating">4.7</div>
+                                <div style="font-size: 0.65rem; color: #9ca3af;">Promedio</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="card mb-4">
-                    <h3 class="font-semibold mb-3">🍔 Hamburguesas de este Restaurante</h3>
-                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(251, 191, 36, 0.05); border-radius: 0.5rem; border-left: 3px solid #fbbf24;">
-                            <div>
-                                <div style="font-weight: 600; font-size: 0.95rem;">🥇 The King Burger</div>
-                                <div style="font-size: 0.85rem; color: #9ca3af;">★★★★★ 4.8 (245)</div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="color: #fbbf24; font-weight: bold; font-size: 0.9rem;">#1</div>
-                            </div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(251, 191, 36, 0.05); border-radius: 0.5rem; border-left: 3px solid #f59e0b;">
-                            <div>
-                                <div style="font-weight: 600; font-size: 0.95rem;">Doble Sabor</div>
-                                <div style="font-size: 0.85rem; color: #9ca3af;">★★★★☆ 4.3 (198)</div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="color: #f59e0b; font-weight: bold; font-size: 0.9rem;">#4</div>
-                            </div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(251, 191, 36, 0.05); border-radius: 0.5rem; border-left: 3px solid #d97706;">
-                            <div>
-                                <div style="font-weight: 600; font-size: 0.95rem;">Clásica Tradicional</div>
-                                <div style="font-size: 0.85rem; color: #9ca3af;">★★★★☆ 4.5 (312)</div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="color: #d97706; font-weight: bold; font-size: 0.9rem;">#3</div>
-                            </div>
-                        </div>
+                <div class="card">
+                    <h3 class="font-semibold mb-3" style="font-size: 0.95rem;">🍔 Hamburguesas en el Ranking</h3>
+                    <div id="restaurantBurgers" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <!-- Burgers will be loaded here -->
                     </div>
                 </div>
             </div>
@@ -1756,50 +1748,28 @@
             <div id="myranking" class="page">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                     <div>
-                        <h2 class="text-2xl font-bold">📊 Mi Ranking</h2>
+                        <h2 class="text-2xl font-bold">📊 Mi Ranking Personal</h2>
                     </div>
                     <button style="background: none; border: none; font-size: 1.5rem; cursor: pointer;" onclick="showPage('profile')" title="Volver">←</button>
                 </div>
 
-                <div class="card">
-                    <p class="text-sm text-muted mb-4">Aquí están todas las hamburguesas que has valorado, ordenadas por tu puntuación.</p>
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(251, 191, 36, 0.05); border-radius: 0.375rem; border-left: 3px solid #fbbf24;">
-                            <div>
-                                <span style="color: #fbbf24; font-weight: bold; font-size: 0.9rem;">🥇 </span>
-                                <span style="font-weight: 600;">The King</span>
-                            </div>
-                            <div style="color: #fbbf24; font-weight: bold;">9.2/10</div>
+                <div class="card mb-4">
+                    <p class="text-sm text-muted mb-4">Todas las hamburguesas que has valorado, ordenadas de mayor a menor puntuación.</p>
+                    <div style="display: grid; gap: 0.5rem; grid-template-columns: repeat(2, 1fr); margin-bottom: 1rem;">
+                        <div style="text-align: center; padding: 0.5rem; background: rgba(251, 191, 36, 0.1); border-radius: 0.375rem;">
+                            <div style="font-size: 1.2rem; font-weight: bold; color: #fbbf24;">48</div>
+                            <div style="font-size: 0.65rem; color: #9ca3af;">Hamburguesas Valoradas</div>
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(251, 191, 36, 0.05); border-radius: 0.375rem; border-left: 3px solid #f59e0b;">
-                            <div>
-                                <span style="color: #f59e0b; font-weight: bold; font-size: 0.9rem;">🥈 </span>
-                                <span style="font-weight: 600;">Smoky BBQ</span>
-                            </div>
-                            <div style="color: #f59e0b; font-weight: bold;">8.5/10</div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(251, 191, 36, 0.05); border-radius: 0.375rem; border-left: 3px solid #d97706;">
-                            <div>
-                                <span style="color: #d97706; font-weight: bold; font-size: 0.9rem;">🥉 </span>
-                                <span style="font-weight: 600;">Doble Sabor</span>
-                            </div>
-                            <div style="color: #d97706; font-weight: bold;">8.0/10</div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(75, 85, 99, 0.3); border-radius: 0.375rem; border-left: 3px solid #6b7280;">
-                            <div>
-                                <span style="color: #6b7280; font-weight: bold; font-size: 0.9rem;">4️⃣ </span>
-                                <span style="font-weight: 600;">Clásica Tradicional</span>
-                            </div>
-                            <div style="color: #6b7280; font-weight: bold;">7.8/10</div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(75, 85, 99, 0.3); border-radius: 0.375rem; border-left: 3px solid #6b7280;">
-                            <div>
-                                <span style="color: #6b7280; font-weight: bold; font-size: 0.9rem;">5️⃣ </span>
-                                <span style="font-weight: 600;">Premium Classic</span>
-                            </div>
-                            <div style="color: #6b7280; font-weight: bold;">7.5/10</div>
+                        <div style="text-align: center; padding: 0.5rem; background: rgba(251, 191, 36, 0.1); border-radius: 0.375rem;">
+                            <div style="font-size: 1.2rem; font-weight: bold; color: #fbbf24;">8.1</div>
+                            <div style="font-size: 0.65rem; color: #9ca3af;">Promedio</div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Ranking List -->
+                <div id="myRankingList">
+                    <!-- Will be loaded by JavaScript -->
                 </div>
             </div>
 
@@ -1807,40 +1777,32 @@
             <div id="myratings" class="page">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                     <div>
-                        <h2 class="text-2xl font-bold">⭐ Mis Valoraciones</h2>
+                        <h2 class="text-2xl font-bold">⭐ Historial de Valoraciones</h2>
                     </div>
                     <button style="background: none; border: none; font-size: 1.5rem; cursor: pointer;" onclick="showPage('profile')" title="Volver">←</button>
                 </div>
 
-                <div class="card">
-                    <p class="text-sm text-muted mb-4">Historial completo de todas tus valoraciones.</p>
-                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                        <div style="padding: 1rem; background: rgba(75, 85, 99, 0.5); border-radius: 0.5rem; border-left: 3px solid #fbbf24;">
-                            <div style="font-weight: 600; margin-bottom: 0.25rem;">🍔 The King</div>
-                            <div style="font-size: 0.7rem; color: #fbbf24; margin-bottom: 0.25rem;">★★★★★</div>
-                            <div style="font-size: 0.75rem; color: #9ca3af;">Valorada hace 2 días • Puntuación: 9.2/10</div>
+                <div class="card mb-4">
+                    <p class="text-sm text-muted mb-4">Historial completo de todas tus valoraciones, ordenadas por fecha más reciente.</p>
+                    <div style="display: grid; gap: 0.5rem; grid-template-columns: repeat(3, 1fr); margin-bottom: 1rem;">
+                        <div style="text-align: center; padding: 0.5rem; background: rgba(251, 191, 36, 0.1); border-radius: 0.375rem;">
+                            <div style="font-size: 1.2rem; font-weight: bold; color: #fbbf24;">48</div>
+                            <div style="font-size: 0.65rem; color: #9ca3af;">Total</div>
                         </div>
-                        <div style="padding: 1rem; background: rgba(75, 85, 99, 0.5); border-radius: 0.5rem; border-left: 3px solid #f59e0b;">
-                            <div style="font-weight: 600; margin-bottom: 0.25rem;">🍔 Smoky BBQ</div>
-                            <div style="font-size: 0.7rem; color: #f59e0b; margin-bottom: 0.25rem;">★★★★☆</div>
-                            <div style="font-size: 0.75rem; color: #9ca3af;">Valorada hace 5 días • Puntuación: 8.5/10</div>
+                        <div style="text-align: center; padding: 0.5rem; background: rgba(251, 191, 36, 0.1); border-radius: 0.375rem;">
+                            <div style="font-size: 1.2rem; font-weight: bold; color: #fbbf24;">⭐⭐⭐⭐⭐</div>
+                            <div style="font-size: 0.65rem; color: #9ca3af;">Últimos 7 días</div>
                         </div>
-                        <div style="padding: 1rem; background: rgba(75, 85, 99, 0.5); border-radius: 0.5rem; border-left: 3px solid #d97706;">
-                            <div style="font-weight: 600; margin-bottom: 0.25rem;">🍔 Doble Sabor</div>
-                            <div style="font-size: 0.7rem; color: #d97706; margin-bottom: 0.25rem;">★★★★☆</div>
-                            <div style="font-size: 0.75rem; color: #9ca3af;">Valorada hace 1 semana • Puntuación: 8.0/10</div>
-                        </div>
-                        <div style="padding: 1rem; background: rgba(75, 85, 99, 0.5); border-radius: 0.5rem; border-left: 3px solid #6b7280;">
-                            <div style="font-weight: 600; margin-bottom: 0.25rem;">🍔 Clásica Tradicional</div>
-                            <div style="font-size: 0.7rem; color: #6b7280; margin-bottom: 0.25rem;">★★★☆☆</div>
-                            <div style="font-size: 0.75rem; color: #9ca3af;">Valorada hace 2 semanas • Puntuación: 7.5/10</div>
-                        </div>
-                        <div style="padding: 1rem; background: rgba(75, 85, 99, 0.5); border-radius: 0.5rem; border-left: 3px solid #6b7280;">
-                            <div style="font-weight: 600; margin-bottom: 0.25rem;">🍔 Premium Classic</div>
-                            <div style="font-size: 0.7rem; color: #6b7280; margin-bottom: 0.25rem;">★★★☆☆</div>
-                            <div style="font-size: 0.75rem; color: #9ca3af;">Valorada hace 3 semanas • Puntuación: 7.0/10</div>
+                        <div style="text-align: center; padding: 0.5rem; background: rgba(251, 191, 36, 0.1); border-radius: 0.375rem;">
+                            <div style="font-size: 1.2rem; font-weight: bold; color: #fbbf24;">340 pts</div>
+                            <div style="font-size: 0.65rem; color: #9ca3af;">Puntos Ganados</div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Timeline of Ratings -->
+                <div id="myRatingsList">
+                    <!-- Will be loaded by JavaScript -->
                 </div>
             </div>
         </div>
@@ -1953,9 +1915,13 @@
                 navItems[navMap[pageName]].classList.add('active');
             }
 
-            // Load ranking data when showing ranking page
+            // Load data when showing specific pages
             if (pageName === 'ranking') {
                 loadRanking();
+            } else if (pageName === 'myranking') {
+                loadMyRanking();
+            } else if (pageName === 'myratings') {
+                loadMyRatings();
             }
 
             // Close sidebar
@@ -2221,6 +2187,126 @@
             btns.forEach(b => b.classList.remove('active'));
             element.classList.add('active');
             alert(`Ordenando ranking por: ${view === 'all' ? 'Todos' : view === 'trending' ? 'Tendencias' : 'Nuevas'}`);
+        }
+
+        // Restaurant page functions
+        function viewRestaurant(burgerId) {
+            const burger = burgers.find(b => b.id === burgerId);
+            if (!burger) return;
+            
+            // Get all burgers from this restaurant
+            const restaurantBurgers = burgers.filter(b => b.restaurant === burger.restaurant);
+            
+            // Calculate restaurant stats
+            const avgRating = (restaurantBurgers.reduce((sum, b) => sum + b.rating, 0) / restaurantBurgers.length).toFixed(1);
+            const totalRatings = restaurantBurgers.reduce((sum, b) => sum + b.reviews, 0);
+            
+            // Update restaurant page
+            document.getElementById('restaurantTitle').textContent = `🏪 ${burger.restaurant}`;
+            document.getElementById('restaurantName').textContent = `🏪 ${burger.restaurant}`;
+            document.getElementById('restaurantAddress').textContent = `Calle Principal 123, ${burger.city}`;
+            document.getElementById('restaurantPhone').textContent = '+34 123 456 789';
+            document.getElementById('restaurantHours').textContent = '12:00 - 23:00 (Todos los días)';
+            document.getElementById('restaurantRating').textContent = avgRating;
+            document.getElementById('restaurantBurgerCount').textContent = restaurantBurgers.length;
+            document.getElementById('restaurantTotalRatings').textContent = totalRatings;
+            document.getElementById('restaurantAvgRating').textContent = avgRating;
+            
+            // Load restaurant burgers
+            const burgersList = document.getElementById('restaurantBurgers');
+            burgersList.innerHTML = '';
+            restaurantBurgers.forEach((b, index) => {
+                const medalEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '  ';
+                const medalColor = index === 0 ? '#fbbf24' : index === 1 ? '#f59e0b' : index === 2 ? '#d97706' : '#6b7280';
+                const html = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(251, 191, 36, 0.05); border-radius: 0.5rem; border-left: 3px solid ${medalColor};">
+                        <div>
+                            <div style="font-weight: 600; font-size: 0.95rem;">${medalEmoji} ${b.name}</div>
+                            <div style="font-size: 0.85rem; color: #9ca3af;">★★★★☆ ${b.rating} (${b.reviews})</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: ${medalColor}; font-weight: bold; font-size: 0.9rem;">#${index + 1}</div>
+                        </div>
+                    </div>
+                `;
+                burgersList.innerHTML += html;
+            });
+            
+            showPage('restaurant');
+        }
+
+        // Load My Ranking
+        function loadMyRanking() {
+            const ratedBurgers = burgers
+                .filter(b => b.userRating > 0)
+                .sort((a, b) => b.userRating - a.userRating);
+            
+            const list = document.getElementById('myRankingList');
+            list.innerHTML = '';
+            
+            if (ratedBurgers.length === 0) {
+                list.innerHTML = '<div class="card" style="text-align: center; padding: 2rem; color: #9ca3af;">No has valorado ninguna hamburguesa aún</div>';
+                return;
+            }
+            
+            ratedBurgers.forEach((burger, index) => {
+                const medalEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '  ';
+                const medalColor = index === 0 ? '#fbbf24' : index === 1 ? '#f59e0b' : index === 2 ? '#d97706' : '#6b7280';
+                const rating = (burger.userRating / 5 * 10).toFixed(1);
+                
+                const html = `
+                    <div class="card" style="padding: 1rem; border-left: 3px solid ${medalColor};">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.2rem;">${medalEmoji} ${burger.name}</div>
+                                <div style="font-size: 0.85rem; color: #9ca3af; margin-bottom: 0.3rem;">🏪 ${burger.restaurant}</div>
+                                <div style="font-size: 0.8rem; color: #9ca3af;">📍 ${burger.city}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="color: ${medalColor}; font-weight: bold; font-size: 1.1rem;">${rating}/10</div>
+                                <div style="font-size: 0.7rem; color: #9ca3af;">Tu puntuación</div>
+                            </div>
+                        </div>
+                        <div style="font-size: 0.8rem; color: #d1d5db; margin-top: 0.5rem;">${burger.description}</div>
+                        <div style="display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.5rem;">
+                            ${burger.tags.map(tag => `<span style="font-size: 0.7rem; background-color: #fbbf24; color: #000; padding: 0.3rem 0.6rem; border-radius: 0.25rem; font-weight: 500;">${tag}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+                list.innerHTML += html;
+            });
+        }
+
+        // Load My Ratings (Historial)
+        function loadMyRatings() {
+            const ratedBurgers = burgers
+                .filter(b => b.userRating > 0)
+                .sort((a, b) => b.userRating - a.userRating);
+            
+            const list = document.getElementById('myRatingsList');
+            list.innerHTML = '';
+            
+            if (ratedBurgers.length === 0) {
+                list.innerHTML = '<div class="card" style="text-align: center; padding: 2rem; color: #9ca3af;">No has valorado ninguna hamburguesa aún</div>';
+                return;
+            }
+            
+            ratedBurgers.forEach((burger, index) => {
+                const stars = '★'.repeat(burger.userRating) + '☆'.repeat(5 - burger.userRating);
+                const starColor = burger.userRating >= 4 ? '#fbbf24' : burger.userRating >= 3 ? '#f59e0b' : '#d97706';
+                const rating = (burger.userRating / 5 * 10).toFixed(1);
+                const daysAgo = Math.floor(Math.random() * 60) + 1;
+                
+                const html = `
+                    <div class="card" style="padding: 1rem; border-left: 3px solid ${starColor}; margin-bottom: 0.5rem;">
+                        <div style="font-weight: 600; margin-bottom: 0.25rem;">🍔 ${burger.name}</div>
+                        <div style="font-size: 0.8rem; color: ${starColor}; margin-bottom: 0.25rem;">${stars}</div>
+                        <div style="font-size: 0.75rem; color: #9ca3af;">📍 ${burger.restaurant} • ${burger.city}</div>
+                        <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem;">Valorada hace ${daysAgo} días • Puntuación: ${rating}/10</div>
+                    </div>
+                `;
+                list.innerHTML += html;
+            });
         }
 
         // Load initial data
