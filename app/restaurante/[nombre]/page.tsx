@@ -2,6 +2,12 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useAdmin } from '@/app/contexts/AdminContext';
+import { AdminBadge } from '@/app/components/AdminBadge';
+import { AdminEditButton } from '@/app/components/AdminEditButton';
+import { AdminEditRestaurantModal } from '@/app/components/AdminEditRestaurantModal';
+import { useAdminData, Restaurant } from '@/app/hooks/useAdminData';
 
 interface Burger {
   id: number;
@@ -217,6 +223,10 @@ const getStars = (rating: number) => {
 export default function RestaurantePage() {
   const searchParams = useSearchParams();
   const nombre = decodeURIComponent(searchParams.get('nombre') || '');
+  const { isAdmin } = useAdmin();
+  const { data } = useAdminData();
+  const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const restaurant = restaurantsData[nombre];
 
@@ -237,11 +247,14 @@ export default function RestaurantePage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-gray-100">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-black/50 border-b-2 border-amber-600 px-4 py-4">
-        <div className="max-w-7xl mx-auto flex items-center gap-3">
-          <Link href="/rankings" className="text-2xl hover:scale-110 transition-transform">
-            ←
-          </Link>
-          <h1 className="text-2xl font-bold text-amber-400">🍔 BurgeRank</h1>
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Link href="/rankings" className="text-2xl hover:scale-110 transition-transform">
+              ←
+            </Link>
+            <h1 className="text-2xl font-bold text-amber-400">🍔 BurgeRank</h1>
+          </div>
+          {isAdmin && <AdminBadge />}
         </div>
       </div>
 
@@ -261,7 +274,37 @@ export default function RestaurantePage() {
 
         {/* Información del Restaurante */}
         <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-bold mb-4">ℹ️ Información</h2>
+          <div className="flex justify-between items-start mb-4">
+            <h2 className="text-xl font-bold">ℹ️ Información</h2>
+            {isAdmin && (
+              <AdminEditButton
+                label="Editar"
+                icon="✏️"
+                onClick={() => {
+                  const restaurantData = data.restaurants.find(r => r.name === restaurant.name);
+                  if (restaurantData) {
+                    setEditingRestaurant(restaurantData);
+                    setModalOpen(true);
+                  } else {
+                    // Create a restaurant object if not found in admin data
+                    const newRestaurant: Restaurant = {
+                      id: Math.max(...data.restaurants.map(r => r.id), 0) + 1,
+                      name: restaurant.name,
+                      city: restaurant.city,
+                      address: restaurant.address,
+                      phone: restaurant.phone,
+                      hours: restaurant.openingHours,
+                      website: restaurant.website,
+                      rating: restaurant.averageRating,
+                      reviews: restaurant.totalReviews
+                    };
+                    setEditingRestaurant(newRestaurant);
+                    setModalOpen(true);
+                  }
+                }}
+              />
+            )}
+          </div>
           <div className="space-y-2 text-gray-300">
             <div>
               <span className="text-amber-400 font-semibold">Dirección:</span> {restaurant.address}
@@ -344,6 +387,21 @@ export default function RestaurantePage() {
         >
           ← Volver a Rankings
         </Link>
+
+        {/* Admin Edit Modal */}
+        {editingRestaurant && (
+          <AdminEditRestaurantModal
+            restaurant={editingRestaurant}
+            isOpen={modalOpen}
+            onClose={() => {
+              setModalOpen(false);
+              setEditingRestaurant(null);
+            }}
+            onSave={() => {
+              // Reload data if needed
+            }}
+          />
+        )}
       </div>
 
       {/* Bottom Navigation */}

@@ -1,6 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
+import { useAdmin } from '@/app/contexts/AdminContext';
+import { AdminBadge } from '@/app/components/AdminBadge';
+import { AdminEditButton } from '@/app/components/AdminEditButton';
+import { AdminEditRestaurantModal } from '@/app/components/AdminEditRestaurantModal';
+import { useAdminData, Restaurant } from '@/app/hooks/useAdminData';
 
 interface Hamburger {
   id: number;
@@ -153,15 +159,23 @@ const getMedalColor = (position: number): { medal: string; color: string; bgColo
 };
 
 export default function RankingsPage() {
+  const { isAdmin } = useAdmin();
+  const { data } = useAdminData();
+  const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-gray-100">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-black/50 border-b-2 border-amber-600 px-4 py-4">
-        <div className="max-w-7xl mx-auto flex items-center gap-3">
-          <Link href="/" className="text-2xl hover:scale-110 transition-transform">
-            ←
-          </Link>
-          <h1 className="text-2xl font-bold text-amber-400">🍔 BurgeRank</h1>
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="text-2xl hover:scale-110 transition-transform">
+              ←
+            </Link>
+            <h1 className="text-2xl font-bold text-amber-400">🍔 BurgeRank</h1>
+          </div>
+          {isAdmin && <AdminBadge />}
         </div>
       </div>
 
@@ -211,6 +225,23 @@ export default function RankingsPage() {
                     </span>
                   </div>
                 </div>
+
+                {/* Admin Edit Button */}
+                {isAdmin && (
+                  <div className="flex-shrink-0">
+                    <AdminEditButton
+                      label="Editar"
+                      icon="✏️"
+                      onClick={() => {
+                        const restaurant = data.restaurants.find(r => r.name === burger.restaurant);
+                        if (restaurant) {
+                          setEditingRestaurant(restaurant);
+                          setModalOpen(true);
+                        }
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             );
           })}
@@ -223,6 +254,21 @@ export default function RankingsPage() {
         >
           ← Volver
         </Link>
+
+        {/* Admin Edit Modal */}
+        {editingRestaurant && (
+          <AdminEditRestaurantModal
+            restaurant={editingRestaurant}
+            isOpen={modalOpen}
+            onClose={() => {
+              setModalOpen(false);
+              setEditingRestaurant(null);
+            }}
+            onSave={() => {
+              // Reload data if needed
+            }}
+          />
+        )}
       </div>
 
       {/* Bottom Navigation */}

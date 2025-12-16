@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useAdmin } from '../contexts/AdminContext';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './admin.css';
 
@@ -93,6 +94,7 @@ interface SearchFilters {
 const adminCredentials = { username: 'usuario_admin', password: 'admin123' };
 
 export default function AdminPanel() {
+  const { loginAdmin, logoutAdmin } = useAdmin();
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [data, setData] = useState<Data>({
@@ -174,6 +176,7 @@ export default function AdminPanel() {
 
     if (username === adminCredentials.username && password === adminCredentials.password) {
       setCurrentUser(username);
+      loginAdmin(username);
       addActivityLog('Inicio de sesión', `${username} inició sesión`);
       showAlert('✅ Sesión iniciada', 'success');
     } else {
@@ -185,6 +188,7 @@ export default function AdminPanel() {
     if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
       addActivityLog('Cierre de sesión', `${currentUser} cerró sesión`);
       setCurrentUser(null);
+      logoutAdmin();
     }
   };
 

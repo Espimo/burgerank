@@ -5,6 +5,8 @@ import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Sidebar from '@/components/layout/Sidebar'
 import { burgers } from '@/lib/data/mockData'
+import { useAdmin } from '@/app/contexts/AdminContext'
+import { AdminBadge } from '@/app/components/AdminBadge'
 
 export default function RankingPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -12,6 +14,7 @@ export default function RankingPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState('todos') // 'todos', 'tendencias', 'nuevas'
   const [scrollPosition, setScrollPosition] = useState(0)
+  const { isAdmin } = useAdmin()
 
   const handleMenuClick = () => {
     setSidebarOpen(true)
@@ -65,6 +68,7 @@ export default function RankingPage() {
     <div className="container">
       <TopBar onMenuClick={handleMenuClick} />
       <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} />
+      {isAdmin && <AdminBadge />}
 
       <div className="main">
         <h2 className="text-2xl font-bold mb-4">🏆 Ranking Nacional de Hamburguesas</h2>
