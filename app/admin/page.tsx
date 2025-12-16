@@ -84,6 +84,12 @@ interface Data {
   activityLog: ActivityLog[];
 }
 
+interface SearchFilters {
+  searchTerm: string;
+  filterType: string;
+  filterStatus: string;
+}
+
 const adminCredentials = { username: 'usuario_admin', password: 'admin123' };
 
 export default function AdminPanel() {
@@ -101,6 +107,8 @@ export default function AdminPanel() {
   const [alert, setAlert] = useState({ message: '', type: '' });
   const [selectedModal, setSelectedModal] = useState<any>(null);
   const [tags, setTags] = useState<string[]>([]);
+  const [searchFilters, setSearchFilters] = useState<SearchFilters>({ searchTerm: '', filterType: '', filterStatus: '' });
+  const [editingItem, setEditingItem] = useState<any>(null);
 
   // Cargar datos
   useEffect(() => {
@@ -184,12 +192,27 @@ export default function AdminPanel() {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
     
+    const name = (formData.get('restName') as string).trim();
+    const city = formData.get('restCity') as string;
+    const address = (formData.get('restAddress') as string).trim();
+    const phone = (formData.get('restPhone') as string).trim();
+
+    if (!name || !city || !address || !phone) {
+      showAlert('❌ Por favor completa todos los campos obligatorios', 'error');
+      return;
+    }
+
+    if (data.restaurants.some(r => r.name.toLowerCase() === name.toLowerCase())) {
+      showAlert('❌ Ya existe un restaurante con este nombre', 'error');
+      return;
+    }
+    
     const newRestaurant: Restaurant = {
       id: data.restaurants.length + 1,
-      name: formData.get('restName') as string,
-      city: formData.get('restCity') as string,
-      address: formData.get('restAddress') as string,
-      phone: formData.get('restPhone') as string,
+      name,
+      city,
+      address,
+      phone,
       hours: formData.get('restHours') as string,
       website: formData.get('restWebsite') as string,
       description: formData.get('restDescription') as string,
@@ -208,12 +231,25 @@ export default function AdminPanel() {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
     
+    const name = (formData.get('burgerName') as string).trim();
+    const price = parseFloat(formData.get('burgerPrice') as string);
+
+    if (!name || !price || price <= 0) {
+      showAlert('❌ Por favor completa todos los campos requeridos correctamente', 'error');
+      return;
+    }
+
+    if (data.burgers.some(b => b.name.toLowerCase() === name.toLowerCase())) {
+      showAlert('❌ Ya existe una hamburguesa con este nombre', 'error');
+      return;
+    }
+    
     const newBurger: Burger = {
       id: data.burgers.length + 1,
-      name: formData.get('burgerName') as string,
+      name,
       restaurantId: parseInt(formData.get('burgerRestaurant') as string),
       type: formData.get('burgerType') as string,
-      price: parseFloat(formData.get('burgerPrice') as string),
+      price,
       description: formData.get('burgerDescription') as string,
       tags: tags,
       rating: 0,
@@ -253,6 +289,62 @@ export default function AdminPanel() {
       showAlert(`✅ Hamburguesa "${burger?.name}" eliminada`, 'success');
       addActivityLog('Eliminar Hamburguesa', `Se eliminó: ${burger?.name}`);
     }
+  };
+
+  const handleEditRestaurant = (e: React.FormEvent, id: number) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    
+    const updatedRestaurants = data.restaurants.map(r => 
+      r.id === id ? {
+        ...r,
+        name: formData.get('restName') as string,
+        city: formData.get('restCity') as string,
+        address: formData.get('restAddress') as string,
+        phone: formData.get('restPhone') as string,
+        hours: formData.get('restHours') as string,
+        website: formData.get('restWebsite') as string,
+        description: formData.get('restDescription') as string
+      } : r
+    );
+    
+    const newData = { ...data, restaurants: updatedRestaurants };
+    saveData(newData);
+    showAlert(`✅ Restaurante actualizado`, 'success');
+    setEditingItem(null);
+    addActivityLog('Editar Restaurante', `Se actualizó: ${data.restaurants.find(r => r.id === id)?.name}`);
+  };
+
+  const handleEditBurger = (e: React.FormEvent, id: number) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    
+    const updatedBurgers = data.burgers.map(b => 
+      b.id === id ? {
+        ...b,
+        name: formData.get('burgerName') as string,
+        restaurantId: parseInt(formData.get('burgerRestaurant') as string),
+        type: formData.get('burgerType') as string,
+        price: parseFloat(formData.get('burgerPrice') as string),
+        description: formData.get('burgerDescription') as string,
+        tags: tags
+      } : b
+    );
+    
+    const newData = { ...data, burgers: updatedBurgers };
+    saveData(newData);
+    showAlert(`✅ Hamburguesa actualizada`, 'success');
+    setEditingItem(null);
+    setTags([]);
+    addActivityLog('Editar Hamburguesa', `Se actualizó: ${data.burgers.find(b => b.id === id)?.name}`);
+  };
+
+  const handleBlockUser = (id: number) => {
+    const newUsers = data.users.map(u => u.id === id ? { ...u, category: 'Bloqueado' } : u);
+    const newData = { ...data, users: newUsers };
+    saveData(newData);
+    showAlert('✅ Usuario bloqueado', 'success');
+    addActivityLog('Bloquear Usuario', `Se bloqueó usuario`);
   };
 
   const handleApproveRequest = (id: number) => {
@@ -296,6 +388,52 @@ export default function AdminPanel() {
     saveData(newData);
     showAlert('✅ Ticket verificado', 'success');
     addActivityLog('Verificar Ticket', `Se verificó ticket`);
+  };
+
+  const addTag = (tag: string) => {
+    if (tag && !tags.includes(tag)) {
+      setTags([...tags, tag]);
+    }
+  };
+
+  const removeTag = (index: number) => {
+    setTags(tags.filter((_, i) => i !== index));
+  };
+
+  const getFilteredRestaurants = () => {
+    return data.restaurants.filter(r =>
+      r.name.toLowerCase().includes(searchFilters.searchTerm.toLowerCase()) ||
+      r.city.toLowerCase().includes(searchFilters.searchTerm.toLowerCase())
+    );
+  };
+
+  const getFilteredBurgers = () => {
+    return data.burgers.filter(b =>
+      (b.name.toLowerCase().includes(searchFilters.searchTerm.toLowerCase()) ||
+       data.restaurants.find(r => r.id === b.restaurantId)?.name.toLowerCase().includes(searchFilters.searchTerm.toLowerCase())) &&
+      (!searchFilters.filterType || b.type === searchFilters.filterType)
+    );
+  };
+
+  const getFilteredUsers = () => {
+    return data.users.filter(u =>
+      u.username.toLowerCase().includes(searchFilters.searchTerm.toLowerCase()) &&
+      (!searchFilters.filterStatus || u.category.includes(searchFilters.filterStatus))
+    );
+  };
+
+  const getFilteredRatings = () => {
+    return data.ratings.filter(r =>
+      r.username.toLowerCase().includes(searchFilters.searchTerm.toLowerCase()) &&
+      (!searchFilters.filterStatus || r.status === searchFilters.filterStatus)
+    );
+  };
+
+  const getFilteredTickets = () => {
+    return data.tickets.filter(t =>
+      t.username.toLowerCase().includes(searchFilters.searchTerm.toLowerCase()) &&
+      (!searchFilters.filterStatus || t.status === searchFilters.filterStatus)
+    );
   };
 
   const handleRejectTicket = (index: number) => {
@@ -453,53 +591,116 @@ export default function AdminPanel() {
         {activeSection === 'restaurants' && (
           <div className="section active">
             <h2>🏪 Gestión de Restaurantes</h2>
-            <div className="form-container">
-              <h3 style={{ color: '#fbbf24', marginBottom: '15px' }}>Añadir Nuevo Restaurante</h3>
-              <form onSubmit={handleAddRestaurant}>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Nombre del Restaurante</label>
-                    <input type="text" name="restName" placeholder="Ej: Burger Palace" required />
-                  </div>
-                  <div className="form-group">
-                    <label>Ciudad</label>
-                    <select name="restCity" required>
-                      <option value="">Selecciona una ciudad</option>
-                      <option value="Madrid">Madrid</option>
-                      <option value="Barcelona">Barcelona</option>
-                      <option value="Valencia">Valencia</option>
-                      <option value="Sevilla">Sevilla</option>
-                      <option value="Bilbao">Bilbao</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Dirección</label>
-                    <input type="text" name="restAddress" placeholder="Calle Principal 123" required />
-                  </div>
-                  <div className="form-group">
-                    <label>Teléfono</label>
-                    <input type="tel" name="restPhone" placeholder="+34 91 234 5678" required />
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Horario</label>
-                    <input type="text" name="restHours" placeholder="12:00-23:30" required />
-                  </div>
-                  <div className="form-group">
-                    <label>Sitio Web</label>
-                    <input type="url" name="restWebsite" placeholder="www.example.es" />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>Descripción</label>
-                  <textarea name="restDescription" placeholder="Descripción del restaurante..."></textarea>
-                </div>
-                <button type="submit" className="btn-submit">➕ Crear Restaurante</button>
-              </form>
+            
+            <div className="search-bar">
+              <input 
+                type="text" 
+                placeholder="🔍 Buscar restaurante..." 
+                value={searchFilters.searchTerm}
+                onChange={(e) => setSearchFilters({ ...searchFilters, searchTerm: e.target.value })}
+              />
             </div>
+
+            {!editingItem || editingItem.type !== 'restaurant' ? (
+              <div className="form-container">
+                <h3 style={{ color: '#fbbf24', marginBottom: '15px' }}>➕ Añadir Nuevo Restaurante</h3>
+                <form onSubmit={handleAddRestaurant}>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Nombre del Restaurante</label>
+                      <input type="text" name="restName" placeholder="Ej: Burger Palace" required />
+                    </div>
+                    <div className="form-group">
+                      <label>Ciudad</label>
+                      <select name="restCity" required>
+                        <option value="">Selecciona una ciudad</option>
+                        <option value="Madrid">Madrid</option>
+                        <option value="Barcelona">Barcelona</option>
+                        <option value="Valencia">Valencia</option>
+                        <option value="Sevilla">Sevilla</option>
+                        <option value="Bilbao">Bilbao</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Dirección</label>
+                      <input type="text" name="restAddress" placeholder="Calle Principal 123" required />
+                    </div>
+                    <div className="form-group">
+                      <label>Teléfono</label>
+                      <input type="tel" name="restPhone" placeholder="+34 91 234 5678" required />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Horario</label>
+                      <input type="text" name="restHours" placeholder="12:00-23:30" required />
+                    </div>
+                    <div className="form-group">
+                      <label>Sitio Web</label>
+                      <input type="url" name="restWebsite" placeholder="www.example.es" />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Descripción</label>
+                    <textarea name="restDescription" placeholder="Descripción del restaurante..."></textarea>
+                  </div>
+                  <button type="submit" className="btn-submit">➕ Crear Restaurante</button>
+                </form>
+              </div>
+            ) : (
+              <div className="form-container">
+                <h3 style={{ color: '#fbbf24', marginBottom: '15px' }}>✏️ Editar Restaurante</h3>
+                <form onSubmit={(e) => handleEditRestaurant(e, editingItem.data.id)}>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Nombre del Restaurante</label>
+                      <input type="text" name="restName" defaultValue={editingItem.data.name} required />
+                    </div>
+                    <div className="form-group">
+                      <label>Ciudad</label>
+                      <select name="restCity" defaultValue={editingItem.data.city} required>
+                        <option value="">Selecciona una ciudad</option>
+                        <option value="Madrid">Madrid</option>
+                        <option value="Barcelona">Barcelona</option>
+                        <option value="Valencia">Valencia</option>
+                        <option value="Sevilla">Sevilla</option>
+                        <option value="Bilbao">Bilbao</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Dirección</label>
+                      <input type="text" name="restAddress" defaultValue={editingItem.data.address} required />
+                    </div>
+                    <div className="form-group">
+                      <label>Teléfono</label>
+                      <input type="tel" name="restPhone" defaultValue={editingItem.data.phone} required />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Horario</label>
+                      <input type="text" name="restHours" defaultValue={editingItem.data.hours} required />
+                    </div>
+                    <div className="form-group">
+                      <label>Sitio Web</label>
+                      <input type="url" name="restWebsite" defaultValue={editingItem.data.website} />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Descripción</label>
+                    <textarea name="restDescription" defaultValue={editingItem.data.description}></textarea>
+                  </div>
+                  <div className="form-row">
+                    <button type="submit" className="btn-submit">💾 Guardar Cambios</button>
+                    <button type="button" className="btn-cancel" onClick={() => setEditingItem(null)}>❌ Cancelar</button>
+                  </div>
+                </form>
+              </div>
+            )}
 
             <div className="table-container">
               <table>
@@ -513,10 +714,10 @@ export default function AdminPanel() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.restaurants.length === 0 ? (
-                    <tr><td colSpan={5} className="empty-state"><div className="empty-state-icon">📭</div>No hay restaurantes creados</td></tr>
+                  {getFilteredRestaurants().length === 0 ? (
+                    <tr><td colSpan={5} className="empty-state"><div className="empty-state-icon">📭</div>No hay restaurantes</td></tr>
                   ) : (
-                    data.restaurants.map(rest => (
+                    getFilteredRestaurants().map(rest => (
                       <tr key={rest.id}>
                         <td><strong>{rest.name}</strong></td>
                         <td>{rest.city}</td>
@@ -524,8 +725,9 @@ export default function AdminPanel() {
                         <td><span className="rating-stars">{'★'.repeat(Math.round(rest.rating))}☆</span> {rest.rating.toFixed(1)}</td>
                         <td>
                           <div className="action-buttons">
-                            <button className="btn-small btn-view" onClick={() => setSelectedModal({ type: 'restaurant', data: rest })}>Ver</button>
-                            <button className="btn-small btn-delete" onClick={() => handleDeleteRestaurant(rest.id)}>Eliminar</button>
+                            <button className="btn-small btn-view" onClick={() => setSelectedModal({ type: 'restaurant', data: rest })}>👁️ Ver</button>
+                            <button className="btn-small btn-edit" onClick={() => setEditingItem({ type: 'restaurant', data: rest })}>✏️ Editar</button>
+                            <button className="btn-small btn-delete" onClick={() => handleDeleteRestaurant(rest.id)}>🗑️ Eliminar</button>
                           </div>
                         </td>
                       </tr>
@@ -541,20 +743,41 @@ export default function AdminPanel() {
         {activeSection === 'burgers' && (
           <div className="section active">
             <h2>🍟 Gestión de Hamburguesas</h2>
-            <div className="form-container">
-              <h3 style={{ color: '#fbbf24', marginBottom: '15px' }}>Añadir Nueva Hamburguesa</h3>
-              <form onSubmit={handleAddBurger}>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Nombre de la Hamburguesa</label>
-                    <input type="text" name="burgerName" placeholder="Ej: The King" required />
-                  </div>
-                  <div className="form-group">
-                    <label>Restaurante</label>
-                    <select name="burgerRestaurant" required>
-                      <option value="">Selecciona un restaurante</option>
-                      {data.restaurants.map(rest => (
-                        <option key={rest.id} value={rest.id}>{rest.name}</option>
+            
+            <div className="search-bar">
+              <input 
+                type="text" 
+                placeholder="🔍 Buscar hamburguesa..." 
+                value={searchFilters.searchTerm}
+                onChange={(e) => setSearchFilters({ ...searchFilters, searchTerm: e.target.value })}
+              />
+              <select 
+                value={searchFilters.filterType}
+                onChange={(e) => setSearchFilters({ ...searchFilters, filterType: e.target.value })}
+                style={{ marginLeft: '10px' }}
+              >
+                <option value="">Todos los tipos</option>
+                <option value="classic">Clásica</option>
+                <option value="premium">Premium</option>
+                <option value="specialty">Especial</option>
+              </select>
+            </div>
+
+            {!editingItem || editingItem.type !== 'burger' ? (
+              <div className="form-container">
+                <h3 style={{ color: '#fbbf24', marginBottom: '15px' }}>➕ Añadir Nueva Hamburguesa</h3>
+                <form onSubmit={handleAddBurger}>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Nombre de la Hamburguesa</label>
+                      <input type="text" name="burgerName" placeholder="Ej: The King" required />
+                    </div>
+                    <div className="form-group">
+                      <label>Restaurante</label>
+                      <select name="burgerRestaurant" required>
+                        <option value="">Selecciona un restaurante</option>
+                        {data.restaurants.map(rest => (
+                          <option key={rest.id} value={rest.id}>{rest.name}</option>
                       ))}
                     </select>
                   </div>
@@ -585,15 +808,83 @@ export default function AdminPanel() {
                     {tags.map((tag, idx) => (
                       <div key={idx} className="tag">
                         {tag}
-                        <button type="button" onClick={() => handleRemoveTag(idx)}>✕</button>
+                        <button type="button" onClick={() => removeTag(idx)}>✕</button>
                       </div>
                     ))}
-                    <input type="text" className="tag-input" onKeyPress={handleAddTag} placeholder="Añade tags..." />
+                    <input 
+                      type="text" 
+                      className="tag-input" 
+                      onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(e.currentTarget.value); e.currentTarget.value = ''; } }} 
+                      placeholder="Añade tags..." 
+                    />
                   </div>
                 </div>
                 <button type="submit" className="btn-submit">➕ Crear Hamburguesa</button>
               </form>
             </div>
+            ) : (
+              <div className="form-container">
+                <h3 style={{ color: '#fbbf24', marginBottom: '15px' }}>✏️ Editar Hamburguesa</h3>
+                <form onSubmit={(e) => handleEditBurger(e, editingItem.data.id)}>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Nombre de la Hamburguesa</label>
+                      <input type="text" name="burgerName" defaultValue={editingItem.data.name} required />
+                    </div>
+                    <div className="form-group">
+                      <label>Restaurante</label>
+                      <select name="burgerRestaurant" defaultValue={editingItem.data.restaurantId} required>
+                        <option value="">Selecciona un restaurante</option>
+                        {data.restaurants.map(rest => (
+                          <option key={rest.id} value={rest.id}>{rest.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Tipo</label>
+                    <select name="burgerType" defaultValue={editingItem.data.type} required>
+                      <option value="premium">Premium</option>
+                      <option value="clásica">Clásica</option>
+                      <option value="doble">Doble Carne</option>
+                      <option value="vegana">Vegana</option>
+                      <option value="especial">Especial</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Precio</label>
+                    <input type="number" name="burgerPrice" defaultValue={editingItem.data.price} step="0.01" required />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Descripción</label>
+                  <textarea name="burgerDescription" defaultValue={editingItem.data.description} required></textarea>
+                </div>
+                <div className="form-group">
+                  <label>Tags</label>
+                  <div className="tags-input">
+                    {tags.map((tag, idx) => (
+                      <div key={idx} className="tag">
+                        {tag}
+                        <button type="button" onClick={() => removeTag(idx)}>✕</button>
+                      </div>
+                    ))}
+                    <input 
+                      type="text" 
+                      className="tag-input" 
+                      onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(e.currentTarget.value); e.currentTarget.value = ''; } }} 
+                      placeholder="Añade tags..." 
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <button type="submit" className="btn-submit">💾 Guardar Cambios</button>
+                  <button type="button" className="btn-cancel" onClick={() => { setEditingItem(null); setTags([]); }}>❌ Cancelar</button>
+                </div>
+              </form>
+            </div>
+            )}
 
             <div className="table-container">
               <table>
@@ -622,8 +913,9 @@ export default function AdminPanel() {
                           <td><span className="rating-stars">{'★'.repeat(Math.round(burger.rating))}☆</span> {burger.rating.toFixed(1)}</td>
                           <td>
                             <div className="action-buttons">
-                              <button className="btn-small btn-view" onClick={() => setSelectedModal({ type: 'burger', data: burger })}>Ver</button>
-                              <button className="btn-small btn-delete" onClick={() => handleDeleteBurger(burger.id)}>Eliminar</button>
+                              <button className="btn-small btn-view" onClick={() => setSelectedModal({ type: 'burger', data: burger })}>👁️ Ver</button>
+                              <button className="btn-small btn-edit" onClick={() => { setEditingItem({ type: 'burger', data: burger }); setTags(burger.tags); }}>✏️ Editar</button>
+                              <button className="btn-small btn-delete" onClick={() => handleDeleteBurger(burger.id)}>🗑️ Eliminar</button>
                             </div>
                           </td>
                         </tr>
@@ -640,6 +932,16 @@ export default function AdminPanel() {
         {activeSection === 'requests' && (
           <div className="section active">
             <h2>📋 Solicitudes de Usuarios</h2>
+            
+            <div className="search-bar">
+              <input 
+                type="text" 
+                placeholder="🔍 Buscar solicitud..." 
+                value={searchFilters.searchTerm}
+                onChange={(e) => setSearchFilters({ ...searchFilters, searchTerm: e.target.value })}
+              />
+            </div>
+
             <div className="table-container">
               <table>
                 <thead>
@@ -662,13 +964,13 @@ export default function AdminPanel() {
                         <td>{req.type}</td>
                         <td>{req.details}</td>
                         <td>{req.date}</td>
-                        <td><span className={`status-badge status-${req.status}`}>{req.status === 'pending' ? 'Pendiente' : 'Aprobado'}</span></td>
+                        <td><span className={`status-badge status-${req.status}`}>{req.status === 'pending' ? '⏳ Pendiente' : '✅ Aprobado'}</span></td>
                         <td>
                           <div className="action-buttons">
                             {req.status === 'pending' ? (
                               <>
-                                <button className="btn-small btn-approve" onClick={() => handleApproveRequest(req.id)}>Aprobar</button>
-                                <button className="btn-small btn-reject" onClick={() => handleRejectRequest(req.id)}>Rechazar</button>
+                                <button className="btn-small btn-approve" onClick={() => handleApproveRequest(req.id)}>✅ Aprobar</button>
+                                <button className="btn-small btn-reject" onClick={() => handleRejectRequest(req.id)}>❌ Rechazar</button>
                               </>
                             ) : '-'}
                           </div>
@@ -686,6 +988,25 @@ export default function AdminPanel() {
         {activeSection === 'ratings' && (
           <div className="section active">
             <h2>⭐ Revisión de Valoraciones</h2>
+            
+            <div className="search-bar">
+              <input 
+                type="text" 
+                placeholder="🔍 Buscar valoración..." 
+                value={searchFilters.searchTerm}
+                onChange={(e) => setSearchFilters({ ...searchFilters, searchTerm: e.target.value })}
+              />
+              <select 
+                value={searchFilters.filterStatus}
+                onChange={(e) => setSearchFilters({ ...searchFilters, filterStatus: e.target.value })}
+                style={{ marginLeft: '10px' }}
+              >
+                <option value="">Todos los estados</option>
+                <option value="pending">Pendiente</option>
+                <option value="verified">Verificado</option>
+              </select>
+            </div>
+
             <div className="table-container">
               <table>
                 <thead>
@@ -700,23 +1021,23 @@ export default function AdminPanel() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.ratings.length === 0 ? (
-                    <tr><td colSpan={7} className="empty-state"><div className="empty-state-icon">⭐</div>No hay valoraciones pendientes de revisar</td></tr>
+                  {getFilteredRatings().length === 0 ? (
+                    <tr><td colSpan={7} className="empty-state"><div className="empty-state-icon">⭐</div>No hay valoraciones para mostrar</td></tr>
                   ) : (
-                    data.ratings.map((rating, idx) => (
+                    getFilteredRatings().map((rating, idx) => (
                       <tr key={idx}>
                         <td>{rating.username}</td>
                         <td>{rating.burger}</td>
                         <td><span className="rating-stars">{'★'.repeat(rating.rating)}</span></td>
                         <td>{rating.comment}</td>
                         <td>{rating.date}</td>
-                        <td><span className={`status-badge status-${rating.status}`}>{rating.status === 'pending' ? 'Pendiente' : 'Verificado'}</span></td>
+                        <td><span className={`status-badge status-${rating.status}`}>{rating.status === 'pending' ? '⏳ Pendiente' : '✅ Verificado'}</span></td>
                         <td>
                           <div className="action-buttons">
                             {rating.status === 'pending' ? (
                               <>
-                                <button className="btn-small btn-approve" onClick={() => handleVerifyRating(idx)}>Verificar</button>
-                                <button className="btn-small btn-reject" onClick={() => handleDeleteRating(idx)}>Rechazar</button>
+                                <button className="btn-small btn-approve" onClick={() => handleVerifyRating(idx)}>✅ Verificar</button>
+                                <button className="btn-small btn-reject" onClick={() => handleDeleteRating(idx)}>❌ Rechazar</button>
                               </>
                             ) : '-'}
                           </div>
@@ -734,6 +1055,25 @@ export default function AdminPanel() {
         {activeSection === 'tickets' && (
           <div className="section active">
             <h2>🎫 Gestión de Tickets</h2>
+            
+            <div className="search-bar">
+              <input 
+                type="text" 
+                placeholder="🔍 Buscar ticket..." 
+                value={searchFilters.searchTerm}
+                onChange={(e) => setSearchFilters({ ...searchFilters, searchTerm: e.target.value })}
+              />
+              <select 
+                value={searchFilters.filterStatus}
+                onChange={(e) => setSearchFilters({ ...searchFilters, filterStatus: e.target.value })}
+                style={{ marginLeft: '10px' }}
+              >
+                <option value="">Todos los estados</option>
+                <option value="pending">Pendiente</option>
+                <option value="verified">Verificado</option>
+              </select>
+            </div>
+
             <div className="table-container">
               <table>
                 <thead>
@@ -748,23 +1088,23 @@ export default function AdminPanel() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.tickets.length === 0 ? (
-                    <tr><td colSpan={7} className="empty-state"><div className="empty-state-icon">🎫</div>No hay tickets para verificar</td></tr>
+                  {getFilteredTickets().length === 0 ? (
+                    <tr><td colSpan={7} className="empty-state"><div className="empty-state-icon">🎫</div>No hay tickets para mostrar</td></tr>
                   ) : (
-                    data.tickets.map((ticket, idx) => (
+                    getFilteredTickets().map((ticket, idx) => (
                       <tr key={idx}>
                         <td>{ticket.username}</td>
                         <td>{ticket.burger}</td>
                         <td>{ticket.restaurant}</td>
                         <td>${ticket.price}</td>
                         <td>{ticket.date}</td>
-                        <td><span className={`status-badge status-${ticket.status}`}>{ticket.status === 'pending' ? 'Pendiente' : 'Verificado'}</span></td>
+                        <td><span className={`status-badge status-${ticket.status}`}>{ticket.status === 'pending' ? '⏳ Pendiente' : '✅ Verificado'}</span></td>
                         <td>
                           <div className="action-buttons">
                             {ticket.status === 'pending' ? (
                               <>
-                                <button className="btn-small btn-approve" onClick={() => handleVerifyTicket(idx)}>Verificar</button>
-                                <button className="btn-small btn-reject" onClick={() => handleRejectTicket(idx)}>Rechazar</button>
+                                <button className="btn-small btn-approve" onClick={() => handleVerifyTicket(idx)}>✅ Verificar</button>
+                                <button className="btn-small btn-reject" onClick={() => handleRejectTicket(idx)}>❌ Rechazar</button>
                               </>
                             ) : '-'}
                           </div>
@@ -782,6 +1122,24 @@ export default function AdminPanel() {
         {activeSection === 'users' && (
           <div className="section active">
             <h2>👥 Gestión de Usuarios</h2>
+            
+            <div className="search-bar">
+              <input 
+                type="text" 
+                placeholder="🔍 Buscar usuario..." 
+                value={searchFilters.searchTerm}
+                onChange={(e) => setSearchFilters({ ...searchFilters, searchTerm: e.target.value })}
+              />
+              <select 
+                value={searchFilters.filterStatus}
+                onChange={(e) => setSearchFilters({ ...searchFilters, filterStatus: e.target.value })}
+                style={{ marginLeft: '10px' }}
+              >
+                <option value="">Todos los usuarios</option>
+                <option value="Bloqueado">Bloqueados</option>
+              </select>
+            </div>
+
             <div className="table-container">
               <table>
                 <thead>
@@ -796,20 +1154,29 @@ export default function AdminPanel() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.users.length === 0 ? (
-                    <tr><td colSpan={7} className="empty-state"><div className="empty-state-icon">👥</div>No hay usuarios registrados</td></tr>
+                  {getFilteredUsers().length === 0 ? (
+                    <tr><td colSpan={7} className="empty-state"><div className="empty-state-icon">👥</div>No hay usuarios para mostrar</td></tr>
                   ) : (
-                    data.users.map(user => (
+                    getFilteredUsers().map(user => (
                       <tr key={user.id}>
                         <td><strong>{user.username}</strong></td>
                         <td>{user.email}</td>
-                        <td>{user.category}</td>
+                        <td>
+                          {user.category === 'Bloqueado' ? (
+                            <span className="status-badge status-blocked">🚫 Bloqueado</span>
+                          ) : (
+                            <span className="status-badge status-approved">{user.category}</span>
+                          )}
+                        </td>
                         <td>{user.points} pts</td>
                         <td>{user.ratings}</td>
                         <td>{user.registeredDate}</td>
                         <td>
                           <div className="action-buttons">
-                            <button className="btn-small btn-view" onClick={() => setSelectedModal({ type: 'user', data: user })}>Ver</button>
+                            <button className="btn-small btn-view" onClick={() => setSelectedModal({ type: 'user', data: user })}>👁️ Ver</button>
+                            {user.category !== 'Bloqueado' && (
+                              <button className="btn-small btn-reject" onClick={() => handleBlockUser(user.id)}>🚫 Bloquear</button>
+                            )}
                           </div>
                         </td>
                       </tr>
