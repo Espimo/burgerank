@@ -267,7 +267,8 @@ export default function RankingPage() {
 
                     {/* Botones */}
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button 
+                      <a 
+                        href={`/restaurante/${encodeURIComponent(burger.restaurant)}`}
                         style={{ 
                           flex: 1, 
                           padding: '0.5rem', 
@@ -278,14 +279,20 @@ export default function RankingPage() {
                           cursor: 'pointer',
                           fontSize: '0.85rem',
                           fontWeight: '500',
-                          transition: 'all 0.2s'
+                          transition: 'all 0.2s',
+                          textAlign: 'center',
+                          textDecoration: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
                         }}
                         onMouseOver={(e) => {e.currentTarget.style.backgroundColor = '#4b5563'}}
                         onMouseOut={(e) => {e.currentTarget.style.backgroundColor = '#374151'}}
                       >
                         🏪 Restaurante
-                      </button>
-                      <button 
+                      </a>
+                      <a 
+                        href="/rate"
                         style={{ 
                           flex: 1, 
                           padding: '0.5rem', 
@@ -296,13 +303,18 @@ export default function RankingPage() {
                           cursor: 'pointer',
                           fontSize: '0.85rem',
                           fontWeight: '600',
-                          transition: 'all 0.2s'
+                          transition: 'all 0.2s',
+                          textAlign: 'center',
+                          textDecoration: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
                         }}
                         onMouseOver={(e) => {e.currentTarget.style.backgroundColor = '#f59e0b'}}
                         onMouseOut={(e) => {e.currentTarget.style.backgroundColor = '#fbbf24'}}
                       >
                         ⭐ Valorar
-                      </button>
+                      </a>
                     </div>
                   </div>
                 </div>
