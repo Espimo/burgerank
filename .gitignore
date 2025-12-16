@@ -18,6 +18,10 @@
 /out/
 
 # production
+# HTML prototype and documentation (local development only)
+BurgeRank-Complete.html
+FRONTEND_DEVELOPMENT.md
+RESUMEN_DESARROLLO.md
 /build
 
 # misc
