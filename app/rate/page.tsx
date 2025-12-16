@@ -189,7 +189,7 @@ export default function RatePage() {
 
           {/* Step 1: Search */}
           {currentStep === 1 && (
-            <div className="wizard-step">
+            <div className="wizard-step active">
               <div className="form-group">
                 <label className="form-label">Buscar Hamburguesa</label>
                 <input
@@ -246,7 +246,7 @@ export default function RatePage() {
 
           {/* Step 2: Detailed Rating */}
           {currentStep === 2 && (
-            <div className="wizard-step">
+            <div className="wizard-step active">
               <div className="form-group">
                 <label className="form-label">Puntuación General</label>
                 <div className="rating-input" style={{ fontSize: '0.9rem' }}>
@@ -392,7 +392,7 @@ export default function RatePage() {
 
           {/* Step 3: Ticket Upload */}
           {currentStep === 3 && (
-            <div className="wizard-step">
+            <div className="wizard-step active">
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎟️</div>
                 <h3 className="text-lg font-bold mb-3">Subir Comprobante</h3>
@@ -439,7 +439,7 @@ export default function RatePage() {
 
           {/* Step 4: Success */}
           {currentStep === 4 && (
-            <div className="wizard-step">
+            <div className="wizard-step active">
               <div style={{ textAlign: 'center', padding: '2rem 0' }}>
                 <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎉</div>
                 <h3 className="text-2xl font-bold mb-2">¡Valoración Enviada!</h3>
@@ -477,7 +477,7 @@ export default function RatePage() {
 
           {/* Step 6: Create New Burger */}
           {currentStep === 6 && (
-            <div className="wizard-step">
+            <div className="wizard-step active">
               <h3 className="text-lg font-bold mb-4">➕ Crear Nueva Hamburguesa</h3>
               <div className="form-group">
                 <label className="form-label">Nombre</label>
