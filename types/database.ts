@@ -1,0 +1,272 @@
+export type Database = {
+  public: {
+    Tables: {
+      users: {
+        Row: {
+          id: string;
+          username: string;
+          email: string;
+          avatar_url: string | null;
+          bio: string | null;
+          points: number;
+          category: string;
+          public_profile: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          username: string;
+          email: string;
+          avatar_url?: string;
+          bio?: string;
+          points?: number;
+          category?: string;
+          public_profile?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          username?: string;
+          email?: string;
+          avatar_url?: string;
+          bio?: string;
+          points?: number;
+          category?: string;
+          public_profile?: boolean;
+          updated_at?: string;
+        };
+      };
+      cities: {
+        Row: {
+          id: string;
+          name: string;
+          country: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          country?: string;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+          country?: string;
+        };
+      };
+      restaurants: {
+        Row: {
+          id: string;
+          name: string;
+          city_id: string;
+          address: string | null;
+          phone: string | null;
+          hours: string | null;
+          average_rating: number;
+          total_ratings: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          city_id: string;
+          address?: string;
+          phone?: string;
+          hours?: string;
+          average_rating?: number;
+          total_ratings?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          city_id?: string;
+          address?: string;
+          phone?: string;
+          hours?: string;
+          average_rating?: number;
+          total_ratings?: number;
+          updated_at?: string;
+        };
+      };
+      burgers: {
+        Row: {
+          id: string;
+          name: string;
+          restaurant_id: string;
+          description: string | null;
+          position: number | null;
+          type: string | null;
+          tags: string[] | null;
+          city_id: string;
+          average_rating: number;
+          total_ratings: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          restaurant_id: string;
+          description?: string;
+          position?: number;
+          type?: string;
+          tags?: string[];
+          city_id: string;
+          average_rating?: number;
+          total_ratings?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          restaurant_id?: string;
+          description?: string;
+          position?: number;
+          type?: string;
+          tags?: string[];
+          city_id?: string;
+          average_rating?: number;
+          total_ratings?: number;
+          updated_at?: string;
+        };
+      };
+      ratings: {
+        Row: {
+          id: string;
+          user_id: string;
+          burger_id: string;
+          overall_rating: number;
+          pan_rating: number | null;
+          carne_rating: number | null;
+          toppings_rating: number | null;
+          salsa_rating: number | null;
+          price: number | null;
+          comment: string | null;
+          has_ticket: boolean;
+          ticket_url: string | null;
+          consumption_type: string | null;
+          appetizers: string[] | null;
+          points_awarded: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          burger_id: string;
+          overall_rating: number;
+          pan_rating?: number;
+          carne_rating?: number;
+          toppings_rating?: number;
+          salsa_rating?: number;
+          price?: number;
+          comment?: string;
+          has_ticket?: boolean;
+          ticket_url?: string;
+          consumption_type?: string;
+          appetizers?: string[];
+          points_awarded?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          overall_rating?: number;
+          pan_rating?: number;
+          carne_rating?: number;
+          toppings_rating?: number;
+          salsa_rating?: number;
+          price?: number;
+          comment?: string;
+          has_ticket?: boolean;
+          ticket_url?: string;
+          consumption_type?: string;
+          appetizers?: string[];
+          points_awarded?: number;
+          updated_at?: string;
+        };
+      };
+      badges: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          emoji: string | null;
+          requirement_type: string;
+          requirement_value: number;
+          icon_url: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          description?: string;
+          emoji?: string;
+          requirement_type: string;
+          requirement_value: number;
+          icon_url?: string;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+          description?: string;
+          emoji?: string;
+          requirement_type?: string;
+          requirement_value?: number;
+          icon_url?: string;
+        };
+      };
+      user_badges: {
+        Row: {
+          id: string;
+          user_id: string;
+          badge_id: string;
+          unlocked_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          badge_id: string;
+          unlocked_at?: string;
+        };
+        Update: {
+          unlocked_at?: string;
+        };
+      };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          description: string | null;
+          type: string;
+          icon_emoji: string | null;
+          is_read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          description?: string;
+          type: string;
+          icon_emoji?: string;
+          is_read?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          title?: string;
+          description?: string;
+          type?: string;
+          icon_emoji?: string;
+          is_read?: boolean;
+        };
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+  };
+};
