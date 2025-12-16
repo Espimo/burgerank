@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BurgeRank - Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html { height: 100%; width: 100%; }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            height: 100%;
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            flex: 1;
+            min-height: 100vh;
+        }
+        
+        .top-bar {
+            height: 56px;
+            background: #000;
+            border-bottom: 2px solid #fbbf24;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .main {
+            flex: 1;
+            padding: 1rem 1rem 65px;
+            overflow-x: hidden;
+            background: #111;
+        }
+        
+        .page {
+            display: none;
+            width: 100%;
+            min-height: 100%;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        .bottom-nav {
+            height: 65px;
+            background: #000;
+            border-top: 2px solid #fbbf24;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        
+        .nav-item {
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            text-align: center;
+        }
+        
+        .page h1 { color: #fbbf24; margin-bottom: 1rem; }
+        .page p { margin-bottom: 1rem; color: #ccc; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <h1>🍔 BurgeRank</h1>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main">
+            <!-- RANKING PAGE -->
+            <div id="ranking" class="page active">
+                <h1>🏆 Ranking National</h1>
+                <p>This is the RANKING page - working correctly</p>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+            </div>
+            
+            <!-- RATE PAGE -->
+            <div id="rate" class="page">
+                <h1>⭐ Valorar</h1>
+                <p>This is the RATE page - should work</p>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+            </div>
+            
+            <!-- PROFILE PAGE -->
+            <div id="profile" class="page">
+                <h1>👤 Perfil</h1>
+                <p>This is the PROFILE page - should work</p>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+            </div>
+            
+            <!-- RESTAURANT PAGE (NEW) -->
+            <div id="restaurant" class="page">
+                <h1>🏪 Restaurante</h1>
+                <p>This is the RESTAURANT page - NEW - MIGHT NOT WORK</p>
+                <div style="padding: 1rem; background: rgba(251, 191, 36, 0.1); border-radius: 0.5rem; margin: 1rem 0;">
+                    <div><strong>📍 Ubicación:</strong> Calle Principal 123</div>
+                    <div><strong>📞 Teléfono:</strong> +34 123 456 789</div>
+                    <div><strong>🕐 Horario:</strong> 12:00 - 23:00</div>
+                </div>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+            </div>
+            
+            <!-- MY RANKING PAGE (NEW) -->
+            <div id="myranking" class="page">
+                <h1>📊 Mi Ranking</h1>
+                <p>This is the MY RANKING page - NEW - MIGHT NOT WORK</p>
+                <div style="padding: 1rem; background: rgba(251, 191, 36, 0.1); border-radius: 0.5rem;">
+                    <div>🥇 The King Burger - 9.2/10</div>
+                    <div>🥈 Smoky BBQ - 8.5/10</div>
+                    <div>🥉 Doble Sabor - 8.0/10</div>
+                </div>
+            </div>
+            
+            <!-- MY RATINGS PAGE (NEW) -->
+            <div id="myratings" class="page">
+                <h1>⭐ Historial</h1>
+                <p>This is the MY RATINGS page - NEW - MIGHT NOT WORK</p>
+                <div style="padding: 1rem; background: rgba(251, 191, 36, 0.1); border-radius: 0.5rem;">
+                    <div>The King Burger - ★★★★★ - Hace 2 días - 9.2/10</div>
+                    <div>Smoky BBQ - ★★★★☆ - Hace 5 días - 8.5/10</div>
+                    <div>Doble Sabor - ★★★☆☆ - Hace 10 días - 8.0/10</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-item" onclick="showPage('ranking')">🏆 Ranking</div>
+            <div class="nav-item" onclick="showPage('rate')">⭐ Rate</div>
+            <div class="nav-item" onclick="showPage('profile')">👤 Profile</div>
+            <div class="nav-item" onclick="showPage('restaurant')">🏪 Restaurant</div>
+            <div class="nav-item" onclick="showPage('myranking')">📊 My Ranking</div>
+            <div class="nav-item" onclick="showPage('myratings')">⭐ Ratings</div>
+        </div>
+    </div>
+    
+    <script>
+        function showPage(name) {
+            console.log('Showing page:', name);
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(p => p.classList.remove('active'));
+            const target = document.getElementById(name);
+            if (target) {
+                target.classList.add('active');
+                console.log('✅ Page shown:', name);
+                console.log('  - offsetHeight:', target.offsetHeight);
+                console.log('  - display:', getComputedStyle(target).display);
+            } else {
+                console.error('❌ Page not found:', name);
+            }
+        }
+    </script>
+</body>
+</html>

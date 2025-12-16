@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Pages Navigation</title>
+    <style>
+        body {
+            background: #111827;
+            color: #e5e7eb;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        
+        .page {
+            display: none;
+            padding: 20px;
+            background: #1f2937;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .page.active {
+            display: block;
+            border-color: #22c55e;
+        }
+        
+        button {
+            background: #fbbf24;
+            color: #000;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background: #f59e0b;
+        }
+        
+        .nav {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test - Navegación entre Páginas</h1>
+    
+    <div class="nav">
+        <button onclick="showPage('ranking')">Ver Ranking</button>
+        <button onclick="showPage('restaurant')">Ver Restaurante</button>
+        <button onclick="showPage('myranking')">Ver Mi Ranking</button>
+        <button onclick="showPage('myratings')">Ver Mis Valoraciones</button>
+    </div>
+    
+    <div id="ranking" class="page active">
+        <h2>📊 PÁGINA: RANKING</h2>
+        <p>Esta es la página de ranking. Debe mostrarse por defecto.</p>
+    </div>
+    
+    <div id="restaurant" class="page">
+        <h2>🏪 PÁGINA: RESTAURANTE</h2>
+        <p>Esta es la página de restaurante. Se muestra al hacer click en botón "Ver Restaurante".</p>
+    </div>
+    
+    <div id="myranking" class="page">
+        <h2>📊 PÁGINA: MI RANKING</h2>
+        <p>Esta es la página de mi ranking personal. Se muestra al hacer click en botón "Ver Mi Ranking".</p>
+    </div>
+    
+    <div id="myratings" class="page">
+        <h2>⭐ PÁGINA: MIS VALORACIONES</h2>
+        <p>Esta es la página de historial de valoraciones. Se muestra al hacer click en botón "Ver Mis Valoraciones".</p>
+    </div>
+    
+    <script>
+        function showPage(pageName) {
+            console.log('=== showPage llamada con:', pageName);
+            
+            // Obtener todas las páginas
+            const pages = document.querySelectorAll('.page');
+            console.log('Total de páginas encontradas:', pages.length);
+            
+            // Remover clase active de todas
+            pages.forEach(p => {
+                console.log('Removiendo active de:', p.id);
+                p.classList.remove('active');
+            });
+            
+            // Obtener la página objetivo
+            const targetPage = document.getElementById(pageName);
+            console.log('Página objetivo encontrada:', targetPage !== null, 'ID:', pageName);
+            
+            if (targetPage) {
+                console.log('Agregando active a página:', pageName);
+                targetPage.classList.add('active');
+                console.log('Clase active agregada correctamente');
+                console.log('Display después de agregar active:', getComputedStyle(targetPage).display);
+            } else {
+                console.error('ERROR: Página no encontrada con ID:', pageName);
+            }
+        }
+    </script>
+</body>
+</html>

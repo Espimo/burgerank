@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Pages</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+        }
+        .page {
+            display: none;
+            padding: 20px;
+            border: 2px solid #fbbf24;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .page.active {
+            display: block;
+            background: rgba(251, 191, 36, 0.1);
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            background: #fbbf24;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #f59e0b;
+        }
+        .nav {
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug - Test Pages Visibility</h1>
+    
+    <div class="nav">
+        <button onclick="showPage('page1')">Show Page 1</button>
+        <button onclick="showPage('page2')">Show Page 2</button>
+        <button onclick="showPage('page3')">Show Page 3</button>
+        <button onclick="test()">Test All Pages</button>
+    </div>
+
+    <div id="page1" class="page active">
+        <h2>📄 Page 1</h2>
+        <p>This is page 1 content. It should be visible by default.</p>
+        <p>offsetHeight: <span id="h1">-</span></p>
+        <p>display: <span id="d1">-</span></p>
+    </div>
+
+    <div id="page2" class="page">
+        <h2>📄 Page 2</h2>
+        <p>This is page 2 content. It should be hidden initially.</p>
+        <p>offsetHeight: <span id="h2">-</span></p>
+        <p>display: <span id="d2">-</span></p>
+    </div>
+
+    <div id="page3" class="page">
+        <h2>📄 Page 3</h2>
+        <p>This is page 3 content. It should be hidden initially.</p>
+        <p>offsetHeight: <span id="h3">-</span></p>
+        <p>display: <span id="d3">-</span></p>
+    </div>
+
+    <script>
+        function showPage(pageName) {
+            console.log('=== showPage called:', pageName);
+            const pages = document.querySelectorAll('.page');
+            console.log('Found pages:', pages.length);
+            
+            pages.forEach(p => {
+                const wasActive = p.classList.contains('active');
+                p.classList.remove('active');
+                console.log(`  - Removed active from ${p.id} (was: ${wasActive})`);
+            });
+            
+            const targetPage = document.getElementById(pageName);
+            if (targetPage) {
+                targetPage.classList.add('active');
+                const style = window.getComputedStyle(targetPage);
+                console.log(`✅ Page "${pageName}" is now ACTIVE`);
+                console.log(`   display: ${style.display}`);
+                console.log(`   offsetHeight: ${targetPage.offsetHeight}`);
+                console.log(`   offsetWidth: ${targetPage.offsetWidth}`);
+                console.log(`   innerHTML length: ${targetPage.innerHTML.length}`);
+            } else {
+                console.error(`❌ Page "${pageName}" NOT FOUND`);
+            }
+        }
+
+        function test() {
+            console.log('\n========== TESTING ALL PAGES ==========');
+            for (let i = 1; i <= 3; i++) {
+                showPage(`page${i}`);
+                console.log('');
+            }
+            console.log('========== END TESTING ==========\n');
+        }
+
+        // Initial check
+        console.log('Page loaded. Pages available:');
+        document.querySelectorAll('.page').forEach(p => {
+            console.log(`  - ${p.id}: ${p.className}`);
+        });
+    </script>
+</body>
+</html>
