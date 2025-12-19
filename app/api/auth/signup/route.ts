@@ -8,15 +8,6 @@ const signupSchema = z.object({
   username: z.string().min(3, 'Mínimo 3 caracteres').max(20, 'Máximo 20 caracteres'),
 });
 
-interface UserInsert {
-  id: string;
-  email: string;
-  username: string;
-  public_profile: boolean;
-  points: number;
-  category: string;
-}
-
 async function signup(formData: {
   email: string;
   password: string;
@@ -54,8 +45,8 @@ async function signup(formData: {
           public_profile: false,
           points: 0,
           category: 'Burger Fan',
-        } as UserInsert,
-      ])
+        },
+      ] as any)
       .select()
       .single();
 

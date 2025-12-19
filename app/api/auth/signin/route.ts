@@ -7,15 +7,6 @@ const signinSchema = z.object({
   password: z.string().min(1, 'Se requiere contraseña'),
 });
 
-interface UserInsert {
-  id: string;
-  email: string;
-  username: string;
-  public_profile: boolean;
-  points: number;
-  category: string;
-}
-
 async function signin(formData: {
   email: string;
   password: string;
@@ -55,8 +46,8 @@ async function signin(formData: {
               public_profile: false,
               points: 0,
               category: 'Burger Fan',
-            } as UserInsert,
-          ])
+            },
+          ] as any)
           .select()
           .single();
 
