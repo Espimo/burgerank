@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
+import type { Database } from '@/types/database';
 
 const signinSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -36,18 +37,18 @@ async function signin(formData: {
     if (userError) {
       // Si el usuario en auth existe pero no en la tabla users, crear el perfil
       if (userError.code === 'PGRST116') {
+        const newUserData: Database['public']['Tables']['users']['Insert'] = {
+          id: authData.user.id,
+          email: authData.user.email || validated.email,
+          username: authData.user.email?.split('@')[0] || 'usuario',
+          public_profile: false,
+          points: 0,
+          category: 'Burger Fan',
+        };
+        
         const { data: newUser, error: createError } = await supabase
           .from('users')
-          .insert([
-            {
-              id: authData.user.id,
-              email: authData.user.email || validated.email,
-              username: authData.user.email?.split('@')[0] || 'usuario',
-              public_profile: false,
-              points: 0,
-              category: 'Burger Fan',
-            }
-          ])
+          .insert([newUserData])
           .select()
           .single();
 

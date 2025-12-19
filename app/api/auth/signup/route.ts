@@ -36,18 +36,18 @@ async function signup(formData: {
     if (!authData.user) throw new Error('No se pudo crear la cuenta');
 
     // 2. Crear perfil en users table - CORREGIDO: debe ser array
+    const newUserData: Database['public']['Tables']['users']['Insert'] = {
+      id: authData.user.id,
+      email: validated.email,
+      username: validated.username,
+      public_profile: false,
+      points: 0,
+      category: 'Burger Fan',
+    };
+    
     const { error: profileError, data: profileData } = await supabase
       .from('users')
-      .insert([
-        {
-          id: authData.user.id,
-          email: validated.email,
-          username: validated.username,
-          public_profile: false,
-          points: 0,
-          category: 'Burger Fan',
-        }
-      ])
+      .insert([newUserData])
       .select()
       .single();
 
