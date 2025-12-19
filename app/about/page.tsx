@@ -4,9 +4,13 @@ import { useState } from 'react'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Sidebar from '@/components/layout/Sidebar'
+import RegistrationPromptModal from '@/app/components/RegistrationPromptModal'
+import { useAuth } from '@/app/contexts/AuthContext'
 
 export default function AboutPage() {
+  const { authUser } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false)
   const [openAccordions, setOpenAccordions] = useState<Record<number, boolean>>({})
 
   const handleMenuClick = () => {
@@ -58,6 +62,10 @@ export default function AboutPage() {
 
   return (
     <div className="container">
+      <RegistrationPromptModal
+        isOpen={showRegistrationModal && !authUser}
+        onClose={() => setShowRegistrationModal(false)}
+      />
       <TopBar onMenuClick={handleMenuClick} />
       <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} />
 

@@ -4,8 +4,10 @@ import { useState } from 'react'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Sidebar from '@/components/layout/Sidebar'
+import RegistrationPromptModal from '@/app/components/RegistrationPromptModal'
 import { burgers } from '@/lib/data/mockData'
 import { useAdmin } from '@/app/contexts/AdminContext'
+import { useAuth } from '@/app/contexts/AuthContext'
 import { AdminBadge } from '@/app/components/AdminBadge'
 
 export default function RankingPage() {
@@ -14,7 +16,9 @@ export default function RankingPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState('todos') // 'todos', 'tendencias', 'nuevas'
   const [scrollPosition, setScrollPosition] = useState(0)
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false)
   const { isAdmin } = useAdmin()
+  const { authUser } = useAuth()
 
   const handleMenuClick = () => {
     setSidebarOpen(true)
@@ -66,6 +70,10 @@ export default function RankingPage() {
 
   return (
     <div className="container">
+      <RegistrationPromptModal
+        isOpen={showRegistrationModal && !authUser}
+        onClose={() => setShowRegistrationModal(false)}
+      />
       <TopBar onMenuClick={handleMenuClick} />
       <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} />
       {isAdmin && <AdminBadge />}
@@ -296,7 +304,13 @@ export default function RankingPage() {
                         🏪 Restaurante
                       </a>
                       <a 
-                        href="/rate"
+                        href={authUser ? "/rate" : undefined}
+                        onClick={(e) => {
+                          if (!authUser) {
+                            e.preventDefault()
+                            setShowRegistrationModal(true)
+                          }
+                        }}
                         style={{ 
                           flex: 1, 
                           padding: '0.5rem', 

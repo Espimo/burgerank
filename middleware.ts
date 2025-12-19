@@ -28,9 +28,19 @@ export async function middleware(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Rutas públicas
-    const publicRoutes = ['/auth/signin', '/auth/signup', '/auth/verify-email', '/auth/reset-password', '/'];
-    const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(route + '/'));
+    // Rutas públicas - accesibles sin autenticación
+    const publicRoutes = [
+      '/auth/signin', 
+      '/auth/signup', 
+      '/auth/verify-email', 
+      '/auth/reset-password', 
+      '/ranking',           // Ranking es público
+      '/about',             // About es público
+      '/',
+    ];
+    const isPublicRoute = publicRoutes.some(route => 
+      request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(route + '/')
+    );
 
     // Rutas que no requieren protección (imágenes, assets, etc)
     const unprotectedPaths = ['/_next/', '/favicon.ico', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
