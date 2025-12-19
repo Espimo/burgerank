@@ -1,12 +1,20 @@
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
-import type { Database } from '@/types/database';
 
 const signinSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(1, 'Se requiere contraseña'),
 });
+
+interface UserInsert {
+  id: string;
+  email: string;
+  username: string;
+  public_profile: boolean;
+  points: number;
+  category: string;
+}
 
 async function signin(formData: {
   email: string;
@@ -47,7 +55,7 @@ async function signin(formData: {
               public_profile: false,
               points: 0,
               category: 'Burger Fan',
-            } as Database['public']['Tables']['users']['Insert'],
+            } as UserInsert,
           ])
           .select()
           .single();

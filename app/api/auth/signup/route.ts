@@ -1,13 +1,21 @@
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
-import type { Database } from '@/types/database';
 
 const signupSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(8, 'Mínimo 8 caracteres'),
   username: z.string().min(3, 'Mínimo 3 caracteres').max(20, 'Máximo 20 caracteres'),
 });
+
+interface UserInsert {
+  id: string;
+  email: string;
+  username: string;
+  public_profile: boolean;
+  points: number;
+  category: string;
+}
 
 async function signup(formData: {
   email: string;
@@ -46,7 +54,7 @@ async function signup(formData: {
           public_profile: false,
           points: 0,
           category: 'Burger Fan',
-        } as Database['public']['Tables']['users']['Insert'],
+        } as UserInsert,
       ])
       .select()
       .single();
