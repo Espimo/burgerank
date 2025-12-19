@@ -28,6 +28,12 @@ export async function middleware(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
+    // Rutas de autenticación (solo acceso sin autenticación)
+    const authRoutes = ['/auth/signin', '/auth/signup', '/auth/verify-email'];
+    const isAuthRoute = authRoutes.some(route => 
+      request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(route + '/')
+    );
+
     // Rutas públicas - accesibles sin autenticación
     const publicRoutes = [
       '/auth/signin', 
@@ -50,13 +56,13 @@ export async function middleware(request: NextRequest) {
     const publicApiRoutes = ['/api/auth'];
     const isPublicApiRoute = publicApiRoutes.some(route => request.nextUrl.pathname.startsWith(route));
 
-    // Si es una ruta protegida y no está autenticado, redirigir a login
+    // Si NO está autenticado y accede a ruta PROTEGIDA, redirigir a ranking (pública)
     if (!user && !isPublicRoute && !isUnprotectedPath && !isPublicApiRoute && !request.nextUrl.pathname.startsWith('/api')) {
-      return NextResponse.redirect(new URL('/auth/signin', request.url));
+      return NextResponse.redirect(new URL('/ranking', request.url));
     }
 
-    // Si está autenticado y accede a rutas de auth, redirigir a ranking
-    if (user && isPublicRoute && request.nextUrl.pathname !== '/') {
+    // Si está autenticado y accede a rutas de AUTH (signup/signin), redirigir a ranking
+    if (user && isAuthRoute) {
       return NextResponse.redirect(new URL('/ranking', request.url));
     }
 
