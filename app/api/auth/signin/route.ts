@@ -26,40 +26,24 @@ async function signin(formData: {
     if (authError) throw authError;
     if (!authData.user) throw new Error('No se pudo iniciar sesión');
 
-    // 2. Obtener datos del usuario
+    // 2. Obtener datos del usuario desde la tabla users
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('*')
       .eq('id', authData.user.id)
       .single();
 
+    // Si no existe el perfil (caso raro), devolver datos básicos
     if (userError) {
-      // Si el usuario en auth existe pero no en la tabla users, crear el perfil
-      if (userError.code === 'PGRST116') {
-        const { data: newUser, error: createError } = await supabase
-          .from('users')
-          .insert([
-            {
-              id: authData.user.id,
-              email: authData.user.email || validated.email,
-              username: authData.user.email?.split('@')[0] || 'usuario',
-              public_profile: false,
-              points: 0,
-              category: 'Burger Fan',
-            },
-          ] as any)
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        
-        return {
-          success: true,
-          message: 'Sesión iniciada exitosamente',
-          user: newUser,
-        };
-      }
-      throw userError;
+      return {
+        success: true,
+        message: 'Sesión iniciada exitosamente',
+        user: {
+          id: authData.user.id,
+          email: authData.user.email,
+          username: authData.user.email?.split('@')[0] || 'usuario',
+        },
+      };
     }
 
     return {

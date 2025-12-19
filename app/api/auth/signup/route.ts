@@ -19,7 +19,7 @@ async function signup(formData: {
 
     const supabase = await createClient();
 
-    // 1. Crear usuario en auth
+    // Crear usuario en auth - El trigger en Supabase creará el perfil automáticamente
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: validated.email,
       password: validated.password,
@@ -33,24 +33,6 @@ async function signup(formData: {
 
     if (authError) throw authError;
     if (!authData.user) throw new Error('No se pudo crear la cuenta');
-
-    // 2. Crear perfil en users table - CORREGIDO: debe ser array
-    const { error: profileError, data: profileData } = await supabase
-      .from('users')
-      .insert([
-        {
-          id: authData.user.id,
-          email: validated.email,
-          username: validated.username,
-          public_profile: false,
-          points: 0,
-          category: 'Burger Fan',
-        },
-      ] as any)
-      .select()
-      .single();
-
-    if (profileError) throw profileError;
 
     return {
       success: true,
