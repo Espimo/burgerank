@@ -208,7 +208,26 @@ ALTER TABLE public.user_rewards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
--- PASO 5: CREAR POLÍTICAS RLS
+-- PASO 5: OTORGAR PERMISOS BÁSICOS (GRANTS)
+-- ============================================================================
+
+-- Permitir acceso al schema public
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+
+-- Permitir acceso a todas las tablas
+GRANT ALL ON public.users TO anon, authenticated;
+GRANT ALL ON public.cities TO anon, authenticated;
+GRANT ALL ON public.restaurants TO anon, authenticated;
+GRANT ALL ON public.burgers TO anon, authenticated;
+GRANT ALL ON public.ratings TO anon, authenticated;
+GRANT ALL ON public.badges TO anon, authenticated;
+GRANT ALL ON public.user_badges TO anon, authenticated;
+GRANT ALL ON public.rewards TO anon, authenticated;
+GRANT ALL ON public.user_rewards TO anon, authenticated;
+GRANT ALL ON public.notifications TO anon, authenticated;
+
+-- ============================================================================
+-- PASO 6: CREAR POLÍTICAS RLS
 -- ============================================================================
 
 -- =====================
@@ -307,7 +326,7 @@ CREATE POLICY "notifications_delete_own" ON public.notifications
   FOR DELETE USING (auth.uid() = user_id);
 
 -- ============================================================================
--- PASO 6: CREAR FUNCIÓN PARA AUTO-CREAR PERFIL EN SIGNUP
+-- PASO 7: CREAR FUNCIÓN PARA AUTO-CREAR PERFIL EN SIGNUP
 -- ============================================================================
 
 -- Esta función se ejecuta automáticamente cuando un usuario se registra
@@ -333,7 +352,7 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- ============================================================================
--- PASO 7: INSERTAR DATOS DE EJEMPLO
+-- PASO 8: INSERTAR DATOS DE EJEMPLO
 -- ============================================================================
 
 -- Ciudades
@@ -514,7 +533,7 @@ BEGIN
 END $$;
 
 -- ============================================================================
--- PASO 8: VERIFICACIÓN FINAL
+-- PASO 9: VERIFICACIÓN FINAL
 -- ============================================================================
 
 -- Este SELECT muestra el resumen de lo creado
