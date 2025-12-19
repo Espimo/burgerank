@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/app/contexts/AuthContext';
 
 export default function SignupPage() {
   const router = useRouter();
+  const { signup: authSignup, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -30,24 +32,14 @@ export default function SignupPage() {
     setMessage('');
 
     try {
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        setMessage(result.message);
-        setTimeout(() => {
-          router.push('/auth/verify-email');
-        }, 2000);
-      } else {
-        setError(result.message);
-      }
+      await authSignup(formData.email, formData.password, formData.username);
+      setMessage('✅ Cuenta creada exitosamente. Redirigiendo...');
+      setTimeout(() => {
+        router.push('/auth/verify-email');
+      }, 1500);
     } catch (err) {
-      setError('Error al registrarse. Intenta de nuevo.');
+      const errorMessage = err instanceof Error ? err.message : 'Error al registrarse';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -84,7 +76,8 @@ export default function SignupPage() {
                 onChange={handleChange}
                 required
                 placeholder="usuario123"
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-amber-500"
+                disabled={loading}
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-amber-500 disabled:opacity-50"
               />
               <p className="text-xs text-gray-400 mt-1">3-20 caracteres, sin espacios</p>
             </div>
@@ -100,7 +93,8 @@ export default function SignupPage() {
                 onChange={handleChange}
                 required
                 placeholder="tu@email.com"
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-amber-500"
+                disabled={loading}
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-amber-500 disabled:opacity-50"
               />
             </div>
 
@@ -115,17 +109,18 @@ export default function SignupPage() {
                 onChange={handleChange}
                 required
                 placeholder="••••••••"
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-amber-500"
+                disabled={loading}
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-amber-500 disabled:opacity-50"
               />
               <p className="text-xs text-gray-400 mt-1">Mínimo 8 caracteres</p>
             </div>
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || authLoading}
               className="w-full px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-gray-900 font-bold rounded-lg transition-colors"
             >
-              {loading ? 'Registrando...' : 'Registrarse'}
+              {loading || authLoading ? 'Registrando...' : 'Registrarse'}
             </button>
           </form>
 

@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { AdminProvider } from './contexts/AdminContext'
+import { AuthProvider } from './contexts/AuthContext'
 
 export const metadata: Metadata = {
   title: 'BurgeRank - Ranking de Hamburguesas',
@@ -15,9 +16,11 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        <AdminProvider>
-          {children}
-        </AdminProvider>
+        <AuthProvider>
+          <AdminProvider>
+            {children}
+          </AdminProvider>
+        </AuthProvider>
       </body>
     </html>
   )

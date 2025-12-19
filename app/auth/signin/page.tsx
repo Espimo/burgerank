@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/app/contexts/AuthContext';
 
 export default function SigninPage() {
   const router = useRouter();
+  const { signin: authSignin, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -29,24 +31,14 @@ export default function SigninPage() {
     setMessage('');
 
     try {
-      const response = await fetch('/api/auth/signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        setMessage(result.message);
-        setTimeout(() => {
-          router.push('/ranking');
-        }, 1500);
-      } else {
-        setError(result.message);
-      }
+      await authSignin(formData.email, formData.password);
+      setMessage('✅ Sesión iniciada exitosamente');
+      setTimeout(() => {
+        router.push('/ranking');
+      }, 1000);
     } catch (err) {
-      setError('Error al iniciar sesión. Intenta de nuevo.');
+      const errorMessage = err instanceof Error ? err.message : 'Error al iniciar sesión';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -83,7 +75,8 @@ export default function SigninPage() {
                 onChange={handleChange}
                 required
                 placeholder="tu@email.com"
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-amber-500"
+                disabled={loading}
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-amber-500 disabled:opacity-50"
               />
             </div>
 
@@ -98,16 +91,17 @@ export default function SigninPage() {
                 onChange={handleChange}
                 required
                 placeholder="••••••••"
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-amber-500"
+                disabled={loading}
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-amber-500 disabled:opacity-50"
               />
             </div>
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || authLoading}
               className="w-full px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-gray-900 font-bold rounded-lg transition-colors"
             >
-              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+              {loading || authLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </button>
           </form>
 

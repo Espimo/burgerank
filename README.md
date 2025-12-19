@@ -72,6 +72,7 @@ Crear archivo `.env.local`:
 ```
 NEXT_PUBLIC_SUPABASE_URL=tu_url_supabase
 NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 4. **Ejecutar en desarrollo**
@@ -80,6 +81,44 @@ npm run dev
 ```
 
 La aplicación estará disponible en `http://localhost:3000`
+
+## 🔐 Autenticación
+
+El sistema de autenticación está completamente implementado con Supabase. 
+
+### ⚡ Setup Rápido (5 minutos)
+
+1. **Ejecutar RLS Policies:**
+   - Ve a Supabase > SQL Editor
+   - Ejecuta: `database/rls_policies.sql`
+
+2. **Habilitar Email Authentication:**
+   - Supabase > Authentication > Providers
+   - Email debe estar HABILITADO ✅
+
+3. **Probar:**
+   ```bash
+   npm run dev
+   # Ve a http://localhost:3000/auth/signup
+   ```
+
+### 📚 Documentación de Autenticación
+
+- **[INDICE_AUTENTICACION.md](INDICE_AUTENTICACION.md)** ← **START HERE** 📍
+- **[EXEC_SUMMARY_AUTH.md](EXEC_SUMMARY_AUTH.md)** - Resumen ejecutivo
+- **[AUTH_SETUP.md](AUTH_SETUP.md)** - Guía de configuración en Supabase
+- **[AUTENTICACION_COMPLETA.md](AUTENTICACION_COMPLETA.md)** - Documentación técnica completa
+- **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - Guía de testing
+
+### ✨ Características de Autenticación
+
+✅ Registro con email/password
+✅ Verificación de email
+✅ Inicio de sesión seguro
+✅ Cierre de sesión
+✅ Protección de rutas privadas
+✅ Contexto global de autenticación
+✅ RLS Policies para seguridad
 
 ## 🗄️ Configuración de Base de Datos
 
@@ -92,12 +131,17 @@ La aplicación estará disponible en `http://localhost:3000`
    - Copia y pega el contenido de `database/burgerank_schema.sql`
    - Ejecuta
 
-3. **Cargar datos de ejemplo (Opcional)**
+3. **Ejecutar RLS Policies (IMPORTANTE para autenticación)**
+   - Copia y pega el contenido de `database/rls_policies.sql`
+   - Ejecuta
+
+4. **Cargar datos de ejemplo (Opcional)**
    - Copia y pega el contenido de `database/seed_data_extended.sql`
    - Ejecuta
 
-4. **Obtener credenciales**
+5. **Obtener credenciales**
    - Settings → API
+
    - Copia: Project URL y Project API Key (anon)
    - Actualiza `.env.local`
 

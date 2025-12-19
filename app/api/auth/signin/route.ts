@@ -1,5 +1,3 @@
-'use server';
-
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
@@ -9,7 +7,7 @@ const signinSchema = z.object({
   password: z.string().min(1, 'Se requiere contraseña'),
 });
 
-export async function signin(formData: {
+async function signin(formData: {
   email: string;
   password: string;
 }) {
@@ -20,22 +18,49 @@ export async function signin(formData: {
     const supabase = await createClient();
 
     // 1. Autenticar usuario
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: validated.email,
       password: validated.password,
     });
 
-    if (error) throw error;
-    if (!data.user) throw new Error('No se pudo iniciar sesión');
+    if (authError) throw authError;
+    if (!authData.user) throw new Error('No se pudo iniciar sesión');
 
     // 2. Obtener datos del usuario
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('*')
-      .eq('id', data.user.id)
+      .eq('id', authData.user.id)
       .single();
 
-    if (userError) throw userError;
+    if (userError) {
+      // Si el usuario en auth existe pero no en la tabla users, crear el perfil
+      if (userError.code === 'PGRST116') {
+        const { data: newUser, error: createError } = await supabase
+          .from('users')
+          .insert([
+            {
+              id: authData.user.id,
+              email: authData.user.email || validated.email,
+              username: authData.user.email?.split('@')[0] || 'usuario',
+              public_profile: false,
+              points: 0,
+              category: 'Burger Fan',
+            }
+          ])
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        
+        return {
+          success: true,
+          message: 'Sesión iniciada exitosamente',
+          user: newUser,
+        };
+      }
+      throw userError;
+    }
 
     return {
       success: true,

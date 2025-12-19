@@ -2,11 +2,12 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 function VerifyEmailContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [message, setMessage] = useState('');
   const [verified, setVerified] = useState(false);
   const [error, setError] = useState('');
@@ -15,37 +16,53 @@ function VerifyEmailContent() {
   useEffect(() => {
     const verifyEmail = async () => {
       try {
-        // Supabase automáticamente valida el token en la URL
-        // y actualiza email_confirmed_at
         const supabase = createClient();
         
+        // Obtener parámetros de la URL
+        const token = searchParams.get('token');
+        const type = searchParams.get('type');
+
+        // Si hay token, Supabase ya lo procesó automáticamente
+        // Solo necesitamos verificar el estado del usuario
+        
         // Esperar un poco para que Supabase procese
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
         // Verificar si el usuario está confirmado
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
-        if (userError) throw userError;
+        if (userError) {
+          setError('Error al verificar tu identidad');
+          setLoading(false);
+          return;
+        }
         
-        if (user?.email_confirmed_at) {
+        if (!user) {
+          setMessage('Por favor inicia sesión primero');
+          setLoading(false);
+          return;
+        }
+
+        if (user.email_confirmed_at) {
           setVerified(true);
           setMessage('✅ Email verificado exitosamente');
           setTimeout(() => {
             router.push('/auth/signin');
           }, 2000);
         } else {
-          setMessage('Verifica tu email haciendo clic en el enlace que te enviamos');
+          setError('El link de confirmación es inválido o ha expirado. Revisa tu email nuevamente.');
+          setMessage('Aún no se ha verificado tu email');
         }
       } catch (err) {
-        setError('Error al verificar email');
-        console.error(err);
+        console.error('Error during email verification:', err);
+        setError('Error al verificar email. Intenta de nuevo.');
       } finally {
         setLoading(false);
       }
     };
 
     verifyEmail();
-  }, [router]);
+  }, [router, searchParams]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
@@ -82,7 +99,7 @@ function VerifyEmailContent() {
 
               <div className="pt-4 border-t border-gray-700">
                 <p className="text-sm text-gray-400 mb-4">
-                  ¿No recibiste el email? Revisa tu carpeta de spam
+                  ¿Necesitas más ayuda?
                 </p>
                 <Link
                   href="/auth/signin"
