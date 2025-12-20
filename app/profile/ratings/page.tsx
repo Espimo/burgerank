@@ -33,19 +33,24 @@ interface UserRating {
 export default function MyRatingsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [ratings, setRatings] = useState<UserRating[]>([])
-  const [loading, setLoading] = useState(true)
+  const [pageLoading, setPageLoading] = useState(true)
   const [sortBy, setSortBy] = useState<'date' | 'rating'>('date')
-  const { authUser } = useAuth()
+  const { authUser, loading: authLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
+    // Esperar a que el contexto de auth termine de cargar
+    if (authLoading) {
+      return
+    }
+
     if (!authUser) {
       router.push('/auth/signin')
       return
     }
 
     loadRatings()
-  }, [authUser, sortBy, router])
+  }, [authUser, authLoading, sortBy, router])
 
   async function loadRatings() {
     if (!authUser) return
@@ -85,7 +90,7 @@ export default function MyRatingsPage() {
       setRatings(data as any)
     }
 
-    setLoading(false)
+    setPageLoading(false)
   }
 
   const getStars = (rating: number) => {
@@ -172,7 +177,7 @@ export default function MyRatingsPage() {
         </div>
 
         {/* Lista de Valoraciones */}
-        {loading ? (
+        {pageLoading ? (
           <div style={{ textAlign: 'center', padding: '3rem' }}>
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🍔</div>
             <div style={{ color: '#9ca3af' }}>Cargando tus valoraciones...</div>
