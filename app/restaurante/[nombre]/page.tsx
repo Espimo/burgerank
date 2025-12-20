@@ -89,13 +89,14 @@ export default function RestaurantePage() {
         return;
       }
 
-      setRestaurant(restData as any);
+      const restaurant = restData as Restaurant;
+      setRestaurant(restaurant);
 
       // Cargar hamburguesas del restaurante
       const { data: burgersData } = await supabase
         .from('burgers')
         .select('*')
-        .eq('restaurant_id', restData.id)
+        .eq('restaurant_id', restaurant.id)
         .order('average_rating', { ascending: false });
 
       if (burgersData) setBurgers(burgersData);
@@ -104,7 +105,7 @@ export default function RestaurantePage() {
       const { data: promoData } = await supabase
         .from('restaurant_promotions')
         .select('*')
-        .eq('restaurant_id', restData.id)
+        .eq('restaurant_id', restaurant.id)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
