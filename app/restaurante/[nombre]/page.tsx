@@ -122,7 +122,7 @@ export default function RestaurantePage() {
           user:users(username),
           burger:burgers(name)
         `)
-        .in('burger_id', burgersData?.map(b => b.id) || [])
+        .in('burger_id', (burgersData as any[])?.map(b => b.id) || [])
         .order('created_at', { ascending: false })
         .limit(10);
 
