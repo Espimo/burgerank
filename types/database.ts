@@ -65,6 +65,9 @@ export type Database = {
           hours: string | null;
           average_rating: number;
           total_ratings: number;
+          delivery_url: string | null;
+          reservation_url: string | null;
+          website: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -77,6 +80,9 @@ export type Database = {
           hours?: string;
           average_rating?: number;
           total_ratings?: number;
+          delivery_url?: string;
+          reservation_url?: string;
+          website?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -88,6 +94,9 @@ export type Database = {
           hours?: string;
           average_rating?: number;
           total_ratings?: number;
+          delivery_url?: string;
+          reservation_url?: string;
+          website?: string;
           updated_at?: string;
         };
       };
@@ -262,6 +271,48 @@ export type Database = {
           type?: string;
           icon_emoji?: string;
           is_read?: boolean;
+        };
+      };
+      restaurant_promotions: {
+        Row: {
+          id: string;
+          restaurant_id: string;
+          title: string;
+          description: string | null;
+          discount_percentage: number | null;
+          valid_from: string | null;
+          valid_until: string | null;
+          terms: string | null;
+          is_active: boolean;
+          emoji: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          restaurant_id: string;
+          title: string;
+          description?: string;
+          discount_percentage?: number;
+          valid_from?: string;
+          valid_until?: string;
+          terms?: string;
+          is_active?: boolean;
+          emoji?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          restaurant_id?: string;
+          title?: string;
+          description?: string;
+          discount_percentage?: number;
+          valid_from?: string;
+          valid_until?: string;
+          terms?: string;
+          is_active?: boolean;
+          emoji?: string;
+          updated_at?: string;
         };
       };
     };

@@ -295,12 +295,13 @@ export default function ProfilePage() {
           <div className="font-semibold" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
             📊 Mi Top 3
           </div>
-          <button
+          <a
+            href="/profile/ratings"
             className="btn btn-secondary"
-            style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem', marginBottom: '1rem', width: '100%', textAlign: 'center' }}
+            style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem', marginBottom: '1rem', width: '100%', textAlign: 'center', textDecoration: 'none', display: 'block' }}
           >
             Ver Todo →
-          </button>
+          </a>
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem', background: 'rgba(251, 191, 36, 0.05)', borderRadius: '0.375rem', borderLeft: '3px solid #fbbf24', fontSize: '0.85rem' }}>
               <div>
@@ -328,12 +329,13 @@ export default function ProfilePage() {
           <div className="font-semibold" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
             ⭐ Últimas
           </div>
-          <button
+          <a
+            href="/profile/ratings"
             className="btn btn-secondary"
-            style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem', marginBottom: '1rem', width: '100%', textAlign: 'center' }}
+            style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem', marginBottom: '1rem', width: '100%', textAlign: 'center', textDecoration: 'none', display: 'block' }}
           >
             Ver Todo →
-          </button>
+          </a>
           <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
             <div
               style={{
