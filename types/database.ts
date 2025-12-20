@@ -11,6 +11,7 @@ export type Database = {
           points: number;
           category: string;
           public_profile: boolean;
+          is_admin: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -23,6 +24,7 @@ export type Database = {
           points?: number;
           category?: string;
           public_profile?: boolean;
+          is_admin?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -34,6 +36,7 @@ export type Database = {
           points?: number;
           category?: string;
           public_profile?: boolean;
+          is_admin?: boolean;
           updated_at?: string;
         };
       };

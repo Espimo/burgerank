@@ -1,1241 +1,1445 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAdmin } from '../contexts/AdminContext';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import './admin.css';
+import { useAuth } from '../contexts/AuthContext';
+import { createAdminClient } from '@/lib/supabase/client';
 
+// Types
 interface Restaurant {
-  id: number;
+  id: string;
   name: string;
-  city: string;
-  address: string;
-  phone: string;
-  hours: string;
-  website?: string;
-  description?: string;
-  rating: number;
-  reviews: number;
+  address: string | null;
+  phone: string | null;
+  hours: string | null;
+  website: string | null;
+  delivery_url: string | null;
+  reservation_url: string | null;
+  average_rating: number;
+  total_ratings: number;
+  city_id: string;
+  city?: { name: string };
 }
 
 interface Burger {
-  id: number;
+  id: string;
   name: string;
-  restaurantId: number;
-  type: string;
-  price: number;
-  rating: number;
-  reviews: number;
-  description: string;
-  tags: string[];
+  description: string | null;
+  restaurant_id: string;
+  city_id: string;
+  average_rating: number;
+  total_ratings: number;
+  position: number | null;
+  type: string | null;
+  tags: string[] | null;
+  restaurant?: { name: string };
+  city?: { name: string };
 }
 
 interface User {
-  id: number;
+  id: string;
   username: string;
   email: string;
-  category: string;
   points: number;
-  ratings: number;
-  registeredDate: string;
+  category: string;
+  is_admin: boolean;
+  created_at: string;
 }
 
-interface Request {
-  id: number;
-  username: string;
-  type: string;
-  details: string;
-  date: string;
-  status: 'pending' | 'approved';
+interface Promotion {
+  id: string;
+  restaurant_id: string;
+  title: string;
+  description: string | null;
+  discount_percentage: number | null;
+  valid_from: string | null;
+  valid_until: string | null;
+  is_active: boolean;
+  emoji: string | null;
+  restaurant?: { name: string };
+}
+
+interface City {
+  id: string;
+  name: string;
+  country: string | null;
 }
 
 interface Rating {
-  id: number;
-  username: string;
-  burger: string;
-  comment: string;
-  rating: number;
-  date: string;
-  status: 'pending' | 'verified';
+  id: string;
+  overall_rating: number;
+  comment: string | null;
+  created_at: string;
+  user?: { username: string };
+  burger?: { name: string; restaurant?: { name: string } };
 }
 
-interface Ticket {
-  id: number;
-  username: string;
-  burger: string;
-  restaurant: string;
-  price: number;
-  date: string;
-  status: 'pending' | 'verified';
-}
-
-interface ActivityLog {
-  type: string;
-  description: string;
-  date: string;
-}
-
-interface Data {
-  restaurants: Restaurant[];
-  burgers: Burger[];
-  requests: Request[];
-  ratings: Rating[];
-  tickets: Ticket[];
-  users: User[];
-  activityLog: ActivityLog[];
-}
-
-interface SearchFilters {
-  searchTerm: string;
-  filterType: string;
-  filterStatus: string;
-}
-
-const adminCredentials = { username: 'usuario_admin', password: 'admin123' };
+type ActiveSection = 'dashboard' | 'burgers' | 'restaurants' | 'users' | 'promotions' | 'ratings';
 
 export default function AdminPanel() {
-  const { loginAdmin, logoutAdmin } = useAdmin();
-  const [currentUser, setCurrentUser] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState('dashboard');
-  const [data, setData] = useState<Data>({
-    restaurants: [],
-    burgers: [],
-    requests: [],
-    ratings: [],
-    tickets: [],
-    users: [],
-    activityLog: []
+  const router = useRouter();
+  const { isAdmin, adminLoading } = useAdmin();
+  const { authUser, loading: authLoading, userProfile } = useAuth();
+  
+  const [activeSection, setActiveSection] = useState<ActiveSection>('dashboard');
+  const [loading, setLoading] = useState(true);
+  
+  // Data states
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [burgers, setBurgers] = useState<Burger[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+  const [ratings, setRatings] = useState<Rating[]>([]);
+  
+  // Stats
+  const [stats, setStats] = useState({
+    totalBurgers: 0,
+    totalRestaurants: 0,
+    totalUsers: 0,
+    totalRatings: 0,
+    activePromotions: 0
   });
-  const [alert, setAlert] = useState({ message: '', type: '' });
-  const [selectedModal, setSelectedModal] = useState<any>(null);
-  const [tags, setTags] = useState<string[]>([]);
-  const [searchFilters, setSearchFilters] = useState<SearchFilters>({ searchTerm: '', filterType: '', filterStatus: '' });
+
+  // Modal states
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [modalType, setModalType] = useState<'burger' | 'restaurant' | 'promotion' | 'user' | null>(null);
+  const [showModal, setShowModal] = useState(false);
 
-  // Cargar datos
+  // Check authentication and admin status
   useEffect(() => {
-    const saved = localStorage.getItem('burgerankAdminData');
-    if (saved) {
-      setData(JSON.parse(saved));
+    if (!authLoading && !adminLoading) {
+      if (!authUser) {
+        router.push('/auth/signin');
+        return;
+      }
+      if (!isAdmin) {
+        router.push('/');
+        return;
+      }
+      loadAllData();
+    }
+  }, [authUser, isAdmin, authLoading, adminLoading, router]);
+
+  const loadAllData = async () => {
+    setLoading(true);
+    const supabase = createAdminClient();
+
+    try {
+      // Load cities
+      const { data: citiesData } = await supabase
+        .from('cities')
+        .select('*')
+        .order('name');
+      if (citiesData) setCities(citiesData);
+
+      // Load restaurants with city
+      const { data: restaurantsData } = await supabase
+        .from('restaurants')
+        .select('*, city:cities(name)')
+        .order('name');
+      if (restaurantsData) setRestaurants(restaurantsData);
+
+      // Load burgers with restaurant and city
+      const { data: burgersData } = await supabase
+        .from('burgers')
+        .select('*, restaurant:restaurants(name), city:cities(name)')
+        .order('position', { ascending: true, nullsFirst: false });
+      if (burgersData) setBurgers(burgersData);
+
+      // Load users
+      const { data: usersData } = await supabase
+        .from('users')
+        .select('id, username, email, points, category, is_admin, created_at')
+        .order('created_at', { ascending: false });
+      if (usersData) setUsers(usersData);
+
+      // Load promotions with restaurant
+      const { data: promotionsData } = await supabase
+        .from('restaurant_promotions')
+        .select('*, restaurant:restaurants(name)')
+        .order('created_at', { ascending: false });
+      if (promotionsData) setPromotions(promotionsData);
+
+      // Load recent ratings
+      const { data: ratingsData } = await supabase
+        .from('ratings')
+        .select('*, user:users(username), burger:burgers(name, restaurant:restaurants(name))')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (ratingsData) setRatings(ratingsData);
+
+      // Calculate stats
+      setStats({
+        totalBurgers: burgersData?.length || 0,
+        totalRestaurants: restaurantsData?.length || 0,
+        totalUsers: usersData?.length || 0,
+        totalRatings: ratingsData?.length || 0,
+        activePromotions: (promotionsData as any[] || []).filter((p: any) => p.is_active).length
+      });
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // CRUD Operations
+  const handleSaveBurger = async (burger: Partial<Burger>) => {
+    const supabase = createAdminClient();
+    
+    if (burger.id) {
+      const { error } = await supabase
+        .from('burgers')
+        .update({
+          name: burger.name,
+          description: burger.description,
+          restaurant_id: burger.restaurant_id,
+          city_id: burger.city_id,
+          type: burger.type,
+          tags: burger.tags,
+          position: burger.position
+        })
+        .eq('id', burger.id);
+      
+      if (error) {
+        alert('Error actualizando hamburguesa: ' + error.message);
+        return;
+      }
     } else {
-      initializeSampleData();
-    }
-  }, []);
-
-  // Guardar datos
-  const saveData = (newData: Data) => {
-    setData(newData);
-    localStorage.setItem('burgerankAdminData', JSON.stringify(newData));
-  };
-
-  const initializeSampleData = () => {
-    const initialData: Data = {
-      restaurants: [
-        { id: 1, name: 'Burger Palace', city: 'Madrid', address: 'Calle Principal 123', phone: '+34 91 234 5678', hours: '12:00-23:30', website: 'www.burgerpalace.es', rating: 4.8, reviews: 245 },
-        { id: 2, name: 'The Smokehouse', city: 'Barcelona', address: 'Paseo de Gracia 456', phone: '+34 93 234 5678', hours: '13:00-22:30', website: 'www.smokehouse.es', rating: 4.7, reviews: 189 }
-      ],
-      burgers: [
-        { id: 1, name: 'The King', restaurantId: 1, type: 'premium', price: 12.99, rating: 9.7, reviews: 52, description: 'Doble carne, queso cheddar, bacon, lechuga y tomate', tags: ['Jugosa', 'Doble Carne', 'Premium'] },
-        { id: 2, name: 'Smoky BBQ Delight', restaurantId: 2, type: 'premium', price: 13.99, rating: 9.5, reviews: 45, description: 'Carne ahumada con salsa BBQ premium', tags: ['Ahumada', 'BBQ', 'Specialty'] }
-      ],
-      users: [
-        { id: 1, username: 'usuario_burguer', email: 'usuario@burgerank.es', category: 'Burger Fan', points: 120, ratings: 8, registeredDate: '2025-01-15' },
-        { id: 2, username: 'foodlover_madrid', email: 'foodlover@burgerank.es', category: 'Burger Lover', points: 245, ratings: 15, registeredDate: '2025-01-10' }
-      ],
-      requests: [
-        { id: 1, username: 'nuevo_usuario', type: 'Nuevo Restaurante', details: 'Hamburguesa Express en Sevilla', date: '2025-01-20', status: 'pending' }
-      ],
-      ratings: [
-        { id: 1, username: 'usuario_burguer', burger: 'The King', comment: 'Excelente hamburguesa', rating: 5, date: '2025-01-19', status: 'pending' }
-      ],
-      tickets: [
-        { id: 1, username: 'foodlover_madrid', burger: 'The King', restaurant: 'Burger Palace', price: 12.99, date: '2025-01-18', status: 'pending' }
-      ],
-      activityLog: []
-    };
-    saveData(initialData);
-  };
-
-  const showAlert = (message: string, type: string) => {
-    setAlert({ message, type });
-    setTimeout(() => setAlert({ message: '', type: '' }), 3000);
-  };
-
-  const addActivityLog = (type: string, description: string) => {
-    const now = new Date();
-    const date = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
-    const newData = { ...data, activityLog: [...data.activityLog, { type, description, date }] };
-    saveData(newData);
-  };
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    const username = formData.get('username') as string;
-    const password = formData.get('password') as string;
-
-    if (username === adminCredentials.username && password === adminCredentials.password) {
-      setCurrentUser(username);
-      loginAdmin(username);
-      addActivityLog('Inicio de sesión', `${username} inició sesión`);
-      showAlert('✅ Sesión iniciada', 'success');
-    } else {
-      showAlert('❌ Usuario o contraseña incorrectos', 'error');
-    }
-  };
-
-  const handleLogout = () => {
-    if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
-      addActivityLog('Cierre de sesión', `${currentUser} cerró sesión`);
-      setCurrentUser(null);
-      logoutAdmin();
-    }
-  };
-
-  const handleAddRestaurant = (e: React.FormEvent) => {
-    e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    
-    const name = (formData.get('restName') as string).trim();
-    const city = formData.get('restCity') as string;
-    const address = (formData.get('restAddress') as string).trim();
-    const phone = (formData.get('restPhone') as string).trim();
-
-    if (!name || !city || !address || !phone) {
-      showAlert('❌ Por favor completa todos los campos obligatorios', 'error');
-      return;
-    }
-
-    if (data.restaurants.some(r => r.name.toLowerCase() === name.toLowerCase())) {
-      showAlert('❌ Ya existe un restaurante con este nombre', 'error');
-      return;
-    }
-    
-    const newRestaurant: Restaurant = {
-      id: data.restaurants.length + 1,
-      name,
-      city,
-      address,
-      phone,
-      hours: formData.get('restHours') as string,
-      website: formData.get('restWebsite') as string,
-      description: formData.get('restDescription') as string,
-      rating: 0,
-      reviews: 0
-    };
-
-    const newData = { ...data, restaurants: [...data.restaurants, newRestaurant] };
-    saveData(newData);
-    showAlert(`✅ Restaurante "${newRestaurant.name}" creado exitosamente`, 'success');
-    (e.target as HTMLFormElement).reset();
-    addActivityLog('Crear Restaurante', `Se creó: ${newRestaurant.name}`);
-  };
-
-  const handleAddBurger = (e: React.FormEvent) => {
-    e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    
-    const name = (formData.get('burgerName') as string).trim();
-    const price = parseFloat(formData.get('burgerPrice') as string);
-
-    if (!name || !price || price <= 0) {
-      showAlert('❌ Por favor completa todos los campos requeridos correctamente', 'error');
-      return;
-    }
-
-    if (data.burgers.some(b => b.name.toLowerCase() === name.toLowerCase())) {
-      showAlert('❌ Ya existe una hamburguesa con este nombre', 'error');
-      return;
-    }
-    
-    const newBurger: Burger = {
-      id: data.burgers.length + 1,
-      name,
-      restaurantId: parseInt(formData.get('burgerRestaurant') as string),
-      type: formData.get('burgerType') as string,
-      price,
-      description: formData.get('burgerDescription') as string,
-      tags: tags,
-      rating: 0,
-      reviews: 0
-    };
-
-    const newData = { ...data, burgers: [...data.burgers, newBurger] };
-    saveData(newData);
-    showAlert(`✅ Hamburguesa "${newBurger.name}" creada exitosamente`, 'success');
-    (e.target as HTMLFormElement).reset();
-    setTags([]);
-    addActivityLog('Crear Hamburguesa', `Se creó: ${newBurger.name}`);
-  };
-
-  const handleDeleteRestaurant = (id: number) => {
-    if (confirm('¿Estás seguro de que deseas eliminar este restaurante?')) {
-      const rest = data.restaurants.find(r => r.id === id);
-      const newData = {
-        ...data,
-        restaurants: data.restaurants.filter(r => r.id !== id),
-        burgers: data.burgers.filter(b => b.restaurantId !== id)
-      };
-      saveData(newData);
-      showAlert(`✅ Restaurante "${rest?.name}" eliminado`, 'success');
-      addActivityLog('Eliminar Restaurante', `Se eliminó: ${rest?.name}`);
-    }
-  };
-
-  const handleDeleteBurger = (id: number) => {
-    if (confirm('¿Estás seguro de que deseas eliminar esta hamburguesa?')) {
-      const burger = data.burgers.find(b => b.id === id);
-      const newData = {
-        ...data,
-        burgers: data.burgers.filter(b => b.id !== id)
-      };
-      saveData(newData);
-      showAlert(`✅ Hamburguesa "${burger?.name}" eliminada`, 'success');
-      addActivityLog('Eliminar Hamburguesa', `Se eliminó: ${burger?.name}`);
-    }
-  };
-
-  const handleEditRestaurant = (e: React.FormEvent, id: number) => {
-    e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    
-    const updatedRestaurants = data.restaurants.map(r => 
-      r.id === id ? {
-        ...r,
-        name: formData.get('restName') as string,
-        city: formData.get('restCity') as string,
-        address: formData.get('restAddress') as string,
-        phone: formData.get('restPhone') as string,
-        hours: formData.get('restHours') as string,
-        website: formData.get('restWebsite') as string,
-        description: formData.get('restDescription') as string
-      } : r
-    );
-    
-    const newData = { ...data, restaurants: updatedRestaurants };
-    saveData(newData);
-    showAlert(`✅ Restaurante actualizado`, 'success');
-    setEditingItem(null);
-    addActivityLog('Editar Restaurante', `Se actualizó: ${data.restaurants.find(r => r.id === id)?.name}`);
-  };
-
-  const handleEditBurger = (e: React.FormEvent, id: number) => {
-    e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    
-    const updatedBurgers = data.burgers.map(b => 
-      b.id === id ? {
-        ...b,
-        name: formData.get('burgerName') as string,
-        restaurantId: parseInt(formData.get('burgerRestaurant') as string),
-        type: formData.get('burgerType') as string,
-        price: parseFloat(formData.get('burgerPrice') as string),
-        description: formData.get('burgerDescription') as string,
-        tags: tags
-      } : b
-    );
-    
-    const newData = { ...data, burgers: updatedBurgers };
-    saveData(newData);
-    showAlert(`✅ Hamburguesa actualizada`, 'success');
-    setEditingItem(null);
-    setTags([]);
-    addActivityLog('Editar Hamburguesa', `Se actualizó: ${data.burgers.find(b => b.id === id)?.name}`);
-  };
-
-  const handleBlockUser = (id: number) => {
-    const newUsers = data.users.map(u => u.id === id ? { ...u, category: 'Bloqueado' } : u);
-    const newData = { ...data, users: newUsers };
-    saveData(newData);
-    showAlert('✅ Usuario bloqueado', 'success');
-    addActivityLog('Bloquear Usuario', `Se bloqueó usuario`);
-  };
-
-  const handleApproveRequest = (id: number) => {
-    const newRequests = data.requests.map(r => r.id === id ? { ...r, status: 'approved' as const } : r);
-    const newData = { ...data, requests: newRequests };
-    saveData(newData);
-    showAlert('✅ Solicitud aprobada', 'success');
-    addActivityLog('Aprobar Solicitud', `Se aprobó solicitud`);
-  };
-
-  const handleRejectRequest = (id: number) => {
-    const req = data.requests.find(r => r.id === id);
-    const newData = { ...data, requests: data.requests.filter(r => r.id !== id) };
-    saveData(newData);
-    showAlert('✅ Solicitud rechazada', 'success');
-    addActivityLog('Rechazar Solicitud', `Se rechazó solicitud de ${req?.username}`);
-  };
-
-  const handleVerifyRating = (index: number) => {
-    const newRatings = [...data.ratings];
-    newRatings[index].status = 'verified';
-    const newData = { ...data, ratings: newRatings };
-    saveData(newData);
-    showAlert('✅ Valoración verificada', 'success');
-    addActivityLog('Verificar Valoración', `Se verificó valoración`);
-  };
-
-  const handleDeleteRating = (index: number) => {
-    const rating = data.ratings[index];
-    const newRatings = data.ratings.filter((_, i) => i !== index);
-    const newData = { ...data, ratings: newRatings };
-    saveData(newData);
-    showAlert('✅ Valoración rechazada', 'success');
-    addActivityLog('Rechazar Valoración', `Se rechazó valoración de ${rating.username}`);
-  };
-
-  const handleVerifyTicket = (index: number) => {
-    const newTickets = [...data.tickets];
-    newTickets[index].status = 'verified';
-    const newData = { ...data, tickets: newTickets };
-    saveData(newData);
-    showAlert('✅ Ticket verificado', 'success');
-    addActivityLog('Verificar Ticket', `Se verificó ticket`);
-  };
-
-  const addTag = (tag: string) => {
-    if (tag && !tags.includes(tag)) {
-      setTags([...tags, tag]);
-    }
-  };
-
-  const removeTag = (index: number) => {
-    setTags(tags.filter((_, i) => i !== index));
-  };
-
-  const getFilteredRestaurants = () => {
-    return data.restaurants.filter(r =>
-      r.name.toLowerCase().includes(searchFilters.searchTerm.toLowerCase()) ||
-      r.city.toLowerCase().includes(searchFilters.searchTerm.toLowerCase())
-    );
-  };
-
-  const getFilteredBurgers = () => {
-    return data.burgers.filter(b =>
-      (b.name.toLowerCase().includes(searchFilters.searchTerm.toLowerCase()) ||
-       data.restaurants.find(r => r.id === b.restaurantId)?.name.toLowerCase().includes(searchFilters.searchTerm.toLowerCase())) &&
-      (!searchFilters.filterType || b.type === searchFilters.filterType)
-    );
-  };
-
-  const getFilteredUsers = () => {
-    return data.users.filter(u =>
-      u.username.toLowerCase().includes(searchFilters.searchTerm.toLowerCase()) &&
-      (!searchFilters.filterStatus || u.category.includes(searchFilters.filterStatus))
-    );
-  };
-
-  const getFilteredRatings = () => {
-    return data.ratings.filter(r =>
-      r.username.toLowerCase().includes(searchFilters.searchTerm.toLowerCase()) &&
-      (!searchFilters.filterStatus || r.status === searchFilters.filterStatus)
-    );
-  };
-
-  const getFilteredTickets = () => {
-    return data.tickets.filter(t =>
-      t.username.toLowerCase().includes(searchFilters.searchTerm.toLowerCase()) &&
-      (!searchFilters.filterStatus || t.status === searchFilters.filterStatus)
-    );
-  };
-
-  const handleRejectTicket = (index: number) => {
-    const ticket = data.tickets[index];
-    const newTickets = data.tickets.filter((_, i) => i !== index);
-    const newData = { ...data, tickets: newTickets };
-    saveData(newData);
-    showAlert('✅ Ticket rechazado', 'success');
-    addActivityLog('Rechazar Ticket', `Se rechazó ticket de ${ticket.username}`);
-  };
-
-  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const input = e.target as HTMLInputElement;
-      if (input.value.trim()) {
-        setTags([...tags, input.value.trim()]);
-        input.value = '';
+      const { error } = await supabase
+        .from('burgers')
+        .insert({
+          name: burger.name,
+          description: burger.description,
+          restaurant_id: burger.restaurant_id,
+          city_id: burger.city_id,
+          type: burger.type,
+          tags: burger.tags,
+          position: burger.position
+        });
+      
+      if (error) {
+        alert('Error creando hamburguesa: ' + error.message);
+        return;
       }
     }
+    
+    setShowModal(false);
+    setEditingItem(null);
+    loadAllData();
   };
 
-  const handleRemoveTag = (index: number) => {
-    setTags(tags.filter((_, i) => i !== index));
+  const handleSaveRestaurant = async (restaurant: Partial<Restaurant>) => {
+    const supabase = createAdminClient();
+    
+    if (restaurant.id) {
+      const { error } = await supabase
+        .from('restaurants')
+        .update({
+          name: restaurant.name,
+          address: restaurant.address,
+          phone: restaurant.phone,
+          hours: restaurant.hours,
+          website: restaurant.website,
+          delivery_url: restaurant.delivery_url,
+          reservation_url: restaurant.reservation_url,
+          city_id: restaurant.city_id
+        })
+        .eq('id', restaurant.id);
+      
+      if (error) {
+        alert('Error actualizando restaurante: ' + error.message);
+        return;
+      }
+    } else {
+      const { error } = await supabase
+        .from('restaurants')
+        .insert({
+          name: restaurant.name,
+          address: restaurant.address,
+          phone: restaurant.phone,
+          hours: restaurant.hours,
+          website: restaurant.website,
+          delivery_url: restaurant.delivery_url,
+          reservation_url: restaurant.reservation_url,
+          city_id: restaurant.city_id
+        });
+      
+      if (error) {
+        alert('Error creando restaurante: ' + error.message);
+        return;
+      }
+    }
+    
+    setShowModal(false);
+    setEditingItem(null);
+    loadAllData();
   };
 
-  // LOGIN
-  if (!currentUser) {
+  const handleSavePromotion = async (promotion: Partial<Promotion>) => {
+    const supabase = createAdminClient();
+    
+    if (promotion.id) {
+      const { error } = await supabase
+        .from('restaurant_promotions')
+        .update({
+          title: promotion.title,
+          description: promotion.description,
+          discount_percentage: promotion.discount_percentage,
+          valid_from: promotion.valid_from,
+          valid_until: promotion.valid_until,
+          is_active: promotion.is_active,
+          emoji: promotion.emoji,
+          restaurant_id: promotion.restaurant_id
+        })
+        .eq('id', promotion.id);
+      
+      if (error) {
+        alert('Error actualizando promoción: ' + error.message);
+        return;
+      }
+    } else {
+      const { error } = await supabase
+        .from('restaurant_promotions')
+        .insert({
+          title: promotion.title,
+          description: promotion.description,
+          discount_percentage: promotion.discount_percentage,
+          valid_from: promotion.valid_from,
+          valid_until: promotion.valid_until,
+          is_active: promotion.is_active ?? true,
+          emoji: promotion.emoji,
+          restaurant_id: promotion.restaurant_id
+        });
+      
+      if (error) {
+        alert('Error creando promoción: ' + error.message);
+        return;
+      }
+    }
+    
+    setShowModal(false);
+    setEditingItem(null);
+    loadAllData();
+  };
+
+  const handleToggleAdmin = async (userId: string, currentStatus: boolean) => {
+    if (userId === authUser?.id) {
+      alert('No puedes modificar tu propio rol de administrador');
+      return;
+    }
+    
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from('users')
+      .update({ is_admin: !currentStatus })
+      .eq('id', userId);
+    
+    if (error) {
+      alert('Error actualizando usuario: ' + error.message);
+      return;
+    }
+    
+    loadAllData();
+  };
+
+  const handleDelete = async (type: 'burger' | 'restaurant' | 'promotion' | 'rating', id: string) => {
+    if (!confirm('¿Estás seguro de eliminar este elemento?')) return;
+    
+    const supabase = createAdminClient();
+    let tableName = '';
+    
+    switch (type) {
+      case 'burger': tableName = 'burgers'; break;
+      case 'restaurant': tableName = 'restaurants'; break;
+      case 'promotion': tableName = 'restaurant_promotions'; break;
+      case 'rating': tableName = 'ratings'; break;
+    }
+    
+    const { error } = await supabase.from(tableName).delete().eq('id', id);
+    
+    if (error) {
+      alert('Error eliminando: ' + error.message);
+      return;
+    }
+    
+    loadAllData();
+  };
+
+  // Loading state
+  if (authLoading || adminLoading || loading) {
     return (
-      <div className="login-container">
-        <div className="login-box">
-          <h1>🍔 BurgeRank</h1>
-          <p>Panel Administrativo</p>
-          <form onSubmit={handleLogin}>
-            <div className="form-group">
-              <label htmlFor="username">Usuario</label>
-              <input type="text" id="username" name="username" placeholder="usuario_admin" required />
-            </div>
-            <div className="form-group">
-              <label htmlFor="password">Contraseña</label>
-              <input type="password" id="password" name="password" placeholder="••••••••" required />
-            </div>
-            <button type="submit" className="btn-submit">Iniciar Sesión</button>
-            <p style={{ marginTop: '20px', fontSize: '12px', textAlign: 'center', color: '#6b7280' }}>
-              Demo: usuario_admin / admin123
-            </p>
-          </form>
-        </div>
+      <div style={styles.loadingContainer}>
+        <div style={styles.loadingSpinner}>🍔</div>
+        <div>Cargando panel de administración...</div>
       </div>
     );
   }
 
-  // ADMIN PANEL
+  // Access denied
+  if (!isAdmin) {
+    return (
+      <div style={styles.loadingContainer}>
+        <div style={styles.loadingSpinner}>🚫</div>
+        <div>Acceso denegado</div>
+        <Link href="/" style={styles.backLink}>Volver al inicio</Link>
+      </div>
+    );
+  }
+
   return (
-    <div className="admin-container">
-      <div className="sidebar">
-        <div className="sidebar-header">
-          <span style={{ fontSize: '24px' }}>🍔</span>
-          <h2>BurgeRank Admin</h2>
+    <div style={styles.container}>
+      {/* Sidebar */}
+      <aside style={styles.sidebar}>
+        <div style={styles.sidebarHeader}>
+          <h1 style={styles.logo}>🍔 BurgeRank</h1>
+          <span style={styles.adminBadge}>Admin</span>
         </div>
-        <ul className="sidebar-menu">
-          <li><button className={activeSection === 'dashboard' ? 'active' : ''} onClick={() => setActiveSection('dashboard')}>📊 Dashboard</button></li>
-          <li><button className={activeSection === 'restaurants' ? 'active' : ''} onClick={() => setActiveSection('restaurants')}>🏪 Restaurantes</button></li>
-          <li><button className={activeSection === 'burgers' ? 'active' : ''} onClick={() => setActiveSection('burgers')}>🍟 Hamburguesas</button></li>
-          <li><button className={activeSection === 'requests' ? 'active' : ''} onClick={() => setActiveSection('requests')}>📋 Solicitudes</button></li>
-          <li><button className={activeSection === 'ratings' ? 'active' : ''} onClick={() => setActiveSection('ratings')}>⭐ Valoraciones</button></li>
-          <li><button className={activeSection === 'tickets' ? 'active' : ''} onClick={() => setActiveSection('tickets')}>🎫 Tickets</button></li>
-          <li><button className={activeSection === 'users' ? 'active' : ''} onClick={() => setActiveSection('users')}>👥 Usuarios</button></li>
-        </ul>
-      </div>
-
-      <div className="main-content">
-        <div className="header-bar">
-          <h1>
-            {{
-              dashboard: '📊 Dashboard',
-              restaurants: '🏪 Restaurantes',
-              burgers: '🍟 Hamburguesas',
-              requests: '📋 Solicitudes',
-              ratings: '⭐ Valoraciones',
-              tickets: '🎫 Tickets',
-              users: '👥 Usuarios'
-            }[activeSection]}
-          </h1>
-          <div className="user-info">
-            <span>Bienvenido, {currentUser}</span>
-            <button className="logout-btn" onClick={handleLogout}>Cerrar Sesión</button>
+        
+        <nav style={styles.nav}>
+          {[
+            { id: 'dashboard', icon: '📊', label: 'Dashboard' },
+            { id: 'burgers', icon: '🍔', label: 'Hamburguesas' },
+            { id: 'restaurants', icon: '🏪', label: 'Restaurantes' },
+            { id: 'promotions', icon: '🎉', label: 'Promociones' },
+            { id: 'users', icon: '👥', label: 'Usuarios' },
+            { id: 'ratings', icon: '⭐', label: 'Valoraciones' },
+          ].map(item => (
+            <button
+              key={item.id}
+              onClick={() => setActiveSection(item.id as ActiveSection)}
+              style={{
+                ...styles.navButton,
+                ...(activeSection === item.id ? styles.navButtonActive : {})
+              }}
+            >
+              <span style={styles.navIcon}>{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        
+        <div style={styles.sidebarFooter}>
+          <div style={styles.userInfo}>
+            <span>👤 {userProfile?.username}</span>
           </div>
+          <Link href="/" style={styles.exitButton}>
+            ← Volver a la app
+          </Link>
         </div>
+      </aside>
 
-        {alert.message && (
-          <div className={`alert alert-${alert.type} active`}>
-            {alert.message}
-          </div>
-        )}
-
-        {/* DASHBOARD */}
+      {/* Main Content */}
+      <main style={styles.main}>
         {activeSection === 'dashboard' && (
-          <div className="section active">
-            <h2>📊 Dashboard General</h2>
-            <div className="stats-grid">
-              <div className="stat-card">
-                <h3>Total Restaurantes</h3>
-                <div className="value">{data.restaurants.length}</div>
-              </div>
-              <div className="stat-card">
-                <h3>Total Hamburguesas</h3>
-                <div className="value">{data.burgers.length}</div>
-              </div>
-              <div className="stat-card">
-                <h3>Valoraciones Pendientes</h3>
-                <div className="value">{data.ratings.filter(r => r.status === 'pending').length}</div>
-              </div>
-              <div className="stat-card">
-                <h3>Tickets Sin Verificar</h3>
-                <div className="value">{data.tickets.filter(t => t.status === 'pending').length}</div>
-              </div>
-              <div className="stat-card">
-                <h3>Usuarios Totales</h3>
-                <div className="value">{data.users.length}</div>
-              </div>
-              <div className="stat-card">
-                <h3>Solicitudes Pendientes</h3>
-                <div className="value">{data.requests.filter(r => r.status === 'pending').length}</div>
-              </div>
-            </div>
-
-            <div className="table-container">
-              <h2 style={{ padding: '20px', color: '#fbbf24' }}>Actividad Reciente</h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Tipo</th>
-                    <th>Descripción</th>
-                    <th>Fecha</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.activityLog.slice(-5).reverse().map((log, idx) => (
-                    <tr key={idx}>
-                      <td>{log.type}</td>
-                      <td>{log.description}</td>
-                      <td>{log.date}</td>
-                      <td><span className="status-badge status-approved">✓ Completado</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <DashboardSection stats={stats} />
         )}
-
-        {/* RESTAURANTES */}
-        {activeSection === 'restaurants' && (
-          <div className="section active">
-            <h2>🏪 Gestión de Restaurantes</h2>
-            
-            <div className="search-bar">
-              <input 
-                type="text" 
-                placeholder="🔍 Buscar restaurante..." 
-                value={searchFilters.searchTerm}
-                onChange={(e) => setSearchFilters({ ...searchFilters, searchTerm: e.target.value })}
-              />
-            </div>
-
-            {!editingItem || editingItem.type !== 'restaurant' ? (
-              <div className="form-container">
-                <h3 style={{ color: '#fbbf24', marginBottom: '15px' }}>➕ Añadir Nuevo Restaurante</h3>
-                <form onSubmit={handleAddRestaurant}>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Nombre del Restaurante</label>
-                      <input type="text" name="restName" placeholder="Ej: Burger Palace" required />
-                    </div>
-                    <div className="form-group">
-                      <label>Ciudad</label>
-                      <select name="restCity" required>
-                        <option value="">Selecciona una ciudad</option>
-                        <option value="Madrid">Madrid</option>
-                        <option value="Barcelona">Barcelona</option>
-                        <option value="Valencia">Valencia</option>
-                        <option value="Sevilla">Sevilla</option>
-                        <option value="Bilbao">Bilbao</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Dirección</label>
-                      <input type="text" name="restAddress" placeholder="Calle Principal 123" required />
-                    </div>
-                    <div className="form-group">
-                      <label>Teléfono</label>
-                      <input type="tel" name="restPhone" placeholder="+34 91 234 5678" required />
-                    </div>
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Horario</label>
-                      <input type="text" name="restHours" placeholder="12:00-23:30" required />
-                    </div>
-                    <div className="form-group">
-                      <label>Sitio Web</label>
-                      <input type="url" name="restWebsite" placeholder="www.example.es" />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label>Descripción</label>
-                    <textarea name="restDescription" placeholder="Descripción del restaurante..."></textarea>
-                  </div>
-                  <button type="submit" className="btn-submit">➕ Crear Restaurante</button>
-                </form>
-              </div>
-            ) : (
-              <div className="form-container">
-                <h3 style={{ color: '#fbbf24', marginBottom: '15px' }}>✏️ Editar Restaurante</h3>
-                <form onSubmit={(e) => handleEditRestaurant(e, editingItem.data.id)}>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Nombre del Restaurante</label>
-                      <input type="text" name="restName" defaultValue={editingItem.data.name} required />
-                    </div>
-                    <div className="form-group">
-                      <label>Ciudad</label>
-                      <select name="restCity" defaultValue={editingItem.data.city} required>
-                        <option value="">Selecciona una ciudad</option>
-                        <option value="Madrid">Madrid</option>
-                        <option value="Barcelona">Barcelona</option>
-                        <option value="Valencia">Valencia</option>
-                        <option value="Sevilla">Sevilla</option>
-                        <option value="Bilbao">Bilbao</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Dirección</label>
-                      <input type="text" name="restAddress" defaultValue={editingItem.data.address} required />
-                    </div>
-                    <div className="form-group">
-                      <label>Teléfono</label>
-                      <input type="tel" name="restPhone" defaultValue={editingItem.data.phone} required />
-                    </div>
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Horario</label>
-                      <input type="text" name="restHours" defaultValue={editingItem.data.hours} required />
-                    </div>
-                    <div className="form-group">
-                      <label>Sitio Web</label>
-                      <input type="url" name="restWebsite" defaultValue={editingItem.data.website} />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label>Descripción</label>
-                    <textarea name="restDescription" defaultValue={editingItem.data.description}></textarea>
-                  </div>
-                  <div className="form-row">
-                    <button type="submit" className="btn-submit">💾 Guardar Cambios</button>
-                    <button type="button" className="btn-cancel" onClick={() => setEditingItem(null)}>❌ Cancelar</button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Ciudad</th>
-                    <th>Teléfono</th>
-                    <th>Rating</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {getFilteredRestaurants().length === 0 ? (
-                    <tr><td colSpan={5} className="empty-state"><div className="empty-state-icon">📭</div>No hay restaurantes</td></tr>
-                  ) : (
-                    getFilteredRestaurants().map(rest => (
-                      <tr key={rest.id}>
-                        <td><strong>{rest.name}</strong></td>
-                        <td>{rest.city}</td>
-                        <td>{rest.phone}</td>
-                        <td><span className="rating-stars">{'★'.repeat(Math.round(rest.rating))}☆</span> {rest.rating.toFixed(1)}</td>
-                        <td>
-                          <div className="action-buttons">
-                            <button className="btn-small btn-view" onClick={() => setSelectedModal({ type: 'restaurant', data: rest })}>👁️ Ver</button>
-                            <button className="btn-small btn-edit" onClick={() => setEditingItem({ type: 'restaurant', data: rest })}>✏️ Editar</button>
-                            <button className="btn-small btn-delete" onClick={() => handleDeleteRestaurant(rest.id)}>🗑️ Eliminar</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* HAMBURGUESAS */}
+        
         {activeSection === 'burgers' && (
-          <div className="section active">
-            <h2>🍟 Gestión de Hamburguesas</h2>
-            
-            <div className="search-bar">
-              <input 
-                type="text" 
-                placeholder="🔍 Buscar hamburguesa..." 
-                value={searchFilters.searchTerm}
-                onChange={(e) => setSearchFilters({ ...searchFilters, searchTerm: e.target.value })}
-              />
-              <select 
-                value={searchFilters.filterType}
-                onChange={(e) => setSearchFilters({ ...searchFilters, filterType: e.target.value })}
-                style={{ marginLeft: '10px' }}
-              >
-                <option value="">Todos los tipos</option>
-                <option value="classic">Clásica</option>
-                <option value="premium">Premium</option>
-                <option value="specialty">Especial</option>
-              </select>
-            </div>
-
-            {!editingItem || editingItem.type !== 'burger' ? (
-              <div className="form-container">
-                <h3 style={{ color: '#fbbf24', marginBottom: '15px' }}>➕ Añadir Nueva Hamburguesa</h3>
-                <form onSubmit={handleAddBurger}>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Nombre de la Hamburguesa</label>
-                      <input type="text" name="burgerName" placeholder="Ej: The King" required />
-                    </div>
-                    <div className="form-group">
-                      <label>Restaurante</label>
-                      <select name="burgerRestaurant" required>
-                        <option value="">Selecciona un restaurante</option>
-                        {data.restaurants.map(rest => (
-                          <option key={rest.id} value={rest.id}>{rest.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Tipo</label>
-                    <select name="burgerType" required>
-                      <option value="premium">Premium</option>
-                      <option value="clásica">Clásica</option>
-                      <option value="doble">Doble Carne</option>
-                      <option value="vegana">Vegana</option>
-                      <option value="especial">Especial</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Precio</label>
-                    <input type="number" name="burgerPrice" placeholder="12.99" step="0.01" required />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>Descripción</label>
-                  <textarea name="burgerDescription" placeholder="Descripción de la hamburguesa..." required></textarea>
-                </div>
-                <div className="form-group">
-                  <label>Tags (escribe y presiona Enter)</label>
-                  <div className="tags-input">
-                    {tags.map((tag, idx) => (
-                      <div key={idx} className="tag">
-                        {tag}
-                        <button type="button" onClick={() => removeTag(idx)}>✕</button>
-                      </div>
-                    ))}
-                    <input 
-                      type="text" 
-                      className="tag-input" 
-                      onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(e.currentTarget.value); e.currentTarget.value = ''; } }} 
-                      placeholder="Añade tags..." 
-                    />
-                  </div>
-                </div>
-                <button type="submit" className="btn-submit">➕ Crear Hamburguesa</button>
-              </form>
-            </div>
-            ) : (
-              <div className="form-container">
-                <h3 style={{ color: '#fbbf24', marginBottom: '15px' }}>✏️ Editar Hamburguesa</h3>
-                <form onSubmit={(e) => handleEditBurger(e, editingItem.data.id)}>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Nombre de la Hamburguesa</label>
-                      <input type="text" name="burgerName" defaultValue={editingItem.data.name} required />
-                    </div>
-                    <div className="form-group">
-                      <label>Restaurante</label>
-                      <select name="burgerRestaurant" defaultValue={editingItem.data.restaurantId} required>
-                        <option value="">Selecciona un restaurante</option>
-                        {data.restaurants.map(rest => (
-                          <option key={rest.id} value={rest.id}>{rest.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Tipo</label>
-                    <select name="burgerType" defaultValue={editingItem.data.type} required>
-                      <option value="premium">Premium</option>
-                      <option value="clásica">Clásica</option>
-                      <option value="doble">Doble Carne</option>
-                      <option value="vegana">Vegana</option>
-                      <option value="especial">Especial</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Precio</label>
-                    <input type="number" name="burgerPrice" defaultValue={editingItem.data.price} step="0.01" required />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>Descripción</label>
-                  <textarea name="burgerDescription" defaultValue={editingItem.data.description} required></textarea>
-                </div>
-                <div className="form-group">
-                  <label>Tags</label>
-                  <div className="tags-input">
-                    {tags.map((tag, idx) => (
-                      <div key={idx} className="tag">
-                        {tag}
-                        <button type="button" onClick={() => removeTag(idx)}>✕</button>
-                      </div>
-                    ))}
-                    <input 
-                      type="text" 
-                      className="tag-input" 
-                      onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(e.currentTarget.value); e.currentTarget.value = ''; } }} 
-                      placeholder="Añade tags..." 
-                    />
-                  </div>
-                </div>
-                <div className="form-row">
-                  <button type="submit" className="btn-submit">💾 Guardar Cambios</button>
-                  <button type="button" className="btn-cancel" onClick={() => { setEditingItem(null); setTags([]); }}>❌ Cancelar</button>
-                </div>
-              </form>
-            </div>
-            )}
-
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Restaurante</th>
-                    <th>Tipo</th>
-                    <th>Precio</th>
-                    <th>Rating</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.burgers.length === 0 ? (
-                    <tr><td colSpan={6} className="empty-state"><div className="empty-state-icon">🍟</div>No hay hamburguesas creadas</td></tr>
-                  ) : (
-                    data.burgers.map(burger => {
-                      const rest = data.restaurants.find(r => r.id === burger.restaurantId);
-                      return (
-                        <tr key={burger.id}>
-                          <td><strong>{burger.name}</strong></td>
-                          <td>{rest?.name || 'Desconocido'}</td>
-                          <td>{burger.type}</td>
-                          <td>${burger.price}</td>
-                          <td><span className="rating-stars">{'★'.repeat(Math.round(burger.rating))}☆</span> {burger.rating.toFixed(1)}</td>
-                          <td>
-                            <div className="action-buttons">
-                              <button className="btn-small btn-view" onClick={() => setSelectedModal({ type: 'burger', data: burger })}>👁️ Ver</button>
-                              <button className="btn-small btn-edit" onClick={() => { setEditingItem({ type: 'burger', data: burger }); setTags(burger.tags); }}>✏️ Editar</button>
-                              <button className="btn-small btn-delete" onClick={() => handleDeleteBurger(burger.id)}>🗑️ Eliminar</button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <BurgersSection 
+            burgers={burgers}
+            restaurants={restaurants}
+            cities={cities}
+            onEdit={(burger: Burger) => { setEditingItem(burger); setModalType('burger'); setShowModal(true); }}
+            onDelete={(id: string) => handleDelete('burger', id)}
+            onAdd={() => { setEditingItem(null); setModalType('burger'); setShowModal(true); }}
+          />
         )}
-
-        {/* SOLICITUDES */}
-        {activeSection === 'requests' && (
-          <div className="section active">
-            <h2>📋 Solicitudes de Usuarios</h2>
-            
-            <div className="search-bar">
-              <input 
-                type="text" 
-                placeholder="🔍 Buscar solicitud..." 
-                value={searchFilters.searchTerm}
-                onChange={(e) => setSearchFilters({ ...searchFilters, searchTerm: e.target.value })}
-              />
-            </div>
-
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Usuario</th>
-                    <th>Tipo</th>
-                    <th>Detalles</th>
-                    <th>Fecha</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.requests.length === 0 ? (
-                    <tr><td colSpan={6} className="empty-state"><div className="empty-state-icon">📭</div>No hay solicitudes pendientes</td></tr>
-                  ) : (
-                    data.requests.map(req => (
-                      <tr key={req.id}>
-                        <td>{req.username}</td>
-                        <td>{req.type}</td>
-                        <td>{req.details}</td>
-                        <td>{req.date}</td>
-                        <td><span className={`status-badge status-${req.status}`}>{req.status === 'pending' ? '⏳ Pendiente' : '✅ Aprobado'}</span></td>
-                        <td>
-                          <div className="action-buttons">
-                            {req.status === 'pending' ? (
-                              <>
-                                <button className="btn-small btn-approve" onClick={() => handleApproveRequest(req.id)}>✅ Aprobar</button>
-                                <button className="btn-small btn-reject" onClick={() => handleRejectRequest(req.id)}>❌ Rechazar</button>
-                              </>
-                            ) : '-'}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+        
+        {activeSection === 'restaurants' && (
+          <RestaurantsSection 
+            restaurants={restaurants}
+            cities={cities}
+            onEdit={(restaurant: Restaurant) => { setEditingItem(restaurant); setModalType('restaurant'); setShowModal(true); }}
+            onDelete={(id: string) => handleDelete('restaurant', id)}
+            onAdd={() => { setEditingItem(null); setModalType('restaurant'); setShowModal(true); }}
+          />
         )}
-
-        {/* VALORACIONES */}
-        {activeSection === 'ratings' && (
-          <div className="section active">
-            <h2>⭐ Revisión de Valoraciones</h2>
-            
-            <div className="search-bar">
-              <input 
-                type="text" 
-                placeholder="🔍 Buscar valoración..." 
-                value={searchFilters.searchTerm}
-                onChange={(e) => setSearchFilters({ ...searchFilters, searchTerm: e.target.value })}
-              />
-              <select 
-                value={searchFilters.filterStatus}
-                onChange={(e) => setSearchFilters({ ...searchFilters, filterStatus: e.target.value })}
-                style={{ marginLeft: '10px' }}
-              >
-                <option value="">Todos los estados</option>
-                <option value="pending">Pendiente</option>
-                <option value="verified">Verificado</option>
-              </select>
-            </div>
-
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Usuario</th>
-                    <th>Hamburguesa</th>
-                    <th>Rating</th>
-                    <th>Comentario</th>
-                    <th>Fecha</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {getFilteredRatings().length === 0 ? (
-                    <tr><td colSpan={7} className="empty-state"><div className="empty-state-icon">⭐</div>No hay valoraciones para mostrar</td></tr>
-                  ) : (
-                    getFilteredRatings().map((rating, idx) => (
-                      <tr key={idx}>
-                        <td>{rating.username}</td>
-                        <td>{rating.burger}</td>
-                        <td><span className="rating-stars">{'★'.repeat(rating.rating)}</span></td>
-                        <td>{rating.comment}</td>
-                        <td>{rating.date}</td>
-                        <td><span className={`status-badge status-${rating.status}`}>{rating.status === 'pending' ? '⏳ Pendiente' : '✅ Verificado'}</span></td>
-                        <td>
-                          <div className="action-buttons">
-                            {rating.status === 'pending' ? (
-                              <>
-                                <button className="btn-small btn-approve" onClick={() => handleVerifyRating(idx)}>✅ Verificar</button>
-                                <button className="btn-small btn-reject" onClick={() => handleDeleteRating(idx)}>❌ Rechazar</button>
-                              </>
-                            ) : '-'}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+        
+        {activeSection === 'promotions' && (
+          <PromotionsSection 
+            promotions={promotions}
+            restaurants={restaurants}
+            onEdit={(promo: Promotion) => { setEditingItem(promo); setModalType('promotion'); setShowModal(true); }}
+            onDelete={(id: string) => handleDelete('promotion', id)}
+            onAdd={() => { setEditingItem(null); setModalType('promotion'); setShowModal(true); }}
+          />
         )}
-
-        {/* TICKETS */}
-        {activeSection === 'tickets' && (
-          <div className="section active">
-            <h2>🎫 Gestión de Tickets</h2>
-            
-            <div className="search-bar">
-              <input 
-                type="text" 
-                placeholder="🔍 Buscar ticket..." 
-                value={searchFilters.searchTerm}
-                onChange={(e) => setSearchFilters({ ...searchFilters, searchTerm: e.target.value })}
-              />
-              <select 
-                value={searchFilters.filterStatus}
-                onChange={(e) => setSearchFilters({ ...searchFilters, filterStatus: e.target.value })}
-                style={{ marginLeft: '10px' }}
-              >
-                <option value="">Todos los estados</option>
-                <option value="pending">Pendiente</option>
-                <option value="verified">Verificado</option>
-              </select>
-            </div>
-
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Usuario</th>
-                    <th>Hamburguesa</th>
-                    <th>Restaurante</th>
-                    <th>Precio</th>
-                    <th>Fecha</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {getFilteredTickets().length === 0 ? (
-                    <tr><td colSpan={7} className="empty-state"><div className="empty-state-icon">🎫</div>No hay tickets para mostrar</td></tr>
-                  ) : (
-                    getFilteredTickets().map((ticket, idx) => (
-                      <tr key={idx}>
-                        <td>{ticket.username}</td>
-                        <td>{ticket.burger}</td>
-                        <td>{ticket.restaurant}</td>
-                        <td>${ticket.price}</td>
-                        <td>{ticket.date}</td>
-                        <td><span className={`status-badge status-${ticket.status}`}>{ticket.status === 'pending' ? '⏳ Pendiente' : '✅ Verificado'}</span></td>
-                        <td>
-                          <div className="action-buttons">
-                            {ticket.status === 'pending' ? (
-                              <>
-                                <button className="btn-small btn-approve" onClick={() => handleVerifyTicket(idx)}>✅ Verificar</button>
-                                <button className="btn-small btn-reject" onClick={() => handleRejectTicket(idx)}>❌ Rechazar</button>
-                              </>
-                            ) : '-'}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* USUARIOS */}
+        
         {activeSection === 'users' && (
-          <div className="section active">
-            <h2>👥 Gestión de Usuarios</h2>
-            
-            <div className="search-bar">
-              <input 
-                type="text" 
-                placeholder="🔍 Buscar usuario..." 
-                value={searchFilters.searchTerm}
-                onChange={(e) => setSearchFilters({ ...searchFilters, searchTerm: e.target.value })}
-              />
-              <select 
-                value={searchFilters.filterStatus}
-                onChange={(e) => setSearchFilters({ ...searchFilters, filterStatus: e.target.value })}
-                style={{ marginLeft: '10px' }}
-              >
-                <option value="">Todos los usuarios</option>
-                <option value="Bloqueado">Bloqueados</option>
-              </select>
-            </div>
-
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Usuario</th>
-                    <th>Email</th>
-                    <th>Categoría</th>
-                    <th>Puntos</th>
-                    <th>Valoraciones</th>
-                    <th>Fecha Registro</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {getFilteredUsers().length === 0 ? (
-                    <tr><td colSpan={7} className="empty-state"><div className="empty-state-icon">👥</div>No hay usuarios para mostrar</td></tr>
-                  ) : (
-                    getFilteredUsers().map(user => (
-                      <tr key={user.id}>
-                        <td><strong>{user.username}</strong></td>
-                        <td>{user.email}</td>
-                        <td>
-                          {user.category === 'Bloqueado' ? (
-                            <span className="status-badge status-blocked">🚫 Bloqueado</span>
-                          ) : (
-                            <span className="status-badge status-approved">{user.category}</span>
-                          )}
-                        </td>
-                        <td>{user.points} pts</td>
-                        <td>{user.ratings}</td>
-                        <td>{user.registeredDate}</td>
-                        <td>
-                          <div className="action-buttons">
-                            <button className="btn-small btn-view" onClick={() => setSelectedModal({ type: 'user', data: user })}>👁️ Ver</button>
-                            {user.category !== 'Bloqueado' && (
-                              <button className="btn-small btn-reject" onClick={() => handleBlockUser(user.id)}>🚫 Bloquear</button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <UsersSection 
+            users={users}
+            currentUserId={authUser?.id || ''}
+            onToggleAdmin={handleToggleAdmin}
+          />
         )}
-      </div>
+        
+        {activeSection === 'ratings' && (
+          <RatingsSection 
+            ratings={ratings}
+            onDelete={(id: string) => handleDelete('rating', id)}
+          />
+        )}
+      </main>
 
-      {/* MODAL */}
-      {selectedModal && (
-        <div className="modal active">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>{selectedModal.type === 'restaurant' ? '🏪 ' : selectedModal.type === 'burger' ? '🍟 ' : '👤 '}{selectedModal.data.name || selectedModal.data.username}</h2>
-              <button className="close-modal" onClick={() => setSelectedModal(null)}>×</button>
-            </div>
-            <div id="modalBody">
-              {selectedModal.type === 'restaurant' && (
-                <>
-                  <p><strong>Ciudad:</strong> {selectedModal.data.city}</p>
-                  <p><strong>Dirección:</strong> {selectedModal.data.address}</p>
-                  <p><strong>Teléfono:</strong> {selectedModal.data.phone}</p>
-                  <p><strong>Horario:</strong> {selectedModal.data.hours}</p>
-                  <p><strong>Web:</strong> {selectedModal.data.website}</p>
-                  <p><strong>Rating:</strong> {selectedModal.data.rating.toFixed(1)} / 5 ({selectedModal.data.reviews} reseñas)</p>
-                  <p><strong>Descripción:</strong> {selectedModal.data.description || 'Sin descripción'}</p>
-                </>
-              )}
-              {selectedModal.type === 'burger' && (
-                <>
-                  <p><strong>Restaurante:</strong> {data.restaurants.find(r => r.id === selectedModal.data.restaurantId)?.name}</p>
-                  <p><strong>Tipo:</strong> {selectedModal.data.type}</p>
-                  <p><strong>Precio:</strong> ${selectedModal.data.price}</p>
-                  <p><strong>Rating:</strong> {selectedModal.data.rating.toFixed(1)} / 10 ({selectedModal.data.reviews} valoraciones)</p>
-                  <p><strong>Descripción:</strong> {selectedModal.data.description}</p>
-                  <p><strong>Tags:</strong> {selectedModal.data.tags.join(', ') || 'Sin tags'}</p>
-                </>
-              )}
-              {selectedModal.type === 'user' && (
-                <>
-                  <p><strong>Email:</strong> {selectedModal.data.email}</p>
-                  <p><strong>Categoría:</strong> {selectedModal.data.category}</p>
-                  <p><strong>Puntos:</strong> {selectedModal.data.points}</p>
-                  <p><strong>Valoraciones:</strong> {selectedModal.data.ratings}</p>
-                  <p><strong>Fecha Registro:</strong> {selectedModal.data.registeredDate}</p>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* Modal */}
+      {showModal && (
+        <Modal
+          type={modalType}
+          item={editingItem}
+          restaurants={restaurants}
+          cities={cities}
+          onClose={() => { setShowModal(false); setEditingItem(null); }}
+          onSave={(data: any) => {
+            switch (modalType) {
+              case 'burger': handleSaveBurger(data); break;
+              case 'restaurant': handleSaveRestaurant(data); break;
+              case 'promotion': handleSavePromotion(data); break;
+            }
+          }}
+        />
       )}
     </div>
   );
 }
+
+// Dashboard Section
+function DashboardSection({ stats }: { stats: any }) {
+  return (
+    <div>
+      <h2 style={styles.sectionTitle}>📊 Dashboard</h2>
+      
+      <div style={styles.statsGrid}>
+        <div style={styles.statCard}>
+          <div style={styles.statIcon}>🍔</div>
+          <div style={styles.statNumber}>{stats.totalBurgers}</div>
+          <div style={styles.statLabel}>Hamburguesas</div>
+        </div>
+        <div style={styles.statCard}>
+          <div style={styles.statIcon}>🏪</div>
+          <div style={styles.statNumber}>{stats.totalRestaurants}</div>
+          <div style={styles.statLabel}>Restaurantes</div>
+        </div>
+        <div style={styles.statCard}>
+          <div style={styles.statIcon}>👥</div>
+          <div style={styles.statNumber}>{stats.totalUsers}</div>
+          <div style={styles.statLabel}>Usuarios</div>
+        </div>
+        <div style={styles.statCard}>
+          <div style={styles.statIcon}>⭐</div>
+          <div style={styles.statNumber}>{stats.totalRatings}</div>
+          <div style={styles.statLabel}>Valoraciones</div>
+        </div>
+        <div style={styles.statCard}>
+          <div style={styles.statIcon}>🎉</div>
+          <div style={styles.statNumber}>{stats.activePromotions}</div>
+          <div style={styles.statLabel}>Promociones Activas</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Burgers Section
+function BurgersSection({ burgers, onEdit, onDelete, onAdd }: any) {
+  const [search, setSearch] = useState('');
+  
+  const filteredBurgers = burgers.filter((b: Burger) => 
+    b.name.toLowerCase().includes(search.toLowerCase()) ||
+    b.restaurant?.name?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div>
+      <div style={styles.sectionHeader}>
+        <h2 style={styles.sectionTitle}>🍔 Hamburguesas</h2>
+        <button onClick={onAdd} style={styles.addButton}>+ Nueva Hamburguesa</button>
+      </div>
+      
+      <input
+        type="text"
+        placeholder="Buscar hamburguesa..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={styles.searchInput}
+      />
+      
+      <div style={styles.tableContainer}>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.th}>#</th>
+              <th style={styles.th}>Nombre</th>
+              <th style={styles.th}>Restaurante</th>
+              <th style={styles.th}>Ciudad</th>
+              <th style={styles.th}>Rating</th>
+              <th style={styles.th}>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredBurgers.map((burger: Burger) => (
+              <tr key={burger.id} style={styles.tr}>
+                <td style={styles.td}>{burger.position || '-'}</td>
+                <td style={styles.td}>{burger.name}</td>
+                <td style={styles.td}>{burger.restaurant?.name || '-'}</td>
+                <td style={styles.td}>{burger.city?.name || '-'}</td>
+                <td style={styles.td}>⭐ {burger.average_rating?.toFixed(1) || '0.0'}</td>
+                <td style={styles.td}>
+                  <button onClick={() => onEdit(burger)} style={styles.editBtn}>✏️</button>
+                  <button onClick={() => onDelete(burger.id)} style={styles.deleteBtn}>🗑️</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// Restaurants Section
+function RestaurantsSection({ restaurants, onEdit, onDelete, onAdd }: any) {
+  const [search, setSearch] = useState('');
+  
+  const filteredRestaurants = restaurants.filter((r: Restaurant) => 
+    r.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div>
+      <div style={styles.sectionHeader}>
+        <h2 style={styles.sectionTitle}>🏪 Restaurantes</h2>
+        <button onClick={onAdd} style={styles.addButton}>+ Nuevo Restaurante</button>
+      </div>
+      
+      <input
+        type="text"
+        placeholder="Buscar restaurante..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={styles.searchInput}
+      />
+      
+      <div style={styles.tableContainer}>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.th}>Nombre</th>
+              <th style={styles.th}>Ciudad</th>
+              <th style={styles.th}>Dirección</th>
+              <th style={styles.th}>Rating</th>
+              <th style={styles.th}>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredRestaurants.map((restaurant: Restaurant) => (
+              <tr key={restaurant.id} style={styles.tr}>
+                <td style={styles.td}>{restaurant.name}</td>
+                <td style={styles.td}>{restaurant.city?.name || '-'}</td>
+                <td style={styles.td}>{restaurant.address || '-'}</td>
+                <td style={styles.td}>⭐ {restaurant.average_rating?.toFixed(1) || '0.0'}</td>
+                <td style={styles.td}>
+                  <button onClick={() => onEdit(restaurant)} style={styles.editBtn}>✏️</button>
+                  <button onClick={() => onDelete(restaurant.id)} style={styles.deleteBtn}>🗑️</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// Promotions Section
+function PromotionsSection({ promotions, onEdit, onDelete, onAdd }: any) {
+  return (
+    <div>
+      <div style={styles.sectionHeader}>
+        <h2 style={styles.sectionTitle}>🎉 Promociones</h2>
+        <button onClick={onAdd} style={styles.addButton}>+ Nueva Promoción</button>
+      </div>
+      
+      <div style={styles.tableContainer}>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.th}>Título</th>
+              <th style={styles.th}>Restaurante</th>
+              <th style={styles.th}>Descuento</th>
+              <th style={styles.th}>Estado</th>
+              <th style={styles.th}>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {promotions.map((promo: Promotion) => (
+              <tr key={promo.id} style={styles.tr}>
+                <td style={styles.td}>{promo.emoji} {promo.title}</td>
+                <td style={styles.td}>{promo.restaurant?.name || '-'}</td>
+                <td style={styles.td}>{promo.discount_percentage ? `${promo.discount_percentage}%` : '-'}</td>
+                <td style={styles.td}>
+                  <span style={promo.is_active ? styles.activeStatus : styles.inactiveStatus}>
+                    {promo.is_active ? '✅ Activa' : '❌ Inactiva'}
+                  </span>
+                </td>
+                <td style={styles.td}>
+                  <button onClick={() => onEdit(promo)} style={styles.editBtn}>✏️</button>
+                  <button onClick={() => onDelete(promo.id)} style={styles.deleteBtn}>🗑️</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// Users Section
+function UsersSection({ users, currentUserId, onToggleAdmin }: any) {
+  const [search, setSearch] = useState('');
+  
+  const filteredUsers = users.filter((u: User) => 
+    u.username.toLowerCase().includes(search.toLowerCase()) ||
+    u.email.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div>
+      <h2 style={styles.sectionTitle}>👥 Usuarios</h2>
+      
+      <input
+        type="text"
+        placeholder="Buscar usuario..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={styles.searchInput}
+      />
+      
+      <div style={styles.tableContainer}>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.th}>Usuario</th>
+              <th style={styles.th}>Email</th>
+              <th style={styles.th}>Categoría</th>
+              <th style={styles.th}>Puntos</th>
+              <th style={styles.th}>Admin</th>
+              <th style={styles.th}>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredUsers.map((user: User) => (
+              <tr key={user.id} style={styles.tr}>
+                <td style={styles.td}>@{user.username}</td>
+                <td style={styles.td}>{user.email}</td>
+                <td style={styles.td}>{user.category}</td>
+                <td style={styles.td}>{user.points}</td>
+                <td style={styles.td}>
+                  <span style={user.is_admin ? styles.activeStatus : styles.inactiveStatus}>
+                    {user.is_admin ? '✅ Sí' : '❌ No'}
+                  </span>
+                </td>
+                <td style={styles.td}>
+                  {user.id !== currentUserId && (
+                    <button 
+                      onClick={() => onToggleAdmin(user.id, user.is_admin)} 
+                      style={user.is_admin ? styles.deleteBtn : styles.editBtn}
+                    >
+                      {user.is_admin ? '🔒 Quitar Admin' : '🔓 Hacer Admin'}
+                    </button>
+                  )}
+                  {user.id === currentUserId && (
+                    <span style={{ color: '#9ca3af' }}>Tú</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// Ratings Section
+function RatingsSection({ ratings, onDelete }: any) {
+  return (
+    <div>
+      <h2 style={styles.sectionTitle}>⭐ Últimas Valoraciones</h2>
+      
+      <div style={styles.tableContainer}>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.th}>Usuario</th>
+              <th style={styles.th}>Hamburguesa</th>
+              <th style={styles.th}>Restaurante</th>
+              <th style={styles.th}>Rating</th>
+              <th style={styles.th}>Comentario</th>
+              <th style={styles.th}>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ratings.map((rating: Rating) => (
+              <tr key={rating.id} style={styles.tr}>
+                <td style={styles.td}>@{rating.user?.username || '-'}</td>
+                <td style={styles.td}>{rating.burger?.name || '-'}</td>
+                <td style={styles.td}>{rating.burger?.restaurant?.name || '-'}</td>
+                <td style={styles.td}>{'★'.repeat(rating.overall_rating)}{'☆'.repeat(5 - rating.overall_rating)}</td>
+                <td style={styles.td}>{rating.comment?.substring(0, 50) || '-'}{rating.comment && rating.comment.length > 50 ? '...' : ''}</td>
+                <td style={styles.td}>
+                  <button onClick={() => onDelete(rating.id)} style={styles.deleteBtn}>🗑️</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// Modal Component
+function Modal({ type, item, restaurants, cities, onClose, onSave }: any) {
+  const [formData, setFormData] = useState(item || {});
+
+  useEffect(() => {
+    setFormData(item || {});
+  }, [item]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  const getTitle = () => {
+    switch (type) {
+      case 'burger': return item ? 'Editar Hamburguesa' : 'Nueva Hamburguesa';
+      case 'restaurant': return item ? 'Editar Restaurante' : 'Nuevo Restaurante';
+      case 'promotion': return item ? 'Editar Promoción' : 'Nueva Promoción';
+      default: return '';
+    }
+  };
+
+  return (
+    <div style={styles.modalOverlay}>
+      <div style={styles.modal}>
+        <div style={styles.modalHeader}>
+          <h3 style={styles.modalTitle}>{getTitle()}</h3>
+          <button onClick={onClose} style={styles.closeButton}>✕</button>
+        </div>
+        
+        <form onSubmit={handleSubmit} style={styles.form}>
+          {type === 'burger' && (
+            <>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Nombre *</label>
+                <input
+                  type="text"
+                  value={formData.name || ''}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  style={styles.input}
+                  required
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Descripción</label>
+                <textarea
+                  value={formData.description || ''}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  style={styles.textarea}
+                />
+              </div>
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Restaurante *</label>
+                  <select
+                    value={formData.restaurant_id || ''}
+                    onChange={(e) => setFormData({ ...formData, restaurant_id: e.target.value })}
+                    style={styles.select}
+                    required
+                  >
+                    <option value="">Seleccionar...</option>
+                    {restaurants.map((r: Restaurant) => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Ciudad *</label>
+                  <select
+                    value={formData.city_id || ''}
+                    onChange={(e) => setFormData({ ...formData, city_id: e.target.value })}
+                    style={styles.select}
+                    required
+                  >
+                    <option value="">Seleccionar...</option>
+                    {cities.map((c: City) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Tipo</label>
+                  <select
+                    value={formData.type || ''}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    style={styles.select}
+                  >
+                    <option value="">Sin tipo</option>
+                    <option value="clásica">Clásica</option>
+                    <option value="premium">Premium</option>
+                    <option value="doble">Doble</option>
+                    <option value="vegana">Vegana</option>
+                    <option value="gourmet">Gourmet</option>
+                  </select>
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Posición</label>
+                  <input
+                    type="number"
+                    value={formData.position || ''}
+                    onChange={(e) => setFormData({ ...formData, position: parseInt(e.target.value) || null })}
+                    style={styles.input}
+                  />
+                </div>
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Tags (separados por coma)</label>
+                <input
+                  type="text"
+                  value={(formData.tags || []).join(', ')}
+                  onChange={(e) => setFormData({ ...formData, tags: e.target.value.split(',').map((t: string) => t.trim()).filter(Boolean) })}
+                  style={styles.input}
+                  placeholder="Premium, Jugosa, Carne Fresca"
+                />
+              </div>
+            </>
+          )}
+          
+          {type === 'restaurant' && (
+            <>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Nombre *</label>
+                <input
+                  type="text"
+                  value={formData.name || ''}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  style={styles.input}
+                  required
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Ciudad *</label>
+                <select
+                  value={formData.city_id || ''}
+                  onChange={(e) => setFormData({ ...formData, city_id: e.target.value })}
+                  style={styles.select}
+                  required
+                >
+                  <option value="">Seleccionar...</option>
+                  {cities.map((c: City) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Dirección</label>
+                <input
+                  type="text"
+                  value={formData.address || ''}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  style={styles.input}
+                />
+              </div>
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Teléfono</label>
+                  <input
+                    type="text"
+                    value={formData.phone || ''}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    style={styles.input}
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Horario</label>
+                  <input
+                    type="text"
+                    value={formData.hours || ''}
+                    onChange={(e) => setFormData({ ...formData, hours: e.target.value })}
+                    style={styles.input}
+                    placeholder="12:00 - 23:00"
+                  />
+                </div>
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Sitio Web</label>
+                <input
+                  type="url"
+                  value={formData.website || ''}
+                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                  style={styles.input}
+                  placeholder="https://..."
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>URL Delivery</label>
+                <input
+                  type="url"
+                  value={formData.delivery_url || ''}
+                  onChange={(e) => setFormData({ ...formData, delivery_url: e.target.value })}
+                  style={styles.input}
+                  placeholder="https://ubereats.com/..."
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>URL Reservas</label>
+                <input
+                  type="url"
+                  value={formData.reservation_url || ''}
+                  onChange={(e) => setFormData({ ...formData, reservation_url: e.target.value })}
+                  style={styles.input}
+                  placeholder="https://thefork.es/..."
+                />
+              </div>
+            </>
+          )}
+          
+          {type === 'promotion' && (
+            <>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Título *</label>
+                <input
+                  type="text"
+                  value={formData.title || ''}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  style={styles.input}
+                  required
+                />
+              </div>
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Restaurante *</label>
+                  <select
+                    value={formData.restaurant_id || ''}
+                    onChange={(e) => setFormData({ ...formData, restaurant_id: e.target.value })}
+                    style={styles.select}
+                    required
+                  >
+                    <option value="">Seleccionar...</option>
+                    {restaurants.map((r: Restaurant) => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Emoji</label>
+                  <input
+                    type="text"
+                    value={formData.emoji || ''}
+                    onChange={(e) => setFormData({ ...formData, emoji: e.target.value })}
+                    style={styles.input}
+                    placeholder="🎉"
+                  />
+                </div>
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Descripción</label>
+                <textarea
+                  value={formData.description || ''}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  style={styles.textarea}
+                />
+              </div>
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>% Descuento</label>
+                  <input
+                    type="number"
+                    value={formData.discount_percentage || ''}
+                    onChange={(e) => setFormData({ ...formData, discount_percentage: parseInt(e.target.value) || null })}
+                    style={styles.input}
+                    min="0"
+                    max="100"
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Estado</label>
+                  <select
+                    value={formData.is_active ? 'true' : 'false'}
+                    onChange={(e) => setFormData({ ...formData, is_active: e.target.value === 'true' })}
+                    style={styles.select}
+                  >
+                    <option value="true">Activa</option>
+                    <option value="false">Inactiva</option>
+                  </select>
+                </div>
+              </div>
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Válido desde</label>
+                  <input
+                    type="date"
+                    value={formData.valid_from?.split('T')[0] || ''}
+                    onChange={(e) => setFormData({ ...formData, valid_from: e.target.value })}
+                    style={styles.input}
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Válido hasta</label>
+                  <input
+                    type="date"
+                    value={formData.valid_until?.split('T')[0] || ''}
+                    onChange={(e) => setFormData({ ...formData, valid_until: e.target.value })}
+                    style={styles.input}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+          
+          <div style={styles.modalFooter}>
+            <button type="button" onClick={onClose} style={styles.cancelButton}>
+              Cancelar
+            </button>
+            <button type="submit" style={styles.saveButton}>
+              Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Styles
+const styles: { [key: string]: React.CSSProperties } = {
+  container: {
+    display: 'flex',
+    minHeight: '100vh',
+    backgroundColor: '#111827',
+    color: '#e5e7eb'
+  },
+  loadingContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100vh',
+    backgroundColor: '#111827',
+    color: '#e5e7eb',
+    gap: '1rem'
+  },
+  loadingSpinner: {
+    fontSize: '4rem'
+  },
+  backLink: {
+    color: '#fbbf24',
+    textDecoration: 'none',
+    marginTop: '1rem'
+  },
+  sidebar: {
+    width: '250px',
+    backgroundColor: '#1f2937',
+    borderRight: '1px solid #374151',
+    display: 'flex',
+    flexDirection: 'column',
+    padding: '1rem'
+  },
+  sidebarHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    marginBottom: '2rem',
+    paddingBottom: '1rem',
+    borderBottom: '1px solid #374151'
+  },
+  logo: {
+    fontSize: '1.25rem',
+    fontWeight: 'bold',
+    color: '#fbbf24'
+  },
+  adminBadge: {
+    backgroundColor: '#dc2626',
+    color: 'white',
+    fontSize: '0.7rem',
+    padding: '0.25rem 0.5rem',
+    borderRadius: '0.25rem',
+    fontWeight: 'bold'
+  },
+  nav: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+    flex: 1
+  },
+  navButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: '0.75rem 1rem',
+    backgroundColor: 'transparent',
+    border: 'none',
+    color: '#9ca3af',
+    borderRadius: '0.5rem',
+    cursor: 'pointer',
+    textAlign: 'left' as const,
+    fontSize: '0.95rem',
+    transition: 'all 0.2s'
+  },
+  navButtonActive: {
+    backgroundColor: '#374151',
+    color: '#fbbf24'
+  },
+  navIcon: {
+    fontSize: '1.25rem'
+  },
+  sidebarFooter: {
+    borderTop: '1px solid #374151',
+    paddingTop: '1rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem'
+  },
+  userInfo: {
+    fontSize: '0.85rem',
+    color: '#9ca3af'
+  },
+  exitButton: {
+    display: 'block',
+    padding: '0.5rem',
+    color: '#9ca3af',
+    textDecoration: 'none',
+    fontSize: '0.85rem'
+  },
+  main: {
+    flex: 1,
+    padding: '2rem',
+    overflowY: 'auto' as const
+  },
+  sectionTitle: {
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    marginBottom: '1.5rem',
+    color: '#fbbf24'
+  },
+  sectionHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '1rem'
+  },
+  statsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: '1rem',
+    marginBottom: '2rem'
+  },
+  statCard: {
+    backgroundColor: '#1f2937',
+    borderRadius: '0.75rem',
+    padding: '1.5rem',
+    textAlign: 'center' as const,
+    border: '1px solid #374151'
+  },
+  statIcon: {
+    fontSize: '2rem',
+    marginBottom: '0.5rem'
+  },
+  statNumber: {
+    fontSize: '2rem',
+    fontWeight: 'bold',
+    color: '#fbbf24'
+  },
+  statLabel: {
+    color: '#9ca3af',
+    fontSize: '0.85rem'
+  },
+  searchInput: {
+    width: '100%',
+    maxWidth: '400px',
+    padding: '0.75rem 1rem',
+    backgroundColor: '#374151',
+    border: '1px solid #4b5563',
+    borderRadius: '0.5rem',
+    color: '#e5e7eb',
+    marginBottom: '1rem',
+    fontSize: '0.95rem'
+  },
+  addButton: {
+    padding: '0.75rem 1.5rem',
+    backgroundColor: '#fbbf24',
+    color: '#000',
+    border: 'none',
+    borderRadius: '0.5rem',
+    fontWeight: 'bold',
+    cursor: 'pointer'
+  },
+  tableContainer: {
+    backgroundColor: '#1f2937',
+    borderRadius: '0.75rem',
+    border: '1px solid #374151',
+    overflow: 'hidden'
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse' as const
+  },
+  th: {
+    padding: '1rem',
+    textAlign: 'left' as const,
+    backgroundColor: '#374151',
+    fontWeight: '600',
+    fontSize: '0.85rem',
+    color: '#fbbf24',
+    borderBottom: '1px solid #4b5563'
+  },
+  tr: {
+    borderBottom: '1px solid #374151'
+  },
+  td: {
+    padding: '0.75rem 1rem',
+    fontSize: '0.9rem'
+  },
+  editBtn: {
+    padding: '0.4rem 0.75rem',
+    backgroundColor: '#3b82f6',
+    color: 'white',
+    border: 'none',
+    borderRadius: '0.25rem',
+    cursor: 'pointer',
+    marginRight: '0.5rem'
+  },
+  deleteBtn: {
+    padding: '0.4rem 0.75rem',
+    backgroundColor: '#dc2626',
+    color: 'white',
+    border: 'none',
+    borderRadius: '0.25rem',
+    cursor: 'pointer'
+  },
+  activeStatus: {
+    color: '#10b981'
+  },
+  inactiveStatus: {
+    color: '#9ca3af'
+  },
+  modalOverlay: {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000
+  },
+  modal: {
+    backgroundColor: '#1f2937',
+    borderRadius: '0.75rem',
+    width: '100%',
+    maxWidth: '600px',
+    maxHeight: '90vh',
+    overflow: 'auto' as const,
+    border: '1px solid #374151'
+  },
+  modalHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '1rem 1.5rem',
+    borderBottom: '1px solid #374151'
+  },
+  modalTitle: {
+    fontSize: '1.25rem',
+    fontWeight: 'bold',
+    color: '#fbbf24'
+  },
+  closeButton: {
+    background: 'none',
+    border: 'none',
+    color: '#9ca3af',
+    fontSize: '1.5rem',
+    cursor: 'pointer'
+  },
+  form: {
+    padding: '1.5rem'
+  },
+  formGroup: {
+    marginBottom: '1rem',
+    flex: 1
+  },
+  formRow: {
+    display: 'flex',
+    gap: '1rem'
+  },
+  label: {
+    display: 'block',
+    marginBottom: '0.5rem',
+    fontSize: '0.85rem',
+    color: '#9ca3af'
+  },
+  input: {
+    width: '100%',
+    padding: '0.75rem',
+    backgroundColor: '#374151',
+    border: '1px solid #4b5563',
+    borderRadius: '0.5rem',
+    color: '#e5e7eb',
+    fontSize: '0.95rem'
+  },
+  textarea: {
+    width: '100%',
+    padding: '0.75rem',
+    backgroundColor: '#374151',
+    border: '1px solid #4b5563',
+    borderRadius: '0.5rem',
+    color: '#e5e7eb',
+    fontSize: '0.95rem',
+    minHeight: '100px',
+    resize: 'vertical' as const
+  },
+  select: {
+    width: '100%',
+    padding: '0.75rem',
+    backgroundColor: '#374151',
+    border: '1px solid #4b5563',
+    borderRadius: '0.5rem',
+    color: '#e5e7eb',
+    fontSize: '0.95rem'
+  },
+  modalFooter: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '1rem',
+    marginTop: '1.5rem',
+    paddingTop: '1rem',
+    borderTop: '1px solid #374151'
+  },
+  cancelButton: {
+    padding: '0.75rem 1.5rem',
+    backgroundColor: '#374151',
+    color: '#e5e7eb',
+    border: '1px solid #4b5563',
+    borderRadius: '0.5rem',
+    cursor: 'pointer'
+  },
+  saveButton: {
+    padding: '0.75rem 1.5rem',
+    backgroundColor: '#fbbf24',
+    color: '#000',
+    border: 'none',
+    borderRadius: '0.5rem',
+    fontWeight: 'bold',
+    cursor: 'pointer'
+  }
+};

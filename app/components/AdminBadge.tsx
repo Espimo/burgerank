@@ -1,24 +1,18 @@
 'use client';
 
 import { useAdmin } from '@/app/contexts/AdminContext';
+import Link from 'next/link';
 import './AdminBadge.css';
 
 export function AdminBadge() {
-  const { isAdmin, logoutAdmin } = useAdmin();
+  const { isAdmin } = useAdmin();
 
   if (!isAdmin) return null;
 
   return (
-    <div className="admin-badge">
+    <Link href="/admin" className="admin-badge">
       <span className="admin-badge-icon">👑</span>
-      <span className="admin-badge-text">Modo Admin Activo</span>
-      <button 
-        className="admin-badge-logout" 
-        onClick={logoutAdmin}
-        title="Cerrar sesión admin"
-      >
-        ✕
-      </button>
-    </div>
+      <span className="admin-badge-text">Admin</span>
+    </Link>
   );
 }

@@ -1,73 +1,60 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createAdminClient } from '@/lib/supabase/client';
+import { useAuth } from './AuthContext';
 
 interface AdminContextType {
   isAdmin: boolean;
-  adminUsername: string | null;
-  loginAdmin: (username: string) => void;
-  logoutAdmin: () => void;
-  checkAdminStatus: () => void;
+  adminLoading: boolean;
+  checkAdminStatus: () => Promise<void>;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [adminUsername, setAdminUsername] = useState<string | null>(null);
+  const [adminLoading, setAdminLoading] = useState(true);
+  const { authUser, loading: authLoading } = useAuth();
 
-  // Verificar estado de admin al cargar
-  useEffect(() => {
-    checkAdminStatus();
-  }, []);
+  const checkAdminStatus = async () => {
+    if (!authUser) {
+      setIsAdmin(false);
+      setAdminLoading(false);
+      return;
+    }
 
-  const checkAdminStatus = () => {
-    if (typeof window !== 'undefined') {
-      const adminSession = localStorage.getItem('burgerankAdminSession');
-      if (adminSession) {
-        try {
-          const { username, timestamp } = JSON.parse(adminSession);
-          // Sesión válida por 24 horas
-          const hoursPassed = (Date.now() - timestamp) / (1000 * 60 * 60);
-          if (hoursPassed < 24) {
-            setIsAdmin(true);
-            setAdminUsername(username);
-          } else {
-            localStorage.removeItem('burgerankAdminSession');
-            setIsAdmin(false);
-            setAdminUsername(null);
-          }
-        } catch (error) {
-          localStorage.removeItem('burgerankAdminSession');
-          setIsAdmin(false);
-          setAdminUsername(null);
-        }
+    try {
+      const supabase = createAdminClient();
+      const { data, error } = await supabase
+        .from('users')
+        .select('is_admin')
+        .eq('id', authUser.id)
+        .single();
+
+      if (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
+      } else {
+        setIsAdmin(data?.is_admin || false);
       }
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+      setIsAdmin(false);
+    } finally {
+      setAdminLoading(false);
     }
   };
 
-  const loginAdmin = (username: string) => {
-    if (typeof window !== 'undefined') {
-      const adminSession = {
-        username,
-        timestamp: Date.now()
-      };
-      localStorage.setItem('burgerankAdminSession', JSON.stringify(adminSession));
-      setIsAdmin(true);
-      setAdminUsername(username);
+  // Verificar estado de admin cuando cambia el usuario autenticado
+  useEffect(() => {
+    if (!authLoading) {
+      checkAdminStatus();
     }
-  };
-
-  const logoutAdmin = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('burgerankAdminSession');
-    }
-    setIsAdmin(false);
-    setAdminUsername(null);
-  };
+  }, [authUser, authLoading]);
 
   return (
-    <AdminContext.Provider value={{ isAdmin, adminUsername, loginAdmin, logoutAdmin, checkAdminStatus }}>
+    <AdminContext.Provider value={{ isAdmin, adminLoading, checkAdminStatus }}>
       {children}
     </AdminContext.Provider>
   );
