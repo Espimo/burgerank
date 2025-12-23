@@ -183,13 +183,59 @@ export default function RestaurantePage() {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="main">
+        {/* Banner del Restaurante */}
+        {restaurant.banner_url && (
+          <div style={{ 
+            width: '100%', 
+            height: '200px', 
+            borderRadius: '0.75rem', 
+            overflow: 'hidden',
+            marginBottom: '1rem',
+            position: 'relative'
+          }}>
+            <img 
+              src={restaurant.banner_url} 
+              alt={`Banner de ${restaurant.name}`}
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'cover'
+              }}
+            />
+            {restaurant.logo_url && (
+              <div style={{
+                position: 'absolute',
+                bottom: '-30px',
+                left: '20px',
+                width: '80px',
+                height: '80px',
+                borderRadius: '0.5rem',
+                overflow: 'hidden',
+                border: '3px solid #1f2937',
+                backgroundColor: '#fff'
+              }}>
+                <img 
+                  src={restaurant.logo_url}
+                  alt={`Logo de ${restaurant.name}`}
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'contain',
+                    padding: '4px'
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Header del Restaurante */}
-        <div style={{ marginBottom: '1.5rem' }}>
+        <div style={{ marginBottom: '1.5rem', marginTop: restaurant.logo_url && restaurant.banner_url ? '40px' : '0' }}>
           <Link href="/ranking" style={{ color: '#fbbf24', fontSize: '0.9rem', marginBottom: '0.5rem', display: 'inline-block' }}>
             ← Volver al ranking
           </Link>
           <h1 className="text-3xl font-bold" style={{ marginBottom: '0.5rem' }}>
-            🏪 {restaurant.name}
+            {!restaurant.banner_url && '🏪 '}{restaurant.name}
           </h1>
           <div style={{ fontSize: '0.9rem', color: '#9ca3af', marginBottom: '0.5rem' }}>
             📍 {restaurant.city.name}
@@ -378,10 +424,28 @@ export default function RestaurantePage() {
                   padding: '1rem',
                   backgroundColor: '#374151',
                   borderRadius: '0.5rem',
-                  border: '1px solid #4b5563'
+                  border: '1px solid #4b5563',
+                  display: 'flex',
+                  gap: '1rem'
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
+                {/* Imagen de la hamburguesa */}
+                {burger.image_url && (
+                  <div style={{ flexShrink: 0 }}>
+                    <img 
+                      src={burger.image_url}
+                      alt={burger.name}
+                      style={{
+                        width: '100px',
+                        height: '100px',
+                        objectFit: 'cover',
+                        borderRadius: '0.5rem'
+                      }}
+                    />
+                  </div>
+                )}
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', flex: 1 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '600', fontSize: '0.95rem', marginBottom: '0.25rem' }}>
                       {burger.position && <span style={{ color: '#fbbf24', marginRight: '0.5rem' }}>#{burger.position}</span>}

@@ -75,6 +75,7 @@ export default function MyRatingsPage() {
           id,
           name,
           description,
+          image_url,
           restaurant:restaurants(
             name,
             city:cities(name)
@@ -209,26 +210,43 @@ export default function MyRatingsPage() {
         ) : (
           <div style={{ display: 'grid', gap: '1rem' }}>
             {ratings.map((rating) => (
-              <div key={rating.id} className="card" style={{ padding: '1rem' }}>
-                {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.75rem' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.25rem' }}>
-                      🍔 {rating.burger.name}
+              <div key={rating.id} className="card" style={{ padding: '1rem', display: 'flex', gap: '1rem' }}>
+                {/* Imagen de la hamburguesa */}
+                {rating.burger.image_url && (
+                  <div style={{ flexShrink: 0 }}>
+                    <img 
+                      src={rating.burger.image_url}
+                      alt={rating.burger.name}
+                      style={{
+                        width: '100px',
+                        height: '100px',
+                        objectFit: 'cover',
+                        borderRadius: '0.5rem'
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div style={{ flex: 1 }}>
+                  {/* Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.75rem' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.25rem' }}>
+                        🍔 {rating.burger.name}
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
+                        {rating.burger.restaurant.name} • {rating.burger.restaurant.city.name}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
-                      {rating.burger.restaurant.name} • {rating.burger.restaurant.city.name}
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ color: '#fbbf24', fontSize: '1.1rem', fontWeight: '600' }}>
+                        {getStars(rating.overall_rating)}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                        {formatDate(rating.created_at)}
+                      </div>
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ color: '#fbbf24', fontSize: '1.1rem', fontWeight: '600' }}>
-                      {getStars(rating.overall_rating)}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
-                      {formatDate(rating.created_at)}
-                    </div>
-                  </div>
-                </div>
 
                 {/* Descripción de la burger */}
                 {rating.burger.description && (
@@ -311,6 +329,7 @@ export default function MyRatingsPage() {
                 >
                   Ver Restaurante →
                 </a>
+                </div>
               </div>
             ))}
           </div>

@@ -264,7 +264,11 @@ export default function AdminPanel() {
           city_id: burger.city_id,
           type: burger.type,
           tags: burger.tags,
-          position: burger.position
+          position: burger.position,
+          image_url: burger.image_url,
+          is_featured: burger.is_featured || false,
+          featured_order: burger.featured_order,
+          status: burger.status || 'approved'
         })
         .eq('id', burger.id);
       
@@ -282,7 +286,11 @@ export default function AdminPanel() {
           city_id: burger.city_id,
           type: burger.type,
           tags: burger.tags,
-          position: burger.position
+          position: burger.position,
+          image_url: burger.image_url,
+          is_featured: burger.is_featured || false,
+          featured_order: burger.featured_order,
+          status: 'approved'
         });
       
       if (error) {
@@ -310,7 +318,10 @@ export default function AdminPanel() {
           website: restaurant.website,
           delivery_url: restaurant.delivery_url,
           reservation_url: restaurant.reservation_url,
-          city_id: restaurant.city_id
+          city_id: restaurant.city_id,
+          banner_url: restaurant.banner_url,
+          logo_url: restaurant.logo_url,
+          status: restaurant.status || 'approved'
         })
         .eq('id', restaurant.id);
       
@@ -329,7 +340,10 @@ export default function AdminPanel() {
           website: restaurant.website,
           delivery_url: restaurant.delivery_url,
           reservation_url: restaurant.reservation_url,
-          city_id: restaurant.city_id
+          city_id: restaurant.city_id,
+          banner_url: restaurant.banner_url,
+          logo_url: restaurant.logo_url,
+          status: 'approved'
         });
       
       if (error) {
@@ -433,6 +447,137 @@ export default function AdminPanel() {
     loadAllData();
   };
 
+  // Approval functions
+  const handleApprove = async (type: 'burger' | 'restaurant', id: string) => {
+    const supabase = createAdminClient();
+    const tableName = type === 'burger' ? 'burgers' : 'restaurants';
+    
+    const { error } = await supabase
+      .from(tableName)
+      .update({ status: 'approved' })
+      .eq('id', id);
+    
+    if (error) {
+      alert('Error aprobando: ' + error.message);
+      return;
+    }
+    
+    loadAllData();
+  };
+
+  const handleReject = async (type: 'burger' | 'restaurant', id: string) => {
+    const supabase = createAdminClient();
+    const tableName = type === 'burger' ? 'burgers' : 'restaurants';
+    
+    const { error } = await supabase
+      .from(tableName)
+      .update({ status: 'rejected' })
+      .eq('id', id);
+    
+    if (error) {
+      alert('Error rechazando: ' + error.message);
+      return;
+    }
+    
+    loadAllData();
+  };
+
+  // Featured burgers functions
+  const handleToggleFeatured = async (burgerId: string, currentFeatured: boolean) => {
+    const supabase = createAdminClient();
+    
+    // If making featured, need to assign an order
+    if (!currentFeatured) {
+      // Check how many featured burgers already exist
+      const { data: featuredBurgers } = await supabase
+        .from('burgers')
+        .select('featured_order')
+        .eq('is_featured', true)
+        .not('featured_order', 'is', null);
+      
+      if (featuredBurgers && featuredBurgers.length >= 3) {
+        alert('Ya hay 3 hamburguesas destacadas. Deselecciona una primero.');
+        return;
+      }
+      
+      // Find the next available order
+      const orders = (featuredBurgers || []).map(b => b.featured_order).filter(o => o !== null);
+      let nextOrder = 1;
+      for (let i = 1; i <= 3; i++) {
+        if (!orders.includes(i)) {
+          nextOrder = i;
+          break;
+        }
+      }
+      
+      const { error } = await supabase
+        .from('burgers')
+        .update({ is_featured: true, featured_order: nextOrder })
+        .eq('id', burgerId);
+      
+      if (error) {
+        alert('Error destacando hamburguesa: ' + error.message);
+        return;
+      }
+    } else {
+      // Removing from featured
+      const { error } = await supabase
+        .from('burgers')
+        .update({ is_featured: false, featured_order: null })
+        .eq('id', burgerId);
+      
+      if (error) {
+        alert('Error quitando destacado: ' + error.message);
+        return;
+      }
+    }
+    
+    loadAllData();
+  };
+
+  const handleChangeFeaturedOrder = async (burgerId: string, newOrder: number) => {
+    if (newOrder < 1 || newOrder > 3) return;
+    
+    const supabase = createAdminClient();
+    
+    // Check if another burger already has this order
+    const { data: existing } = await supabase
+      .from('burgers')
+      .select('id')
+      .eq('featured_order', newOrder)
+      .eq('is_featured', true)
+      .neq('id', burgerId)
+      .single();
+    
+    if (existing) {
+      // Swap orders
+      const { data: current } = await supabase
+        .from('burgers')
+        .select('featured_order')
+        .eq('id', burgerId)
+        .single();
+      
+      if (current) {
+        await supabase
+          .from('burgers')
+          .update({ featured_order: current.featured_order })
+          .eq('id', existing.id);
+      }
+    }
+    
+    const { error } = await supabase
+      .from('burgers')
+      .update({ featured_order: newOrder })
+      .eq('id', burgerId);
+    
+    if (error) {
+      alert('Error cambiando orden: ' + error.message);
+      return;
+    }
+    
+    loadAllData();
+  };
+
   // Loading state
   if (authLoading || adminLoading || loading) {
     return (
@@ -468,16 +613,19 @@ export default function AdminPanel() {
             { id: 'dashboard', icon: '📊', label: 'Dashboard' },
             { id: 'burgers', icon: '🍔', label: 'Hamburguesas' },
             { id: 'restaurants', icon: '🏪', label: 'Restaurantes' },
+            { id: 'featured', icon: '⭐', label: 'Destacados' },
             { id: 'promotions', icon: '🎉', label: 'Promociones' },
+            { id: 'pending', icon: '⏳', label: `Pendientes ${stats.pendingApprovals > 0 ? `(${stats.pendingApprovals})` : ''}` },
             { id: 'users', icon: '👥', label: 'Usuarios' },
-            { id: 'ratings', icon: '⭐', label: 'Valoraciones' },
+            { id: 'ratings', icon: '💬', label: 'Valoraciones' },
           ].map(item => (
             <button
               key={item.id}
               onClick={() => setActiveSection(item.id as ActiveSection)}
               style={{
                 ...styles.navButton,
-                ...(activeSection === item.id ? styles.navButtonActive : {})
+                ...(activeSection === item.id ? styles.navButtonActive : {}),
+                ...(item.id === 'pending' && stats.pendingApprovals > 0 ? { backgroundColor: '#7c2d12', color: '#fbbf24' } : {})
               }}
             >
               <span style={styles.navIcon}>{item.icon}</span>
@@ -547,6 +695,30 @@ export default function AdminPanel() {
             onDelete={(id: string) => handleDelete('rating', id)}
           />
         )}
+
+        {activeSection === 'featured' && (
+          <FeaturedSection 
+            burgers={burgers.filter(b => b.is_featured)}
+            allBurgers={burgers}
+            onToggleFeatured={handleToggleFeatured}
+            onChangeOrder={handleChangeFeaturedOrder}
+          />
+        )}
+
+        {activeSection === 'pending' && (
+          <PendingSection 
+            pendingItems={pendingItems}
+            burgers={burgers}
+            restaurants={restaurants}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onEdit={(type: string, item: any) => {
+              setEditingItem(item);
+              setModalType(type as any);
+              setShowModal(true);
+            }}
+          />
+        )}
       </main>
 
       {/* Modal */}
@@ -593,7 +765,7 @@ function DashboardSection({ stats }: { stats: any }) {
           <div style={styles.statLabel}>Usuarios</div>
         </div>
         <div style={styles.statCard}>
-          <div style={styles.statIcon}>⭐</div>
+          <div style={styles.statIcon}>💬</div>
           <div style={styles.statNumber}>{stats.totalRatings}</div>
           <div style={styles.statLabel}>Valoraciones</div>
         </div>
@@ -602,6 +774,18 @@ function DashboardSection({ stats }: { stats: any }) {
           <div style={styles.statNumber}>{stats.activePromotions}</div>
           <div style={styles.statLabel}>Promociones Activas</div>
         </div>
+        <div style={styles.statCard}>
+          <div style={styles.statIcon}>⭐</div>
+          <div style={styles.statNumber}>{stats.featuredBurgers}</div>
+          <div style={styles.statLabel}>Destacadas</div>
+        </div>
+        {stats.pendingApprovals > 0 && (
+          <div style={{...styles.statCard, backgroundColor: '#7c2d12', borderColor: '#dc2626'}}>
+            <div style={styles.statIcon}>⏳</div>
+            <div style={styles.statNumber}>{stats.pendingApprovals}</div>
+            <div style={styles.statLabel}>Pendientes Aprobación</div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -918,6 +1102,24 @@ function Modal({ type, item, restaurants, cities, onClose, onSave }: any) {
                   style={styles.textarea}
                 />
               </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>🖼️ Imagen URL</label>
+                <input
+                  type="url"
+                  value={formData.image_url || ''}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  style={styles.input}
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                />
+                {formData.image_url && (
+                  <img 
+                    src={formData.image_url} 
+                    alt="Preview" 
+                    style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px', marginTop: '8px' }}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                )}
+              </div>
               <div style={styles.formRow}>
                 <div style={styles.formGroup}>
                   <label style={styles.label}>Restaurante *</label>
@@ -1073,6 +1275,42 @@ function Modal({ type, item, restaurants, cities, onClose, onSave }: any) {
                   placeholder="https://thefork.es/..."
                 />
               </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>🖼️ Banner URL (Hero Image)</label>
+                <input
+                  type="url"
+                  value={formData.banner_url || ''}
+                  onChange={(e) => setFormData({ ...formData, banner_url: e.target.value })}
+                  style={styles.input}
+                  placeholder="https://ejemplo.com/banner.jpg"
+                />
+                {formData.banner_url && (
+                  <img 
+                    src={formData.banner_url} 
+                    alt="Banner Preview" 
+                    style={{ width: '200px', height: '100px', objectFit: 'cover', borderRadius: '8px', marginTop: '8px' }}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                )}
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>🖼️ Logo URL</label>
+                <input
+                  type="url"
+                  value={formData.logo_url || ''}
+                  onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
+                  style={styles.input}
+                  placeholder="https://ejemplo.com/logo.png"
+                />
+                {formData.logo_url && (
+                  <img 
+                    src={formData.logo_url} 
+                    alt="Logo Preview" 
+                    style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '8px', marginTop: '8px' }}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                )}
+              </div>
             </>
           )}
           
@@ -1179,6 +1417,194 @@ function Modal({ type, item, restaurants, cities, onClose, onSave }: any) {
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+// ==========================================
+// FEATURED SECTION
+// ==========================================
+function FeaturedSection({ burgers, allBurgers, onToggleFeatured, onChangeOrder }: any) {
+  const featured = burgers.sort((a: Burger, b: Burger) => (a.featured_order || 0) - (b.featured_order || 0));
+  const available = allBurgers.filter((b: Burger) => !b.is_featured && b.status === 'approved');
+
+  return (
+    <div>
+      <div style={styles.sectionHeader}>
+        <h2 style={styles.sectionTitle}>⭐ Hamburguesas Destacadas</h2>
+        <span style={{ color: '#9ca3af' }}>Máximo 3 hamburguesas en el slider "Para Ti"</span>
+      </div>
+
+      {featured.length === 0 && (
+        <div style={{ padding: '2rem', textAlign: 'center' as const, color: '#9ca3af' }}>
+          No hay hamburguesas destacadas. Selecciona hasta 3 desde la lista de abajo.
+        </div>
+      )}
+
+      {featured.length > 0 && (
+        <div style={styles.tableContainer}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Orden</th>
+                <th style={styles.th}>Hamburguesa</th>
+                <th style={styles.th}>Restaurante</th>
+                <th style={styles.th}>Imagen</th>
+                <th style={styles.th}>Rating</th>
+                <th style={styles.th}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {featured.map((burger: Burger) => (
+                <tr key={burger.id} style={styles.tr}>
+                  <td style={styles.td}>
+                    <select
+                      value={burger.featured_order || 1}
+                      onChange={(e) => onChangeOrder(burger.id, parseInt(e.target.value))}
+                      style={{ ...styles.select, width: '70px' }}
+                    >
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                    </select>
+                  </td>
+                  <td style={styles.td}>{burger.name}</td>
+                  <td style={styles.td}>{burger.restaurant?.name || '-'}</td>
+                  <td style={styles.td}>
+                    {burger.image_url ? (
+                      <img src={burger.image_url} alt={burger.name} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }} />
+                    ) : (
+                      <span style={{ color: '#9ca3af' }}>Sin imagen</span>
+                    )}
+                  </td>
+                  <td style={styles.td}>⭐ {burger.average_rating?.toFixed(1) || '0.0'}</td>
+                  <td style={styles.td}>
+                    <button onClick={() => onToggleFeatured(burger.id, true)} style={styles.deleteBtn}>
+                      ❌ Quitar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {featured.length < 3 && (
+        <>
+          <h3 style={{ ...styles.sectionTitle, fontSize: '1.2rem', marginTop: '2rem' }}>
+            Hamburguesas disponibles para destacar
+          </h3>
+          <div style={styles.tableContainer}>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Hamburguesa</th>
+                  <th style={styles.th}>Restaurante</th>
+                  <th style={styles.th}>Imagen</th>
+                  <th style={styles.th}>Rating</th>
+                  <th style={styles.th}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {available.slice(0, 20).map((burger: Burger) => (
+                  <tr key={burger.id} style={styles.tr}>
+                    <td style={styles.td}>{burger.name}</td>
+                    <td style={styles.td}>{burger.restaurant?.name || '-'}</td>
+                    <td style={styles.td}>
+                      {burger.image_url ? (
+                        <img src={burger.image_url} alt={burger.name} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} />
+                      ) : (
+                        <span style={{ color: '#9ca3af' }}>Sin imagen</span>
+                      )}
+                    </td>
+                    <td style={styles.td}>⭐ {burger.average_rating?.toFixed(1) || '0.0'}</td>
+                    <td style={styles.td}>
+                      <button onClick={() => onToggleFeatured(burger.id, false)} style={styles.editBtn}>
+                        ⭐ Destacar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ==========================================
+// PENDING SECTION
+// ==========================================
+function PendingSection({ pendingItems, burgers, restaurants, onApprove, onReject, onEdit }: any) {
+  return (
+    <div>
+      <h2 style={styles.sectionTitle}>⏳ Pendientes de Aprobación</h2>
+
+      {pendingItems.length === 0 && (
+        <div style={{ padding: '2rem', textAlign: 'center' as const, color: '#9ca3af' }}>
+          ✅ No hay elementos pendientes de aprobación
+        </div>
+      )}
+
+      {pendingItems.length > 0 && (
+        <div style={styles.tableContainer}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Tipo</th>
+                <th style={styles.th}>Nombre</th>
+                <th style={styles.th}>Enviado por</th>
+                <th style={styles.th}>Fecha</th>
+                <th style={styles.th}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pendingItems.map((item: PendingItem) => {
+                const fullItem = item.item_type === 'burger' 
+                  ? burgers.find((b: Burger) => b.id === item.item_id)
+                  : restaurants.find((r: Restaurant) => r.id === item.item_id);
+
+                return (
+                  <tr key={item.item_id} style={styles.tr}>
+                    <td style={styles.td}>
+                      <span style={{ ...styles.activeStatus, backgroundColor: item.item_type === 'burger' ? '#3b82f6' : '#10b981' }}>
+                        {item.item_type === 'burger' ? '🍔 Burger' : '🏪 Restaurante'}
+                      </span>
+                    </td>
+                    <td style={styles.td}>{item.item_name}</td>
+                    <td style={styles.td}>{item.submitter_name || 'Desconocido'}</td>
+                    <td style={styles.td}>{new Date(item.created_at).toLocaleDateString()}</td>
+                    <td style={styles.td}>
+                      <button 
+                        onClick={() => onEdit(item.item_type, fullItem)} 
+                        style={styles.editBtn}
+                        title="Editar antes de aprobar"
+                      >
+                        ✏️ Editar
+                      </button>
+                      <button 
+                        onClick={() => onApprove(item.item_type, item.item_id)} 
+                        style={{...styles.editBtn, backgroundColor: '#10b981'}}
+                      >
+                        ✅ Aprobar
+                      </button>
+                      <button 
+                        onClick={() => onReject(item.item_type, item.item_id)} 
+                        style={styles.deleteBtn}
+                      >
+                        ❌ Rechazar
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
