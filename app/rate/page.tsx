@@ -648,7 +648,7 @@ export default function RatePage() {
                         city: cities.find(c => c.id === burger.city_id)?.name || 'Ciudad',
                         rating: 0,
                         reviews: 0,
-                        position: null,
+                        position: 0,
                         tags: burger.tags || []
                       })
                       
