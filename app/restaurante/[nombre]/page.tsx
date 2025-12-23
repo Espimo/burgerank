@@ -19,6 +19,8 @@ interface Restaurant {
   reservation_url: string | null;
   average_rating: number;
   total_ratings: number;
+  banner_url: string | null;
+  logo_url: string | null;
   city: {
     name: string;
   };
@@ -89,7 +91,7 @@ export default function RestaurantePage() {
         return;
       }
 
-      const restaurant = restData as any;
+      const restaurant = restData as Restaurant;
       setRestaurant(restaurant);
 
       // Cargar hamburguesas del restaurante
