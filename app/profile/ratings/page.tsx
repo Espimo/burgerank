@@ -209,10 +209,10 @@ export default function MyRatingsPage() {
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '1rem' }}>
-            {ratings.map((rating) => (
+            {ratings.map((rating: any) => (
               <div key={rating.id} className="card" style={{ padding: '1rem', display: 'flex', gap: '1rem' }}>
                 {/* Imagen de la hamburguesa */}
-                {rating.burger.image_url && (
+                {rating.burger?.image_url && (
                   <div style={{ flexShrink: 0 }}>
                     <img 
                       src={rating.burger.image_url}
