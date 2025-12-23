@@ -17,6 +17,10 @@ interface Restaurant {
   website: string | null;
   delivery_url: string | null;
   reservation_url: string | null;
+  banner_url: string | null;
+  logo_url: string | null;
+  status: string;
+  submitted_by: string | null;
   average_rating: number;
   total_ratings: number;
   city_id: string;
@@ -29,6 +33,11 @@ interface Burger {
   description: string | null;
   restaurant_id: string;
   city_id: string;
+  image_url: string | null;
+  is_featured: boolean;
+  featured_order: number | null;
+  status: string;
+  submitted_by: string | null;
   average_rating: number;
   total_ratings: number;
   position: number | null;
@@ -76,7 +85,16 @@ interface Rating {
   burger?: { name: string; restaurant?: { name: string } };
 }
 
-type ActiveSection = 'dashboard' | 'burgers' | 'restaurants' | 'users' | 'promotions' | 'ratings';
+interface PendingItem {
+  item_type: string;
+  item_id: string;
+  item_name: string;
+  submitted_by: string | null;
+  submitter_name: string | null;
+  created_at: string;
+}
+
+type ActiveSection = 'dashboard' | 'burgers' | 'restaurants' | 'users' | 'promotions' | 'ratings' | 'featured' | 'pending';
 
 export default function AdminPanel() {
   const router = useRouter();
@@ -93,6 +111,7 @@ export default function AdminPanel() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [ratings, setRatings] = useState<Rating[]>([]);
+  const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
   
   // Stats
   const [stats, setStats] = useState({
@@ -100,7 +119,9 @@ export default function AdminPanel() {
     totalRestaurants: 0,
     totalUsers: 0,
     totalRatings: 0,
-    activePromotions: 0
+    activePromotions: 0,
+    pendingApprovals: 0,
+    featuredBurgers: 0
   });
 
   // Modal states
@@ -145,28 +166,28 @@ export default function AdminPanel() {
         .from('restaurants')
         .select('*, city:cities(name)')
         .order('name');
-      if (restaurantsData) setRestaurants(restaurantsData);
+      if (restaurantsData) setRestaurants(restaurantsData as any);
 
       // Load burgers with restaurant and city
       const { data: burgersData } = await supabase
         .from('burgers')
         .select('*, restaurant:restaurants(name), city:cities(name)')
         .order('position', { ascending: true, nullsFirst: false });
-      if (burgersData) setBurgers(burgersData);
+      if (burgersData) setBurgers(burgersData as any);
 
       // Load users
       const { data: usersData } = await supabase
         .from('users')
         .select('id, username, email, points, category, is_admin, created_at')
         .order('created_at', { ascending: false });
-      if (usersData) setUsers(usersData);
+      if (usersData) setUsers(usersData as any);
 
       // Load promotions with restaurant
       const { data: promotionsData } = await supabase
         .from('restaurant_promotions')
         .select('*, restaurant:restaurants(name)')
         .order('created_at', { ascending: false });
-      if (promotionsData) setPromotions(promotionsData);
+      if (promotionsData) setPromotions(promotionsData as any);
 
       // Load recent ratings
       const { data: ratingsData } = await supabase
@@ -174,15 +195,53 @@ export default function AdminPanel() {
         .select('*, user:users(username), burger:burgers(name, restaurant:restaurants(name))')
         .order('created_at', { ascending: false })
         .limit(50);
-      if (ratingsData) setRatings(ratingsData);
+      if (ratingsData) setRatings(ratingsData as any);
+
+      // Load pending items (burgers and restaurants awaiting approval)
+      const pendingBurgers = await supabase
+        .from('burgers')
+        .select('id, name, created_at, submitted_by, users:submitted_by(username)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      const pendingRestaurants = await supabase
+        .from('restaurants')
+        .select('id, name, created_at, submitted_by, users:submitted_by(username)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      const pending: PendingItem[] = [
+        ...(pendingBurgers.data || []).map((b: any) => ({
+          item_type: 'burger',
+          item_id: b.id,
+          item_name: b.name,
+          submitted_by: b.submitted_by,
+          submitter_name: b.users?.username || 'Desconocido',
+          created_at: b.created_at
+        })),
+        ...(pendingRestaurants.data || []).map((r: any) => ({
+          item_type: 'restaurant',
+          item_id: r.id,
+          item_name: r.name,
+          submitted_by: r.submitted_by,
+          submitter_name: r.users?.username || 'Desconocido',
+          created_at: r.created_at
+        }))
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setPendingItems(pending);
 
       // Calculate stats
+      const featuredCount = (burgersData || []).filter((b: any) => b.is_featured).length;
+      
       setStats({
         totalBurgers: burgersData?.length || 0,
         totalRestaurants: restaurantsData?.length || 0,
         totalUsers: usersData?.length || 0,
         totalRatings: ratingsData?.length || 0,
-        activePromotions: (promotionsData as any[] || []).filter((p: any) => p.is_active).length
+        activePromotions: (promotionsData as any[] || []).filter((p: any) => p.is_active).length,
+        pendingApprovals: pending.length,
+        featuredBurgers: featuredCount
       });
     } catch (error) {
       console.error('Error loading data:', error);

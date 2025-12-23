@@ -71,6 +71,10 @@ export type Database = {
           delivery_url: string | null;
           reservation_url: string | null;
           website: string | null;
+          banner_url: string | null;
+          logo_url: string | null;
+          status: string;
+          submitted_by: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -86,6 +90,10 @@ export type Database = {
           delivery_url?: string;
           reservation_url?: string;
           website?: string;
+          banner_url?: string;
+          logo_url?: string;
+          status?: string;
+          submitted_by?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -100,6 +108,10 @@ export type Database = {
           delivery_url?: string;
           reservation_url?: string;
           website?: string;
+          banner_url?: string;
+          logo_url?: string;
+          status?: string;
+          submitted_by?: string;
           updated_at?: string;
         };
       };
@@ -115,6 +127,11 @@ export type Database = {
           city_id: string;
           average_rating: number;
           total_ratings: number;
+          image_url: string | null;
+          is_featured: boolean;
+          featured_order: number | null;
+          status: string;
+          submitted_by: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -129,6 +146,11 @@ export type Database = {
           city_id: string;
           average_rating?: number;
           total_ratings?: number;
+          image_url?: string;
+          is_featured?: boolean;
+          featured_order?: number;
+          status?: string;
+          submitted_by?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -142,6 +164,11 @@ export type Database = {
           city_id?: string;
           average_rating?: number;
           total_ratings?: number;
+          image_url?: string;
+          is_featured?: boolean;
+          featured_order?: number;
+          status?: string;
+          submitted_by?: string;
           updated_at?: string;
         };
       };
