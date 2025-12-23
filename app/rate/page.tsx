@@ -644,10 +644,13 @@ export default function RatePage() {
                       setSelectedBurger({
                         id: burger.id,
                         name: burger.name,
+                        description: burger.description || '',
                         restaurant: restaurants.find(r => r.id === burger.restaurant_id)?.name || 'Restaurante',
                         city: cities.find(c => c.id === burger.city_id)?.name || 'Ciudad',
                         rating: 0,
                         reviews: 0,
+                        userRating: 0,
+                        type: 'premium',
                         position: 0,
                         tags: burger.tags || []
                       })
