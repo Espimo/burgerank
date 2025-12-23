@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Sidebar from '@/components/layout/Sidebar'
 import { burgers } from '@/lib/data/mockData'
+import { createClient } from '@/lib/supabase/client'
 
 export default function RatePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -20,6 +21,33 @@ export default function RatePage() {
   const [comment, setComment] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedBurger, setSelectedBurger] = useState<typeof burgers[0] | null>(null)
+  
+  // New burger form
+  const [newBurgerName, setNewBurgerName] = useState('')
+  const [newBurgerRestaurantId, setNewBurgerRestaurantId] = useState('')
+  const [newBurgerCityId, setNewBurgerCityId] = useState('')
+  const [newBurgerDescription, setNewBurgerDescription] = useState('')
+  const [newBurgerImageUrl, setNewBurgerImageUrl] = useState('')
+  const [restaurants, setRestaurants] = useState<any[]>([])
+  const [cities, setCities] = useState<any[]>([])
+  const [loadingForm, setLoadingForm] = useState(false)
+  
+  // Load restaurants and cities
+  useEffect(() => {
+    const loadData = async () => {
+      const supabase = createClient()
+      
+      const [citiesRes, restaurantsRes] = await Promise.all([
+        supabase.from('cities').select('*'),
+        supabase.from('restaurants').select('*')
+      ])
+      
+      if (citiesRes.data) setCities(citiesRes.data)
+      if (restaurantsRes.data) setRestaurants(restaurantsRes.data)
+    }
+    
+    loadData()
+  }, [])
 
   const handleMenuClick = () => {
     setSidebarOpen(true)
@@ -479,38 +507,170 @@ export default function RatePage() {
           {currentStep === 6 && (
             <div className="wizard-step active">
               <h3 className="text-lg font-bold mb-4">➕ Crear Nueva Hamburguesa</h3>
+              
+              {/* Success message */}
+              {selectedBurger && (
+                <div style={{
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  padding: '1rem',
+                  borderRadius: '0.5rem',
+                  marginBottom: '1rem',
+                  textAlign: 'center'
+                }}>
+                  ✅ Hamburguesa creada exitosamente. Ahora puedes valorarla.
+                </div>
+              )}
+              
               <div className="form-group">
-                <label className="form-label">Nombre</label>
+                <label className="form-label">Nombre *</label>
                 <input
                   type="text"
                   className="form-input"
+                  value={newBurgerName}
+                  onChange={(e) => setNewBurgerName(e.target.value)}
                   placeholder="Ej: The Ultimate Burger"
                 />
               </div>
+              
               <div className="form-group">
-                <label className="form-label">Restaurante</label>
-                <input type="text" className="form-input" placeholder="Ej: Burger Paradise" />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Ciudad</label>
-                <input
-                  type="text"
+                <label className="form-label">Descripción</label>
+                <textarea
                   className="form-input"
-                  placeholder="Madrid, Barcelona..."
+                  value={newBurgerDescription}
+                  onChange={(e) => setNewBurgerDescription(e.target.value)}
+                  placeholder="Ej: Con doble carne, queso cheddar y bacon..."
+                  style={{ minHeight: '80px' }}
                 />
               </div>
+              
+              <div className="form-group">
+                <label className="form-label">Restaurante *</label>
+                <select
+                  className="form-input"
+                  value={newBurgerRestaurantId}
+                  onChange={(e) => setNewBurgerRestaurantId(e.target.value)}
+                >
+                  <option value="">Seleccionar restaurante...</option>
+                  {restaurants.map((r) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Ciudad *</label>
+                <select
+                  className="form-input"
+                  value={newBurgerCityId}
+                  onChange={(e) => setNewBurgerCityId(e.target.value)}
+                >
+                  <option value="">Seleccionar ciudad...</option>
+                  {cities.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Imagen URL (opcional)</label>
+                <input
+                  type="url"
+                  className="form-input"
+                  value={newBurgerImageUrl}
+                  onChange={(e) => setNewBurgerImageUrl(e.target.value)}
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                />
+                {newBurgerImageUrl && (
+                  <img 
+                    src={newBurgerImageUrl} 
+                    alt="Preview"
+                    style={{ 
+                      maxWidth: '150px', 
+                      maxHeight: '150px', 
+                      marginTop: '0.5rem',
+                      borderRadius: '0.5rem'
+                    }}
+                    onError={() => {}}
+                  />
+                )}
+              </div>
+              
               <div className="btn-group" style={{ marginTop: '2rem' }}>
-                <button className="btn btn-secondary" onClick={() => advanceStep(1)}>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => {
+                    advanceStep(1)
+                    setNewBurgerName('')
+                    setNewBurgerRestaurantId('')
+                    setNewBurgerCityId('')
+                    setNewBurgerDescription('')
+                    setNewBurgerImageUrl('')
+                  }}
+                  disabled={loadingForm}
+                >
                   ← Atrás
                 </button>
                 <button
                   className="btn btn-primary"
-                  onClick={() => {
-                    alert('Nueva hamburguesa creada. Se revisará en 24-48h')
-                    advanceStep(1)
+                  onClick={async () => {
+                    if (!newBurgerName || !newBurgerRestaurantId || !newBurgerCityId) {
+                      alert('Por favor completa todos los campos requeridos (*)')
+                      return
+                    }
+                    
+                    setLoadingForm(true)
+                    try {
+                      const response = await fetch('/api/burgers/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          name: newBurgerName,
+                          description: newBurgerDescription,
+                          restaurant_id: newBurgerRestaurantId,
+                          city_id: newBurgerCityId,
+                          image_url: newBurgerImageUrl || null,
+                        })
+                      })
+                      
+                      if (!response.ok) {
+                        const error = await response.json()
+                        throw new Error(error.error || 'Error al crear la hamburguesa')
+                      }
+                      
+                      const burger = await response.json()
+                      
+                      // Set the new burger as selected and advance
+                      setSelectedBurger({
+                        id: burger.id,
+                        name: burger.name,
+                        restaurant: restaurants.find(r => r.id === burger.restaurant_id)?.name || 'Restaurante',
+                        city: cities.find(c => c.id === burger.city_id)?.name || 'Ciudad',
+                        rating: 0,
+                        reviews: 0,
+                        position: null,
+                        tags: burger.tags || []
+                      })
+                      
+                      // Clear form
+                      setNewBurgerName('')
+                      setNewBurgerRestaurantId('')
+                      setNewBurgerCityId('')
+                      setNewBurgerDescription('')
+                      setNewBurgerImageUrl('')
+                      
+                      // Advance to rating step
+                      advanceStep(2)
+                    } catch (error) {
+                      console.error('Error:', error)
+                      alert(error instanceof Error ? error.message : 'Error al crear la hamburguesa')
+                    } finally {
+                      setLoadingForm(false)
+                    }
                   }}
+                  disabled={loadingForm}
                 >
-                  Enviar para Revisión
+                  {loadingForm ? 'Creando...' : '✅ Crear y Valorar'}
                 </button>
               </div>
             </div>
