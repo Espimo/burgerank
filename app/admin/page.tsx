@@ -110,15 +110,20 @@ export default function AdminPanel() {
 
   // Check authentication and admin status
   useEffect(() => {
+    console.log('[AdminPanel] Auth state:', { authLoading, adminLoading, authUser: !!authUser, isAdmin });
+    
     if (!authLoading && !adminLoading) {
       if (!authUser) {
+        console.log('[AdminPanel] No authUser, redirecting to signin');
         router.push('/auth/signin');
         return;
       }
       if (!isAdmin) {
+        console.log('[AdminPanel] User is not admin, redirecting to home');
         router.push('/');
         return;
       }
+      console.log('[AdminPanel] User is admin, loading data');
       loadAllData();
     }
   }, [authUser, isAdmin, authLoading, adminLoading, router]);

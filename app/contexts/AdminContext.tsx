@@ -19,10 +19,13 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   const checkAdminStatus = async () => {
     if (!authUser) {
+      console.log('[AdminContext] No authUser, setting isAdmin=false');
       setIsAdmin(false);
       setAdminLoading(false);
       return;
     }
+
+    console.log('[AdminContext] Checking admin status for user:', authUser.id);
 
     try {
       const supabase = createAdminClient();
@@ -32,14 +35,18 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         .eq('id', authUser.id)
         .single();
 
+      console.log('[AdminContext] Query result:', { data, error });
+
       if (error) {
-        console.error('Error checking admin status:', error);
+        console.error('[AdminContext] Error checking admin status:', error);
         setIsAdmin(false);
       } else {
-        setIsAdmin(data?.is_admin || false);
+        const adminStatus = data?.is_admin || false;
+        console.log('[AdminContext] Setting isAdmin to:', adminStatus);
+        setIsAdmin(adminStatus);
       }
     } catch (error) {
-      console.error('Error checking admin status:', error);
+      console.error('[AdminContext] Exception checking admin status:', error);
       setIsAdmin(false);
     } finally {
       setAdminLoading(false);
