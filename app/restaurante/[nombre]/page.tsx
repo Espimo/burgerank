@@ -34,6 +34,7 @@ interface Burger {
   total_ratings: number;
   tags: string[] | null;
   position: number | null;
+  image_url: string | null;
 }
 
 interface Promotion {
