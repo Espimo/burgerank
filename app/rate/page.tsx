@@ -25,25 +25,42 @@ export default function RatePage() {
   // New burger form
   const [newBurgerName, setNewBurgerName] = useState('')
   const [newBurgerRestaurantId, setNewBurgerRestaurantId] = useState('')
+  const [newBurgerRestaurantName, setNewBurgerRestaurantName] = useState('')
   const [newBurgerCityId, setNewBurgerCityId] = useState('')
+  const [newBurgerCityName, setNewBurgerCityName] = useState('')
   const [newBurgerDescription, setNewBurgerDescription] = useState('')
   const [newBurgerImageUrl, setNewBurgerImageUrl] = useState('')
   const [restaurants, setRestaurants] = useState<any[]>([])
   const [cities, setCities] = useState<any[]>([])
   const [loadingForm, setLoadingForm] = useState(false)
+  const [showNewRestaurant, setShowNewRestaurant] = useState(false)
+  const [showNewCity, setShowNewCity] = useState(false)
   
   // Load restaurants and cities
   useEffect(() => {
     const loadData = async () => {
-      const supabase = createClient()
-      
-      const [citiesRes, restaurantsRes] = await Promise.all([
-        supabase.from('cities').select('*'),
-        supabase.from('restaurants').select('*')
-      ])
-      
-      if (citiesRes.data) setCities(citiesRes.data)
-      if (restaurantsRes.data) setRestaurants(restaurantsRes.data)
+      try {
+        const supabase = createClient()
+        
+        const [citiesRes, restaurantsRes] = await Promise.all([
+          supabase.from('cities').select('*'),
+          supabase.from('restaurants').select('*')
+        ])
+        
+        if (citiesRes.error) {
+          console.error('Error loading cities:', citiesRes.error)
+        } else if (citiesRes.data) {
+          setCities(citiesRes.data)
+        }
+        
+        if (restaurantsRes.error) {
+          console.error('Error loading restaurants:', restaurantsRes.error)
+        } else if (restaurantsRes.data) {
+          setRestaurants(restaurantsRes.data)
+        }
+      } catch (error) {
+        console.error('Error in loadData:', error)
+      }
     }
     
     loadData()
@@ -546,30 +563,122 @@ export default function RatePage() {
               
               <div className="form-group">
                 <label className="form-label">Restaurante *</label>
-                <select
-                  className="form-input"
-                  value={newBurgerRestaurantId}
-                  onChange={(e) => setNewBurgerRestaurantId(e.target.value)}
-                >
-                  <option value="">Seleccionar restaurante...</option>
-                  {restaurants.map((r) => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
-                </select>
+                {!showNewRestaurant ? (
+                  <>
+                    <select
+                      className="form-input"
+                      value={newBurgerRestaurantId}
+                      onChange={(e) => setNewBurgerRestaurantId(e.target.value)}
+                    >
+                      <option value="">Seleccionar restaurante...</option>
+                      {restaurants.length > 0 && restaurants.map((r) => (
+                        <option key={r.id} value={r.id}>{r.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setShowNewRestaurant(true)}
+                      style={{
+                        marginTop: '0.5rem',
+                        padding: '0.5rem',
+                        backgroundColor: '#374151',
+                        color: '#e5e7eb',
+                        border: '1px solid #4b5563',
+                        borderRadius: '0.375rem',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      ➕ Crear Nuevo Restaurante
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={newBurgerRestaurantName}
+                      onChange={(e) => setNewBurgerRestaurantName(e.target.value)}
+                      placeholder="Nombre del nuevo restaurante"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewRestaurant(false)}
+                      style={{
+                        marginTop: '0.5rem',
+                        padding: '0.5rem',
+                        backgroundColor: '#374151',
+                        color: '#e5e7eb',
+                        border: '1px solid #4b5563',
+                        borderRadius: '0.375rem',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      ← Seleccionar de lista
+                    </button>
+                  </>
+                )}
               </div>
               
               <div className="form-group">
                 <label className="form-label">Ciudad *</label>
-                <select
-                  className="form-input"
-                  value={newBurgerCityId}
-                  onChange={(e) => setNewBurgerCityId(e.target.value)}
-                >
-                  <option value="">Seleccionar ciudad...</option>
-                  {cities.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                {!showNewCity ? (
+                  <>
+                    <select
+                      className="form-input"
+                      value={newBurgerCityId}
+                      onChange={(e) => setNewBurgerCityId(e.target.value)}
+                    >
+                      <option value="">Seleccionar ciudad...</option>
+                      {cities.length > 0 && cities.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setShowNewCity(true)}
+                      style={{
+                        marginTop: '0.5rem',
+                        padding: '0.5rem',
+                        backgroundColor: '#374151',
+                        color: '#e5e7eb',
+                        border: '1px solid #4b5563',
+                        borderRadius: '0.375rem',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      ➕ Crear Nueva Ciudad
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={newBurgerCityName}
+                      onChange={(e) => setNewBurgerCityName(e.target.value)}
+                      placeholder="Nombre de la nueva ciudad"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewCity(false)}
+                      style={{
+                        marginTop: '0.5rem',
+                        padding: '0.5rem',
+                        backgroundColor: '#374151',
+                        color: '#e5e7eb',
+                        border: '1px solid #4b5563',
+                        borderRadius: '0.375rem',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      ← Seleccionar de lista
+                    </button>
+                  </>
+                )}
               </div>
               
               <div className="form-group">
@@ -614,21 +723,78 @@ export default function RatePage() {
                 <button
                   className="btn btn-primary"
                   onClick={async () => {
-                    if (!newBurgerName || !newBurgerRestaurantId || !newBurgerCityId) {
-                      alert('Por favor completa todos los campos requeridos (*)')
+                    if (!newBurgerName) {
+                      alert('Por favor completa el nombre de la hamburguesa')
+                      return
+                    }
+                    
+                    if (!showNewRestaurant && !newBurgerRestaurantId) {
+                      alert('Por favor selecciona o crea un restaurante')
+                      return
+                    }
+                    
+                    if (!showNewCity && !newBurgerCityId) {
+                      alert('Por favor selecciona o crea una ciudad')
+                      return
+                    }
+                    
+                    if (showNewRestaurant && !newBurgerRestaurantName) {
+                      alert('Por favor ingresa el nombre del restaurante')
+                      return
+                    }
+                    
+                    if (showNewCity && !newBurgerCityName) {
+                      alert('Por favor ingresa el nombre de la ciudad')
                       return
                     }
                     
                     setLoadingForm(true)
                     try {
+                      let finalRestaurantId = newBurgerRestaurantId
+                      let finalCityId = newBurgerCityId
+                      
+                      // Create new restaurant if needed
+                      if (showNewRestaurant) {
+                        const resRes = await fetch('/api/restaurants/create', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ name: newBurgerRestaurantName, city_id: finalCityId })
+                        })
+                        
+                        if (!resRes.ok) {
+                          const error = await resRes.json()
+                          throw new Error('Error al crear restaurante: ' + error.error)
+                        }
+                        
+                        const restaurant = await resRes.json()
+                        finalRestaurantId = restaurant.id
+                      }
+                      
+                      // Create new city if needed
+                      if (showNewCity) {
+                        const cityRes = await fetch('/api/cities/create', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ name: newBurgerCityName })
+                        })
+                        
+                        if (!cityRes.ok) {
+                          const error = await cityRes.json()
+                          throw new Error('Error al crear ciudad: ' + error.error)
+                        }
+                        
+                        const city = await cityRes.json()
+                        finalCityId = city.id
+                      }
+                      
                       const response = await fetch('/api/burgers/create', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                           name: newBurgerName,
                           description: newBurgerDescription,
-                          restaurant_id: newBurgerRestaurantId,
-                          city_id: newBurgerCityId,
+                          restaurant_id: finalRestaurantId,
+                          city_id: finalCityId,
                           image_url: newBurgerImageUrl || null,
                         })
                       })
@@ -645,8 +811,8 @@ export default function RatePage() {
                         id: burger.id,
                         name: burger.name,
                         description: burger.description || '',
-                        restaurant: restaurants.find(r => r.id === burger.restaurant_id)?.name || 'Restaurante',
-                        city: cities.find(c => c.id === burger.city_id)?.name || 'Ciudad',
+                        restaurant: newBurgerRestaurantName || restaurants.find(r => r.id === burger.restaurant_id)?.name || 'Restaurante',
+                        city: newBurgerCityName || cities.find(c => c.id === burger.city_id)?.name || 'Ciudad',
                         rating: 0,
                         reviews: 0,
                         userRating: 0,
@@ -658,9 +824,13 @@ export default function RatePage() {
                       // Clear form
                       setNewBurgerName('')
                       setNewBurgerRestaurantId('')
+                      setNewBurgerRestaurantName('')
                       setNewBurgerCityId('')
+                      setNewBurgerCityName('')
                       setNewBurgerDescription('')
                       setNewBurgerImageUrl('')
+                      setShowNewRestaurant(false)
+                      setShowNewCity(false)
                       
                       // Advance to rating step
                       advanceStep(2)
