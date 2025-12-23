@@ -89,7 +89,7 @@ export default function RestaurantePage() {
         return;
       }
 
-      const restaurant = restData as Restaurant;
+      const restaurant = restData as any;
       setRestaurant(restaurant);
 
       // Cargar hamburguesas del restaurante
