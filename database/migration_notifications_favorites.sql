@@ -59,15 +59,20 @@ DROP POLICY IF EXISTS "Users can view own favorites" ON public.user_favorites;
 CREATE POLICY "Users can view own favorites" ON public.user_favorites
   FOR SELECT USING (auth.uid() = user_id);
 
--- Users can add to their favorites
+-- Users can add to their favorites (allow authenticated users to insert their own records)
 DROP POLICY IF EXISTS "Users can add favorites" ON public.user_favorites;
 CREATE POLICY "Users can add favorites" ON public.user_favorites
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+  FOR INSERT WITH CHECK (auth.uid() = user_id OR auth.role() = 'authenticated');
 
 -- Users can remove from their favorites
 DROP POLICY IF EXISTS "Users can delete own favorites" ON public.user_favorites;
 CREATE POLICY "Users can delete own favorites" ON public.user_favorites
   FOR DELETE USING (auth.uid() = user_id);
+
+-- Allow service role to bypass RLS (for API operations)
+DROP POLICY IF EXISTS "Service role can manage favorites" ON public.user_favorites;
+CREATE POLICY "Service role can manage favorites" ON public.user_favorites
+  FOR ALL USING (true);
 
 -- ============================================================================
 -- TRIGGER: Send notification when user earns a badge

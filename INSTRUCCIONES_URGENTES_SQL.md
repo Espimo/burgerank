@@ -1,12 +1,14 @@
-# ⚠️ INSTRUCCIONES URGENTES - Ejecutar Migración SQL
+# ⚠️ INSTRUCCIONES URGENTES - Re-ejecutar Migración SQL
 
 ## 🔴 PROBLEMA DETECTADO
 
-Los botones de **favoritos** y las **notificaciones** no funcionan porque **faltan las tablas en la base de datos**.
+Los botones de **favoritos** muestran error: `permission denied for table user_favorites` (código 42501)
+
+**Causa:** Las políticas de seguridad RLS (Row Level Security) están bloqueando el acceso. Las políticas anteriores eran demasiado restrictivas.
 
 ## ✅ SOLUCIÓN
 
-Debes ejecutar el script SQL de migración en tu base de datos de Supabase.
+Debes **RE-EJECUTAR** el script SQL actualizado que tiene políticas RLS corregidas.
 
 ## 📝 PASOS A SEGUIR
 

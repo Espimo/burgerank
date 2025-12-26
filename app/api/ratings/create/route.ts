@@ -342,10 +342,23 @@ export async function PUT(request: NextRequest) {
     const message = error instanceof Error ? error.message : 'Error al actualizar valoración';
     const stack = error instanceof Error ? error.stack : undefined;
     console.error('Error stack:', stack);
+    
+    // Serializar el error correctamente
+    let errorDetails = 'Error desconocido';
+    if (error && typeof error === 'object') {
+      try {
+        errorDetails = JSON.stringify(error, Object.getOwnPropertyNames(error));
+      } catch {
+        errorDetails = String(error);
+      }
+    } else {
+      errorDetails = String(error);
+    }
+    
     return NextResponse.json(
       { 
         error: message,
-        details: error instanceof Error ? error.toString() : String(error)
+        details: errorDetails
       },
       { status: 500 }
     );

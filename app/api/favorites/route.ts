@@ -104,6 +104,13 @@ export async function POST(request: Request) {
       if (error.code === '42P01') { // Table does not exist
         return NextResponse.json({ error: 'La tabla user_favorites no existe. Ejecuta el script SQL de migración.' }, { status: 500 })
       }
+      if (error.code === '42501') { // Permission denied
+        return NextResponse.json({ 
+          error: 'Error de permisos en la base de datos. Necesitas re-ejecutar el script SQL con las políticas RLS corregidas.',
+          details: 'Las políticas de seguridad RLS están bloqueando el acceso. Ejecuta de nuevo database/migration_notifications_favorites.sql',
+          code: error.code 
+        }, { status: 500 })
+      }
       return NextResponse.json({ 
         error: 'Error al agregar a favoritos', 
         details: error.message,
