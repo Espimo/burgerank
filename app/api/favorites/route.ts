@@ -77,6 +77,11 @@ export async function POST(request: Request) {
     const supabase = await createClient()
     const adminClient = createAdminClient()
     
+    // Log para diagnóstico
+    const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    const keyLength = process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0
+    console.log('🔑 Service Role Key Status:', { hasServiceKey, keyLength })
+    
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
@@ -102,48 +107,7 @@ export async function POST(request: Request) {
       }, { status: 400 })
     }
 
-    // Verificar que la burger existe (usando admin para evitar RLS)
-    const { data: burgers, error: burgerError } = await adminClient
-      .from('burgers')
-      .select('id, name')
-      .eq('id', burger_id)
-
-    console.log('Burger search result:', { 
-      burgers, 
-      error: burgerError,
-      searchedId: burger_id,
-      foundCount: burgers?.length || 0
-    })
-
-    if (burgerError) {
-      console.error('Error buscando burger:', burgerError)
-      return NextResponse.json({ 
-        error: 'Error al buscar burger', 
-        details: burgerError.message,
-        code: burgerError.code,
-        hint: burgerError.hint,
-        burgerId: burger_id
-      }, { status: 500 })
-    }
-
-    if (!burgers || burgers.length === 0) {
-      console.error('Burger no encontrada con ID:', burger_id)
-      
-      // Verificar cuántas burgers hay en total
-      const { count } = await adminClient
-        .from('burgers')
-        .select('*', { count: 'exact', head: true })
-      
-      return NextResponse.json({ 
-        error: 'Burger no encontrada',
-        burgerId: burger_id,
-        totalBurgersInDB: count || 0
-      }, { status: 404 })
-    }
-
-    const burger = burgers[0]
-
-    // Agregar a favoritos usando admin client
+    // Intentar agregar directamente - el FK constraint validará si existe
     console.log('Intentando agregar a favoritos:', { user_id: user.id, burger_id })
     
     const { data: favorite, error } = await adminClient
@@ -156,20 +120,34 @@ export async function POST(request: Request) {
       .single()
 
     if (error) {
-      console.error('Error adding favorite - CODE:', error.code, 'MESSAGE:', error.message)
+      console.error('Error adding favorite - CODE:', error.code, 'MESSAGE:', error.message, 'DETAILS:', error.details)
+      
       if (error.code === '23505') { // Unique violation
         return NextResponse.json({ error: 'Ya está en favoritos' }, { status: 409 })
       }
+      
+      if (error.code === '23503') { // Foreign key violation
+        return NextResponse.json({ error: 'Burger no encontrada' }, { status: 404 })
+      }
+      
       return NextResponse.json({ 
         error: 'Error al agregar a favoritos', 
         details: error.message,
+        code: error.code,
+        hint: error.hint
+      }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Añadida a favoritos',
         code: error.code 
       }, { status: 500 })
     }
 
     return NextResponse.json({
       success: true,
-      message: `${burger.name} añadida a favoritos`,
+      message: 'Añadida a favoritos',
       favorite
     })
 
