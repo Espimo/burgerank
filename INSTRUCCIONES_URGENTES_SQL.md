@@ -1,14 +1,15 @@
-# ⚠️ INSTRUCCIONES URGENTES - Re-ejecutar Migración SQL
+# ⚠️ INSTRUCCIONES URGENTES - Ejecutar 2 Scripts SQL
 
-## 🔴 PROBLEMA DETECTADO
+## 🔴 PROBLEMAS DETECTADOS
 
-Los botones de **favoritos** muestran error: `permission denied for table user_favorites` (código 42501)
+1. **Favoritos**: Error `permission denied for table user_favorites` (código 42501)
+2. **Ratings**: Error `permission denied for table ranking_config` (código 42501)
 
-**Causa:** Las políticas de seguridad RLS (Row Level Security) están bloqueando el acceso. Las políticas anteriores eran demasiado restrictivas.
+**Causa:** Las políticas de seguridad RLS (Row Level Security) están bloqueando el acceso a estas tablas.
 
 ## ✅ SOLUCIÓN
 
-Debes **RE-EJECUTAR** el script SQL actualizado que tiene políticas RLS corregidas.
+Debes ejecutar **DOS scripts SQL** en Supabase en este orden:
 
 ## 📝 PASOS A SEGUIR
 
@@ -16,56 +17,53 @@ Debes **RE-EJECUTAR** el script SQL actualizado que tiene políticas RLS corregi
 - Ve a [https://supabase.com/dashboard](https://supabase.com/dashboard)
 - Selecciona tu proyecto **BurgeRank**
 
-### 2. Abre el SQL Editor
+### 2. SCRIPT 1: Corregir ranking_config
+
 - En el menú lateral izquierdo, haz clic en **"SQL Editor"**
 - Haz clic en **"New Query"** (Nueva consulta)
-
-### 3. Copia y pega el script
-- Abre el archivo: `database/migration_notifications_favorites.sql`
+- Abre el archivo: `database/fix_ranking_config_rls.sql`
 - **Copia TODO el contenido** del archivo
 - **Pégalo** en el editor SQL de Supabase
+- Haz clic en el botón **"Run"** (Ejecutar)
+- Deberías ver: **"Success. No rows returned"**
 
-### 4. Ejecuta el script
-- Haz clic en el botón **"Run"** (Ejecutar) o presiona `Ctrl + Enter`
-- Deberías ver un mensaje de éxito: **"Success. No rows returned"**
+### 3. SCRIPT 2: Corregir user_favorites y notifications
 
-### 5. Verifica que se crearon las tablas
+- Haz clic en **"New Query"** de nuevo
+- Abre el archivo: `database/migration_notifications_favorites.sql`
+- **Copia TODO el contenido** del archivo  
+- **Pégalo** en el editor SQL
+- Haz clic en **"Run"**
+- Deberías ver: **"Success. No rows returned"**
+
+### 4. Verifica que se crearon las tablas correctamente
 - Ve a **"Table Editor"** en el menú lateral
-- Deberías ver estas nuevas tablas:
+- Deberías ver estas tablas:
   - ✅ `notifications`
   - ✅ `user_favorites`
+  - ✅ `ranking_config` (ya existía)
 
-## 🎯 QUÉ HACE ESTE SCRIPT
+## 🎯 QUÉ HACEN ESTOS SCRIPTS
 
-El script creará:
+### Script 1: `fix_ranking_config_rls.sql`
+- Corrige los permisos de la tabla `ranking_config`
+- Permite que las funciones del sistema lean la configuración
+- Necesario para que funcione la actualización de ratings
 
-1. **Tabla `notifications`**: Para almacenar notificaciones de:
-   - Nuevas insignias desbloqueadas
-   - Cambios de nivel
-   - Mensajes del sistema
-   - Bienvenida para nuevos usuarios
+### Script 2: `migration_notifications_favorites.sql`
+- Crea la tabla `notifications` para notificaciones del sistema
+- Crea la tabla `user_favorites` para favoritos de usuarios
+- Configura políticas de seguridad RLS correctas
+- Crea triggers automáticos para notificaciones
 
-2. **Tabla `user_favorites`**: Para que los usuarios puedan:
-   - Marcar burgers como favoritas (❤️)
-   - Ver su lista de favoritos
-   - Quitar favoritos
-
-3. **Políticas de seguridad (RLS)**: Para que:
-   - Los usuarios solo vean sus propias notificaciones
-   - Los usuarios solo vean sus propios favoritos
-   - Nadie pueda ver los datos de otros usuarios
-
-4. **Triggers automáticos**: Para que:
-   - Se cree una notificación cuando desbloquees una insignia
-   - Se cree una notificación cuando subas de nivel
-   - Se cree una notificación de bienvenida para usuarios nuevos
-
-## ⚡ DESPUÉS DE EJECUTAR EL SCRIPT
+## ⚡ DESPUÉS DE EJECUTAR LOS SCRIPTS
 
 1. **Refresca la página** de BurgeRank en tu navegador (F5)
 2. **Prueba el botón de favoritos** (❤️) en cualquier burger
-3. **Prueba el botón de compartir** (📤) en tu perfil
-4. **Intenta actualizar una valoración** que ya hayas hecho
+3. **Prueba actualizar una valoración** que ya hayas hecho
+4. **Prueba el botón de compartir** (📤) en tu perfil
+
+Todo debería funcionar correctamente ahora.
 
 ## 🐛 SI TODAVÍA HAY ERRORES
 
