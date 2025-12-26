@@ -352,16 +352,6 @@ export default function RankingPage() {
                             }}>
                               📸 {burger.verified_percentage}% verificadas
                             </span>
-                            {burger.wilson_score > 3.5 && (
-                              <span style={{ fontSize: '0.7rem', backgroundColor: '#7c3aed', color: '#fff', padding: '0.2rem 0.5rem', borderRadius: '0.25rem' }}>
-                                ✓ Alta confianza
-                              </span>
-                            )}
-                            {burger.standard_deviation < 0.5 && (
-                              <span style={{ fontSize: '0.7rem', backgroundColor: '#0ea5e9', color: '#fff', padding: '0.2rem 0.5rem', borderRadius: '0.25rem' }}>
-                                📊 Consistente
-                              </span>
-                            )}
                           </div>
 
                           {/* Detalles expandidos */}
