@@ -5,150 +5,67 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const city = searchParams.get('city');
-    const type = searchParams.get('type'); // classic, smash, gourmet, etc.
-    const minReviews = searchParams.get('minReviews');
+    const type = searchParams.get('type');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
-    const includeNew = searchParams.get('includeNew') === 'true'; // Incluir burgers nuevas (no en ranking)
+    const includeAll = searchParams.get('includeAll') === 'true'; // Modo desarrollo: incluir todas las burgers
 
     const supabase = await createClient();
 
-    // Query principal: burgers en el ranking oficial
+    // Query simplificada: solo columnas necesarias
     let query = supabase
       .from('burgers')
       .select(`
         id,
         name,
-        description,
-        type,
-        tags,
-        price,
         image_url,
         ranking_position,
         ranking_score,
-        bayesian_score,
-        wilson_score,
         average_rating,
         total_reviews,
         verified_reviews_count,
-        positive_reviews_count,
-        standard_deviation,
-        last_review_date,
         is_in_ranking,
-        created_at,
-        restaurant:restaurants(
-          id,
-          name,
-          address,
-          city:cities(id, name)
-        )
+        restaurant_id,
+        restaurants(id, name, city_id, cities(id, name))
       `)
-      .eq('status', 'approved')
-      .eq('is_in_ranking', true)
-      .order('ranking_position', { ascending: true });
+      .eq('status', 'approved');
 
-    // Filtros opcionales
-    if (city && city !== 'all') {
-      query = query.eq('restaurant.city.id', city);
+    // En modo desarrollo, mostrar todas; en producción solo las que están en ranking
+    if (!includeAll) {
+      query = query.eq('is_in_ranking', true);
     }
 
-    if (type && type !== 'all') {
-      query = query.eq('type', type);
-    }
+    query = query
+      .order('ranking_score', { ascending: false, nullsFirst: false })
+      .range(offset, offset + limit - 1);
 
-    if (minReviews) {
-      query = query.gte('total_reviews', parseInt(minReviews));
-    }
-
-    query = query.range(offset, offset + limit - 1);
-
-    const { data: rankedBurgers, error } = await query;
+    const { data: burgers, error } = await query;
 
     if (error) throw error;
 
-    // Si se solicitan, obtener también las burgers nuevas (aún no en ranking)
-    let newBurgers: any[] = [];
-    if (includeNew) {
-      const { data: newData, error: newError } = await supabase
-        .from('burgers')
-        .select(`
-          id,
-          name,
-          description,
-          type,
-          tags,
-          price,
-          image_url,
-          average_rating,
-          total_reviews,
-          verified_reviews_count,
-          created_at,
-          restaurant:restaurants(
-            id,
-            name,
-            address,
-            city:cities(id, name)
-          )
-        `)
-        .eq('status', 'approved')
-        .eq('is_in_ranking', false)
-        .gt('total_reviews', 0)
-        .order('total_reviews', { ascending: false })
-        .limit(10);
-
-      if (!newError && newData) {
-        newBurgers = newData;
-      }
-    }
-
-    // Obtener estadísticas generales
-    const { count: totalInRanking } = await supabase
-      .from('burgers')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'approved')
-      .eq('is_in_ranking', true);
-
-    const { count: totalNew } = await supabase
-      .from('burgers')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'approved')
-      .eq('is_in_ranking', false)
-      .gt('total_reviews', 0);
-
-    // Obtener configuración del ranking
-    const { data: config } = await supabase
-      .from('ranking_config')
-      .select('*')
-      .single();
-
-    // Formatear respuesta con porcentaje verificado
-    const formattedBurgers = (rankedBurgers || []).map(burger => ({
-      ...burger,
+    // Formatear respuesta
+    const formattedBurgers = (burgers || []).map((burger, index) => ({
+      id: burger.id,
+      name: burger.name,
+      image_url: burger.image_url,
+      ranking_position: burger.is_in_ranking ? burger.ranking_position : null,
+      ranking_score: burger.ranking_score,
+      average_rating: burger.average_rating,
+      total_reviews: burger.total_reviews,
+      verified_reviews_count: burger.verified_reviews_count,
+      is_in_ranking: burger.is_in_ranking,
       verified_percentage: burger.total_reviews > 0 
         ? Math.round((burger.verified_reviews_count / burger.total_reviews) * 100)
         : 0,
-    }));
-
-    const formattedNewBurgers = newBurgers.map(burger => ({
-      ...burger,
-      reviews_needed: (config?.min_reviews_for_ranking || 1) - burger.total_reviews,
-      verified_percentage: burger.total_reviews > 0 
-        ? Math.round((burger.verified_reviews_count / burger.total_reviews) * 100)
-        : 0,
+      restaurant: burger.restaurants,
     }));
 
     return NextResponse.json({
       burgers: formattedBurgers,
-      newBurgers: formattedNewBurgers,
-      stats: {
-        totalInRanking: totalInRanking || 0,
-        totalNew: totalNew || 0,
-        minReviewsForRanking: config?.min_reviews_for_ranking || 1,
-      },
       pagination: {
         limit,
         offset,
-        hasMore: (rankedBurgers?.length || 0) === limit,
+        hasMore: (burgers?.length || 0) === limit,
       },
     });
   } catch (error) {

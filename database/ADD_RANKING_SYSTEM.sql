@@ -558,18 +558,39 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================
--- PARTE 8: TRIGGERS
+-- PARTE 8: TRIGGERS (OPTIMIZADOS)
 -- ============================================
 
 -- Trigger: Después de insertar una nueva rating
+-- OPTIMIZADO: Solo recalcula la burger afectada, no todas
 CREATE OR REPLACE FUNCTION trigger_after_rating_insert()
 RETURNS TRIGGER AS $$
+DECLARE
+    min_reviews INTEGER;
+    total_count INTEGER;
 BEGIN
-    -- Detectar actividad sospechosa
-    PERFORM detect_suspicious_activity(NEW.burger_id);
+    -- Obtener configuración
+    SELECT min_reviews_for_ranking INTO min_reviews FROM ranking_config WHERE id = 1;
     
-    -- Recalcular ranking de la burger
-    PERFORM update_single_burger_ranking(NEW.burger_id);
+    -- Contar reviews de esta burger
+    SELECT COUNT(*) INTO total_count FROM ratings WHERE burger_id = NEW.burger_id;
+    
+    -- Solo recalcular si la burger está cerca del umbral o ya en ranking
+    IF total_count <= min_reviews + 5 THEN
+        -- Detectar actividad sospechosa solo si hay muchas reviews recientes
+        IF total_count > 5 THEN
+            PERFORM detect_suspicious_activity(NEW.burger_id);
+        END IF;
+        
+        -- Recalcular solo esta burger (sin actualizar todas las posiciones)
+        PERFORM calculate_final_ranking_score(NEW.burger_id);
+    ELSE
+        -- Para burgers con muchas reviews, solo actualizar incrementalmente
+        UPDATE burgers SET
+            total_reviews = total_count,
+            last_review_date = NEW.created_at
+        WHERE id = NEW.burger_id;
+    END IF;
     
     RETURN NEW;
 END;
@@ -581,12 +602,14 @@ CREATE TRIGGER after_rating_insert
     FOR EACH ROW
     EXECUTE FUNCTION trigger_after_rating_insert();
 
--- Trigger: Después de actualizar una rating
+-- Trigger: Después de actualizar una rating (OPTIMIZADO)
 CREATE OR REPLACE FUNCTION trigger_after_rating_update()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Recalcular ranking de la burger afectada
-    PERFORM update_single_burger_ranking(NEW.burger_id);
+    -- Solo recalcular si cambió el rating
+    IF OLD.overall_rating != NEW.overall_rating THEN
+        PERFORM calculate_final_ranking_score(NEW.burger_id);
+    END IF;
     
     RETURN NEW;
 END;
@@ -615,7 +638,7 @@ CREATE TRIGGER after_rating_delete
     FOR EACH ROW
     EXECUTE FUNCTION trigger_after_rating_delete();
 
--- Trigger: Actualizar nivel de usuario cuando cambian sus puntos
+-- Trigger: Actualizar nivel de usuario cuando cambian sus puntos (sin cambios)
 CREATE OR REPLACE FUNCTION trigger_update_user_level()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -634,6 +657,29 @@ CREATE TRIGGER update_user_level
     BEFORE UPDATE OF total_points ON users
     FOR EACH ROW
     EXECUTE FUNCTION trigger_update_user_level();
+
+-- ============================================
+-- PARTE 8B: FUNCIÓN DE RECÁLCULO BATCH (para cron)
+-- ============================================
+-- Esta función se ejecuta una vez al día por cron, no en cada insert
+CREATE OR REPLACE FUNCTION batch_update_ranking_positions()
+RETURNS void AS $$
+DECLARE
+    burger_record RECORD;
+    current_position INTEGER := 0;
+BEGIN
+    -- Asignar posiciones ordenadas por ranking_score
+    FOR burger_record IN 
+        SELECT id
+        FROM burgers
+        WHERE status = 'approved' AND is_in_ranking = true
+        ORDER BY ranking_score DESC, id ASC
+    LOOP
+        current_position := current_position + 1;
+        UPDATE burgers SET ranking_position = current_position WHERE id = burger_record.id;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
 
 -- ============================================
 -- PARTE 9: FUNCIÓN PARA OBTENER DETALLES DEL RANKING
