@@ -15,22 +15,25 @@ CREATE TABLE IF NOT EXISTS public.notifications (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_notifications_user_id ON public.notifications(user_id);
-CREATE INDEX idx_notifications_is_read ON public.notifications(is_read);
-CREATE INDEX idx_notifications_created_at ON public.notifications(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON public.notifications(is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON public.notifications(created_at DESC);
 
 -- RLS for notifications
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
 -- Users can only see their own notifications
+DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
 CREATE POLICY "Users can view own notifications" ON public.notifications
   FOR SELECT USING (auth.uid() = user_id);
 
 -- Users can update their own notifications (mark as read)
+DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
 CREATE POLICY "Users can update own notifications" ON public.notifications
   FOR UPDATE USING (auth.uid() = user_id);
 
 -- System can insert notifications (via service role or trigger)
+DROP POLICY IF EXISTS "Service role can insert notifications" ON public.notifications;
 CREATE POLICY "Service role can insert notifications" ON public.notifications
   FOR INSERT WITH CHECK (true);
 
@@ -45,21 +48,24 @@ CREATE TABLE IF NOT EXISTS public.user_favorites (
   UNIQUE(user_id, burger_id)
 );
 
-CREATE INDEX idx_user_favorites_user_id ON public.user_favorites(user_id);
-CREATE INDEX idx_user_favorites_burger_id ON public.user_favorites(burger_id);
+CREATE INDEX IF NOT EXISTS idx_user_favorites_user_id ON public.user_favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_favorites_burger_id ON public.user_favorites(burger_id);
 
 -- RLS for favorites
 ALTER TABLE public.user_favorites ENABLE ROW LEVEL SECURITY;
 
 -- Users can view their own favorites
+DROP POLICY IF EXISTS "Users can view own favorites" ON public.user_favorites;
 CREATE POLICY "Users can view own favorites" ON public.user_favorites
   FOR SELECT USING (auth.uid() = user_id);
 
 -- Users can add to their favorites
+DROP POLICY IF EXISTS "Users can add favorites" ON public.user_favorites;
 CREATE POLICY "Users can add favorites" ON public.user_favorites
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Users can remove from their favorites
+DROP POLICY IF EXISTS "Users can delete own favorites" ON public.user_favorites;
 CREATE POLICY "Users can delete own favorites" ON public.user_favorites
   FOR DELETE USING (auth.uid() = user_id);
 
