@@ -3,6 +3,10 @@
 -- Ejecutar en Supabase SQL Editor
 -- ============================================
 
+-- 0. Asegurar que la tabla users tiene el campo is_admin
+ALTER TABLE users 
+ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
+
 -- 1. Añadir campos de aprobación a CITIES si no existen
 ALTER TABLE cities 
 ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'approved',
@@ -28,12 +32,24 @@ CREATE INDEX IF NOT EXISTS idx_cities_status ON cities(status);
 -- 5. Actualizar ciudades existentes para que tengan status='approved'
 UPDATE cities SET status = 'approved' WHERE status IS NULL;
 
--- 6. Actualizar RLS policies para cities
+-- 6. Crear función helper para verificar si un usuario es admin
+CREATE OR REPLACE FUNCTION is_user_admin() 
+RETURNS boolean AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM users 
+    WHERE id = auth.uid() AND is_admin = true
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 7. Actualizar RLS policies para cities
 DO $$
 BEGIN
   DROP POLICY IF EXISTS "Anyone can view approved cities" ON cities;
   DROP POLICY IF EXISTS "Anyone can view cities" ON cities;
   DROP POLICY IF EXISTS "Authenticated users can insert cities" ON cities;
+  DROP POLICY IF EXISTS "Admins can update cities" ON cities;
 END $$;
 
 -- Cualquiera puede ver ciudades aprobadas
@@ -57,37 +73,39 @@ FOR UPDATE
 TO authenticated
 USING (is_user_admin());
 
--- 7. Actualizar RLS para burgers - mostrar solo aprobados públicamente
+-- 8. Actualizar RLS para burgers - mostrar solo aprobados públicamente
 DO $$
 BEGIN
   DROP POLICY IF EXISTS "Anyone can view approved burgers" ON burgers;
+  DROP POLICY IF EXISTS "Users can view approved and own burgers" ON burgers;
 END $$;
 
-CREATE POLICY "Anyone can view approved burgers"
+CREATE POLICY "Users can view approved and own burgers"
 ON burgers
 FOR SELECT
 TO public
 USING (
   status = 'approved' 
   OR auth.uid() = submitted_by  -- El usuario puede ver sus propias burgers pendientes
-  OR (SELECT role FROM users WHERE id = auth.uid()) = 'admin'  -- Admins ven todo
+  OR is_user_admin()  -- Admins ven todo
 );
 
--- 8. Actualizar RLS para restaurants
+-- 9. Actualizar RLS para restaurants
 DO $$
 BEGIN
   DROP POLICY IF EXISTS "Anyone can view approved restaurants" ON restaurants;
+  DROP POLICY IF EXISTS "Users can view approved and own restaurants" ON restaurants;
   DROP POLICY IF EXISTS "Anyone can view restaurants" ON restaurants;
 END $$;
 
-CREATE POLICY "Anyone can view approved restaurants"
+CREATE POLICY "Users can view approved and own restaurants"
 ON restaurants
 FOR SELECT
 TO public
 USING (
   status = 'approved' 
   OR auth.uid() = submitted_by
-  OR (SELECT role FROM users WHERE id = auth.uid()) = 'admin'
+  OR is_user_admin()
 );
 
 -- ============================================
@@ -96,7 +114,9 @@ USING (
 DO $$
 BEGIN
   RAISE NOTICE '✅ Sistema de aprobación configurado correctamente';
+  RAISE NOTICE '- Campo is_admin añadido a users (si no existía)';
   RAISE NOTICE '- Campos status, submitted_by, reviewed_by, reviewed_at añadidos';
+  RAISE NOTICE '- Función is_user_admin() creada';
   RAISE NOTICE '- Índices creados para mejor rendimiento';
   RAISE NOTICE '- Políticas RLS actualizadas';
 END $$;
