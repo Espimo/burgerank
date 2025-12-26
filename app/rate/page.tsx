@@ -243,6 +243,8 @@ export default function RatePage() {
         has_ticket: hasTicketUploaded,
       }
 
+      console.log('Enviando actualización de rating:', { rating_id: ratingIdToUpdate, ...ratingData })
+      
       const response = await fetch('/api/ratings/create', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -251,9 +253,13 @@ export default function RatePage() {
           ...ratingData
         })
       })
+      
+      console.log('Respuesta del servidor:', response.status, response.statusText)
       const data = await response.json()
+      console.log('Datos de respuesta:', data)
 
       if (!response.ok) {
+        console.error('Error al actualizar rating:', data)
         throw new Error(data.error || 'Error al actualizar la valoración')
       }
 
@@ -270,7 +276,10 @@ export default function RatePage() {
       advanceStep(4)
     } catch (error) {
       console.error('Error updating rating:', error)
-      setRatingError(error instanceof Error ? error.message : 'Error al actualizar')
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al actualizar'
+      console.error('Mensaje de error completo:', errorMessage)
+      setRatingError(errorMessage)
+      alert('Error al actualizar valoración: ' + errorMessage) // Mostrar alert temporal para debug
     } finally {
       setSubmittingRating(false)
     }

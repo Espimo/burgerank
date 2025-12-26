@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Sidebar from '@/components/layout/Sidebar'
+import ShareButton from '@/app/components/ShareButton'
 import { useAuth } from '@/app/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 
@@ -284,7 +285,15 @@ export default function ProfilePage() {
               {!user.avatar_url && getInitials(user.username)}
             </div>
             <div style={{ flex: 1 }}>
-              <h3 className="text-lg font-bold">{user.username}</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h3 className="text-lg font-bold">{user.username}</h3>
+                <ShareButton
+                  url={typeof window !== 'undefined' ? window.location.href : ''}
+                  title={`Perfil de ${user.username} en BurgeRank`}
+                  text={`¡Mira mi perfil de BurgeRank! Soy ${stats.category} con ${stats.points} puntos y ${stats.totalRatings} valoraciones.`}
+                  size="sm"
+                />
+              </div>
               <div className="text-sm text-muted" style={{ marginBottom: '0.25rem' }}>
                 @{user.username.toLowerCase().replace(/\s+/g, '_')}
               </div>

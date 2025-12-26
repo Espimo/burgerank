@@ -41,8 +41,11 @@ export default function FavoriteButton({
           onToggle?.(false);
         } else if (response.status === 401) {
           // Not authenticated - could show login modal
-          console.log('Must be logged in to use favorites');
-        }
+          console.log('Must be logged in to use favorites');          alert('Debes iniciar sesión para usar favoritos')
+        } else {
+          const error = await response.text()
+          console.error('Error removing favorite:', error)
+          alert('Error al quitar de favoritos: ' + (error || 'Error desconocido'))        }
       } else {
         // Add to favorites
         const response = await fetch('/api/favorites', {
@@ -58,10 +61,16 @@ export default function FavoriteButton({
           onToggle?.(true);
         } else if (response.status === 401) {
           console.log('Must be logged in to use favorites');
+          alert('Debes iniciar sesión para usar favoritos')
+        } else {
+          const error = await response.text()
+          console.error('Error adding favorite:', error)
+          alert('Error al agregar a favoritos: ' + (error || 'Error desconocido'))
         }
       }
     } catch (error) {
-      console.error('Error toggling favorite:', error);
+      console.error('Error toggling favorite:', error)
+      alert('Error en favoritos: ' + (error instanceof Error ? error.message : 'Error desconocido'))
     } finally {
       setLoading(false);
     }
