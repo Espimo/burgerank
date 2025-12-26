@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 // GET: Obtener favoritos del usuario
 export async function GET(request: Request) {
   try {
     const supabase = await createClient()
+    const adminClient = createAdminClient()
     
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
@@ -12,32 +13,54 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
 
-    // Primero verificar si la tabla existe haciendo una consulta simple
-    const { data: favorites, error } = await (supabase
+    // Usar admin client para bypassear RLS
+    const { data: favorites, error } = await adminClient
       .from('user_favorites')
-      .select('id, created_at, burger_id') as any)
+      .select('id, created_at, burger_id')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching favorites:', error)
-      // Si es error de permisos, devolver lista vacía en lugar de error
-      if (error.code === '42501' || error.code === '42P01') {
-        console.log('Tabla user_favorites no accesible, devolviendo lista vacía')
-        return NextResponse.json({
-          favorites: [],
-          favoriteIds: [],
-          count: 0
-        })
-      }
-      return NextResponse.json({ error: 'Error al obtener favoritos', details: error.message }, { status: 500 })
+      // Si es error, devolver lista vacía
+      return NextResponse.json({
+        favorites: [],
+        favoriteIds: [],
+        count: 0
+      })
     }
 
     // Obtener los IDs de burgers favoritas
     const favoriteIds = favorites?.map((f: any) => f.burger_id).filter(Boolean) || []
 
+    // Obtener detalles de las burgers favoritas
+    let favoritesWithBurgers = favorites || []
+    if (favoriteIds.length > 0) {
+      const { data: burgers } = await adminClient
+        .from('burgers')
+        .select('id, name, image_url, average_rating, restaurant_id')
+        .in('id', favoriteIds)
+
+      if (burgers) {
+        // Obtener nombres de restaurantes
+        const restaurantIds = [...new Set(burgers.map(b => b.restaurant_id).filter(Boolean))]
+        const { data: restaurants } = await adminClient
+          .from('restaurants')
+          .select('id, name')
+          .in('id', restaurantIds)
+
+        const restaurantMap = new Map(restaurants?.map(r => [r.id, r]) || [])
+        const burgerMap = new Map(burgers.map(b => [b.id, { ...b, restaurant: restaurantMap.get(b.restaurant_id) }]))
+
+        favoritesWithBurgers = favorites?.map((f: any) => ({
+          ...f,
+          burger: burgerMap.get(f.burger_id)
+        })) || []
+      }
+    }
+
     return NextResponse.json({
-      favorites: favorites || [],
+      favorites: favoritesWithBurgers,
       favoriteIds,
       count: favorites?.length || 0
     })
@@ -52,6 +75,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
+    const adminClient = createAdminClient()
     
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
@@ -66,8 +90,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'ID de burger requerido' }, { status: 400 })
     }
 
-    // Verificar que la burger existe
-    const { data: burger, error: burgerError } = await supabase
+    // Verificar que la burger existe (usando admin para evitar RLS)
+    const { data: burger, error: burgerError } = await adminClient
       .from('burgers')
       .select('id, name')
       .eq('id', burger_id)
@@ -77,10 +101,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Burger no encontrada' }, { status: 404 })
     }
 
-    // Agregar a favoritos
+    // Agregar a favoritos usando admin client
     console.log('Intentando agregar a favoritos:', { user_id: user.id, burger_id })
     
-    const { data: favorite, error } = await supabase
+    const { data: favorite, error } = await adminClient
       .from('user_favorites')
       .insert({
         user_id: user.id,
@@ -90,19 +114,9 @@ export async function POST(request: Request) {
       .single()
 
     if (error) {
-      console.error('Error adding favorite - CODE:', error.code, 'MESSAGE:', error.message, 'DETAILS:', error.details, 'HINT:', error.hint)
+      console.error('Error adding favorite - CODE:', error.code, 'MESSAGE:', error.message)
       if (error.code === '23505') { // Unique violation
         return NextResponse.json({ error: 'Ya está en favoritos' }, { status: 409 })
-      }
-      if (error.code === '42P01') { // Table does not exist
-        return NextResponse.json({ error: 'La tabla user_favorites no existe. Ejecuta el script SQL de migración.' }, { status: 500 })
-      }
-      if (error.code === '42501') { // Permission denied
-        return NextResponse.json({ 
-          error: 'Error de permisos en la base de datos. Necesitas re-ejecutar el script SQL con las políticas RLS corregidas.',
-          details: 'Las políticas de seguridad RLS están bloqueando el acceso. Ejecuta de nuevo database/migration_notifications_favorites.sql',
-          code: error.code 
-        }, { status: 500 })
       }
       return NextResponse.json({ 
         error: 'Error al agregar a favoritos', 
@@ -127,6 +141,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const supabase = await createClient()
+    const adminClient = createAdminClient()
     
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
@@ -141,7 +156,8 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID de burger requerido' }, { status: 400 })
     }
 
-    const { error } = await supabase
+    // Eliminar usando admin client
+    const { error } = await adminClient
       .from('user_favorites')
       .delete()
       .eq('user_id', user.id)
