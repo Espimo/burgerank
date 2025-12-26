@@ -10,48 +10,23 @@ import { useAuth } from '@/app/contexts/AuthContext'
 import { AdminBadge } from '@/app/components/AdminBadge'
 import { createClient } from '@/lib/supabase/client'
 
-// Type for burgers with ranking data
+// Type for burgers with ranking data (simplificado)
 interface RankedBurger {
   id: string
   name: string
-  description: string
-  type: string
-  tags: string[]
-  price: number
   image_url?: string
-  ranking_position: number
+  ranking_position: number | null
   ranking_score: number
-  bayesian_score: number
-  wilson_score: number
   average_rating: number
   total_reviews: number
   verified_reviews_count: number
-  positive_reviews_count: number
-  standard_deviation: number
-  last_review_date: string
   is_in_ranking: boolean
   verified_percentage: number
-  created_at: string
   restaurant: {
     id: string
     name: string
-    address: string
-    city: { id: string; name: string }
-  }
-}
-
-interface NewBurger {
-  id: string
-  name: string
-  description: string
-  average_rating: number
-  total_reviews: number
-  reviews_needed: number
-  verified_percentage: number
-  restaurant: {
-    id: string
-    name: string
-    city: { id: string; name: string }
+    city_id: string
+    cities: { id: string; name: string }
   }
 }
 
@@ -71,7 +46,6 @@ export default function RankingPage() {
   const [selectedCity, setSelectedCity] = useState('')
   const [selectedType, setSelectedType] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [viewMode, setViewMode] = useState('ranking') // 'ranking', 'nuevas', 'tendencias'
   const [scrollPosition, setScrollPosition] = useState(0)
   const [showRegistrationModal, setShowRegistrationModal] = useState(false)
   const [expandedBurger, setExpandedBurger] = useState<string | null>(null)
@@ -80,10 +54,9 @@ export default function RankingPage() {
   
   // Data from API
   const [rankedBurgers, setRankedBurgers] = useState<RankedBurger[]>([])
-  const [newBurgers, setNewBurgers] = useState<NewBurger[]>([])
   const [cities, setCities] = useState<CityData[]>([])
-  const [stats, setStats] = useState<RankingStats>({ totalInRanking: 0, totalNew: 0, minReviewsForRanking: 1 })
   const [loading, setLoading] = useState(true)
+  const [showAllBurgers, setShowAllBurgers] = useState(true) // Modo desarrollo: mostrar todas
   
   // Load ranking data from API
   useEffect(() => {
@@ -91,11 +64,11 @@ export default function RankingPage() {
       try {
         setLoading(true)
         
-        // Build query params
+        // Build query params - modo desarrollo incluye todas las burgers
         const params = new URLSearchParams()
         if (selectedCity) params.append('city', selectedCity)
         if (selectedType) params.append('type', selectedType)
-        params.append('includeNew', 'true')
+        if (showAllBurgers) params.append('includeAll', 'true')
         params.append('limit', '50')
         
         const response = await fetch(`/api/burgers/ranking?${params.toString()}`)
@@ -103,12 +76,6 @@ export default function RankingPage() {
         
         if (data.burgers) {
           setRankedBurgers(data.burgers)
-        }
-        if (data.newBurgers) {
-          setNewBurgers(data.newBurgers)
-        }
-        if (data.stats) {
-          setStats(data.stats)
         }
         
         // Load cities separately
@@ -125,7 +92,7 @@ export default function RankingPage() {
     }
     
     loadData()
-  }, [selectedCity, selectedType])
+  }, [selectedCity, selectedType, showAllBurgers])
 
   const handleMenuClick = () => {
     setSidebarOpen(true)
@@ -141,7 +108,7 @@ export default function RankingPage() {
     const query = searchQuery.toLowerCase()
     return burger.name.toLowerCase().includes(query) ||
            burger.restaurant?.name?.toLowerCase().includes(query) ||
-           burger.restaurant?.city?.name?.toLowerCase().includes(query)
+           burger.restaurant?.cities?.name?.toLowerCase().includes(query)
   })
 
   const renderStars = (rating: number) => {
@@ -272,26 +239,22 @@ export default function RankingPage() {
           </select>
         </div>
 
-        {/* Filtros rápidos */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-          <button 
-            className={`filter-btn ${viewMode === 'ranking' ? 'active' : ''}`}
-            onClick={() => setViewMode('ranking')}
-            style={{ fontSize: '0.85rem', backgroundColor: viewMode === 'ranking' ? '#fbbf24' : '#374151', color: viewMode === 'ranking' ? '#000' : '#e5e7eb', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', cursor: 'pointer' }}
-          >
-            🏆 Ranking
-          </button>
-          <button 
-            className={`filter-btn ${viewMode === 'nuevas' ? 'active' : ''}`}
-            onClick={() => setViewMode('nuevas')}
-            style={{ fontSize: '0.85rem', backgroundColor: viewMode === 'nuevas' ? '#fbbf24' : '#374151', color: viewMode === 'nuevas' ? '#000' : '#e5e7eb', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', cursor: 'pointer' }}
-          >
-            ✨ Nuevas ({stats.totalNew})
-          </button>
+        {/* Toggle mostrar todas */}
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.85rem', color: '#9ca3af' }}>🏆 Ranking</span>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#9ca3af', cursor: 'pointer' }}>
+            <input 
+              type="checkbox" 
+              checked={showAllBurgers}
+              onChange={(e) => setShowAllBurgers(e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+            Mostrar todas (incluso sin reviews)
+          </label>
         </div>
 
         {/* Podio Top 3 */}
-        {viewMode === 'ranking' && featuredBurgers.length >= 3 && (
+        {featuredBurgers.length >= 3 && (
           <div style={{ marginBottom: '2rem' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               🏆 Podio
@@ -366,19 +329,17 @@ export default function RankingPage() {
         </div>
 
         {/* Vista: Ranking oficial */}
-        {viewMode === 'ranking' && (
-          <>
-            {filteredBurgers.length > 0 ? (
-              <div style={{ display: 'grid', gap: '1rem' }}>
-                {filteredBurgers.map((burger) => {
-                  const badge = getPositionBadge(burger.ranking_position)
-                  const isExpanded = expandedBurger === burger.id
-                  
-                  return (
-                    <div key={burger.id} className="card" style={{ padding: '1rem', borderRadius: '0.5rem', overflow: 'hidden' }}>
-                      <div style={{ display: 'flex', gap: '1rem' }}>
-                        {/* Posición */}
-                        <div style={{ 
+        {filteredBurgers.length > 0 ? (
+          <div style={{ display: 'grid', gap: '1rem' }}>
+            {filteredBurgers.map((burger) => {
+              const badge = getPositionBadge(burger.ranking_position)
+              const isExpanded = expandedBurger === burger.id
+              
+              return (
+                <div key={burger.id} className="card" style={{ padding: '1rem', borderRadius: '0.5rem', overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    {/* Posición */}
+                    <div style={{ 
                           display: 'flex', 
                           flexDirection: 'column', 
                           alignItems: 'center', 
@@ -402,7 +363,7 @@ export default function RankingPage() {
                                 {burger.name}
                               </div>
                               <div style={{ fontSize: '0.85rem', color: '#9ca3af', marginBottom: '0.3rem' }}>
-                                {burger.restaurant?.name} • {burger.restaurant?.city?.name}
+                                {burger.restaurant?.name} • {burger.restaurant?.cities?.name}
                               </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
@@ -544,107 +505,10 @@ export default function RankingPage() {
                 <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔍</div>
                 <div>No hay hamburguesas en el ranking aún</div>
                 <div style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                  Las burgers necesitan mínimo {stats.minReviewsForRanking} reviews para entrar al ranking
+                  Las burgers necesitan reviews para entrar al ranking
                 </div>
               </div>
             )}
-          </>
-        )}
-
-        {/* Vista: Nuevas (aún no en ranking) */}
-        {viewMode === 'nuevas' && (
-          <>
-            <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: '#1f2937', borderRadius: '0.5rem', border: '1px solid #374151' }}>
-              <p style={{ fontSize: '0.85rem', color: '#9ca3af', margin: 0 }}>
-                💡 Estas hamburguesas necesitan más reviews para entrar al ranking oficial. 
-                ¡Ayúdalas valorándolas!
-              </p>
-            </div>
-            
-            {newBurgers.length > 0 ? (
-              <div style={{ display: 'grid', gap: '1rem' }}>
-                {newBurgers.map((burger) => (
-                  <div key={burger.id} className="card" style={{ padding: '1rem', borderRadius: '0.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
-                      <div>
-                        <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.2rem' }}>
-                          {burger.name}
-                        </div>
-                        <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
-                          {burger.restaurant?.name} • {burger.restaurant?.city?.name}
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '1rem', color: '#fbbf24' }}>
-                          {burger.average_rating?.toFixed(1)} ⭐
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
-                          ({burger.total_reviews} reviews)
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Barra de progreso hacia el ranking */}
-                    <div style={{ marginBottom: '0.75rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#9ca3af', marginBottom: '0.3rem' }}>
-                        <span>Progreso hacia el ranking</span>
-                        <span>{burger.total_reviews}/{stats.minReviewsForRanking} reviews</span>
-                      </div>
-                      <div style={{ 
-                        height: '6px', 
-                        backgroundColor: '#374151', 
-                        borderRadius: '3px', 
-                        overflow: 'hidden' 
-                      }}>
-                        <div style={{ 
-                          width: `${Math.min((burger.total_reviews / stats.minReviewsForRanking) * 100, 100)}%`,
-                          height: '100%',
-                          backgroundColor: '#10b981',
-                          borderRadius: '3px',
-                          transition: 'width 0.3s'
-                        }} />
-                      </div>
-                      <div style={{ fontSize: '0.7rem', color: '#6b7280', marginTop: '0.3rem' }}>
-                        Faltan {burger.reviews_needed} reviews para entrar al ranking
-                      </div>
-                    </div>
-                    
-                    <a 
-                      href={authUser ? "/rate" : undefined}
-                      onClick={(e) => {
-                        if (!authUser) {
-                          e.preventDefault()
-                          setShowRegistrationModal(true)
-                        }
-                      }}
-                      style={{ 
-                        display: 'block',
-                        width: '100%',
-                        padding: '0.5rem', 
-                        backgroundColor: '#10b981', 
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '0.375rem',
-                        cursor: 'pointer',
-                        fontSize: '0.85rem',
-                        fontWeight: '600',
-                        textAlign: 'center',
-                        textDecoration: 'none'
-                      }}
-                    >
-                      🚀 ¡Ayúdala a subir! Valorar
-                    </a>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
-                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✨</div>
-                <div>No hay hamburguesas nuevas pendientes</div>
-              </div>
-            )}
-          </>
-        )}
       </div>
 
       <BottomNav />
