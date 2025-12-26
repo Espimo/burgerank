@@ -59,8 +59,11 @@ CREATE TABLE IF NOT EXISTS ranking_config (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Insertar configuración inicial
-INSERT INTO ranking_config (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+-- Insertar/actualizar configuración inicial
+INSERT INTO ranking_config (id, min_reviews_for_ranking) 
+VALUES (1, 1) 
+ON CONFLICT (id) DO UPDATE 
+SET min_reviews_for_ranking = EXCLUDED.min_reviews_for_ranking;
 
 -- ============================================
 -- PARTE 3: TABLA DE HISTORIAL DE RANKING
