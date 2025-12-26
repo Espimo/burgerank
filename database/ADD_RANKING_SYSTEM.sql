@@ -48,7 +48,7 @@ CREATE INDEX IF NOT EXISTS idx_ratings_overall_rating ON ratings(overall_rating)
 
 CREATE TABLE IF NOT EXISTS ranking_config (
     id INTEGER PRIMARY KEY DEFAULT 1,
-    min_reviews_for_ranking INTEGER DEFAULT 15,
+    min_reviews_for_ranking INTEGER DEFAULT 1,
     confidence_threshold INTEGER DEFAULT 25,
     bayesian_weight DECIMAL(3,2) DEFAULT 0.50,
     wilson_weight DECIMAL(3,2) DEFAULT 0.30,
