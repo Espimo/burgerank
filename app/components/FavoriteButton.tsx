@@ -54,6 +54,8 @@ export default function FavoriteButton({
           body: JSON.stringify({ burger_id: burgerId })
         });
         
+        console.log('Add favorite response:', response.status);
+        
         if (response.ok) {
           setIsFavorite(true);
           setShowAnimation(true);
@@ -63,9 +65,9 @@ export default function FavoriteButton({
           console.log('Must be logged in to use favorites');
           alert('Debes iniciar sesión para usar favoritos')
         } else {
-          const error = await response.text()
-          console.error('Error adding favorite:', error)
-          alert('Error al agregar a favoritos: ' + (error || 'Error desconocido'))
+          const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
+          console.error('Error adding favorite:', errorData);
+          alert('Error al agregar a favoritos: ' + (errorData.error || 'Error desconocido'));
         }
       }
     } catch (error) {

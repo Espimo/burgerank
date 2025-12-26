@@ -90,16 +90,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'ID de burger requerido' }, { status: 400 })
     }
 
+    console.log('POST favorites - burger_id recibido:', burger_id, 'tipo:', typeof burger_id)
+
     // Verificar que la burger existe (usando admin para evitar RLS)
-    const { data: burger, error: burgerError } = await adminClient
+    const { data: burgers, error: burgerError } = await adminClient
       .from('burgers')
       .select('id, name')
       .eq('id', burger_id)
-      .single()
 
-    if (burgerError || !burger) {
+    console.log('Burger search result:', { burgers, error: burgerError })
+
+    if (burgerError) {
+      console.error('Error buscando burger:', burgerError)
+      return NextResponse.json({ 
+        error: 'Error al buscar burger', 
+        details: burgerError.message 
+      }, { status: 500 })
+    }
+
+    if (!burgers || burgers.length === 0) {
+      console.error('Burger no encontrada con ID:', burger_id)
       return NextResponse.json({ error: 'Burger no encontrada' }, { status: 404 })
     }
+
+    const burger = burgers[0]
 
     // Agregar a favoritos usando admin client
     console.log('Intentando agregar a favoritos:', { user_id: user.id, burger_id })
