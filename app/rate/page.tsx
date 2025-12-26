@@ -4,8 +4,25 @@ import { useState, useEffect } from 'react'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Sidebar from '@/components/layout/Sidebar'
-import { burgers } from '@/lib/data/mockData'
 import { createClient } from '@/lib/supabase/client'
+
+// Type for burgers loaded from Supabase
+interface BurgerData {
+  id: string
+  name: string
+  description: string
+  restaurant: string
+  restaurant_id: string
+  city: string
+  city_id: string
+  rating: number
+  reviews: number
+  userRating: number
+  type: string
+  position: number
+  tags: string[]
+  image_url?: string
+}
 
 export default function RatePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -20,7 +37,16 @@ export default function RatePage() {
   const [price, setPrice] = useState('8.50')
   const [comment, setComment] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedBurger, setSelectedBurger] = useState<typeof burgers[0] | null>(null)
+  const [selectedBurger, setSelectedBurger] = useState<BurgerData | null>(null)
+  
+  // Burgers loaded from Supabase
+  const [burgers, setBurgers] = useState<BurgerData[]>([])
+  const [loadingBurgers, setLoadingBurgers] = useState(true)
+  
+  // Rating submission state
+  const [submittingRating, setSubmittingRating] = useState(false)
+  const [ratingResult, setRatingResult] = useState<{ pointsEarned: number; newTotal: number } | null>(null)
+  const [ratingError, setRatingError] = useState<string | null>(null)
   
   // New burger form
   const [newBurgerName, setNewBurgerName] = useState('')
@@ -36,15 +62,30 @@ export default function RatePage() {
   const [showNewRestaurant, setShowNewRestaurant] = useState(false)
   const [showNewCity, setShowNewCity] = useState(false)
   
-  // Load restaurants and cities
+  // Load restaurants, cities and burgers from Supabase
   useEffect(() => {
     const loadData = async () => {
       try {
         const supabase = createClient()
         
-        const [citiesRes, restaurantsRes] = await Promise.all([
+        setLoadingBurgers(true)
+        
+        const [citiesRes, restaurantsRes, burgersRes] = await Promise.all([
           supabase.from('cities').select('*'),
-          supabase.from('restaurants').select('*')
+          supabase.from('restaurants').select('*'),
+          supabase.from('burgers').select(`
+            id,
+            name,
+            description,
+            image_url,
+            average_rating,
+            total_ratings,
+            tags,
+            restaurant_id,
+            city_id,
+            restaurants(id, name),
+            cities(id, name)
+          `).eq('status', 'approved')
         ])
         
         if (citiesRes.error) {
@@ -58,8 +99,33 @@ export default function RatePage() {
         } else if (restaurantsRes.data) {
           setRestaurants(restaurantsRes.data)
         }
+        
+        if (burgersRes.error) {
+          console.error('Error loading burgers:', burgersRes.error)
+        } else if (burgersRes.data) {
+          // Transform burgers to our format
+          const transformedBurgers: BurgerData[] = burgersRes.data.map((b: any, index: number) => ({
+            id: b.id,
+            name: b.name,
+            description: b.description || '',
+            restaurant: b.restaurants?.name || 'Restaurante',
+            restaurant_id: b.restaurant_id,
+            city: b.cities?.name || 'Ciudad',
+            city_id: b.city_id,
+            rating: b.average_rating || 0,
+            reviews: b.total_ratings || 0,
+            userRating: 0,
+            type: 'premium',
+            position: index + 1,
+            tags: b.tags || [],
+            image_url: b.image_url
+          }))
+          setBurgers(transformedBurgers)
+        }
       } catch (error) {
         console.error('Error in loadData:', error)
+      } finally {
+        setLoadingBurgers(false)
       }
     }
     
@@ -131,6 +197,59 @@ export default function RatePage() {
     setPrice('8.50')
     setComment('')
     setSelectedBurger(null)
+    setRatingResult(null)
+    setRatingError(null)
+  }
+
+  // Submit rating to the database
+  const submitRating = async () => {
+    if (!selectedBurger) {
+      setRatingError('No hay hamburguesa seleccionada')
+      return
+    }
+
+    setSubmittingRating(true)
+    setRatingError(null)
+
+    try {
+      const response = await fetch('/api/ratings/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          burger_id: selectedBurger.id,
+          overall_rating: generalRating,
+          pan_rating: panRating,
+          carne_rating: meatRating,
+          toppings_rating: toppingsRating,
+          salsa_rating: sauceRating,
+          price: parseFloat(price) || undefined,
+          comment: comment || undefined,
+          consumption_type: selectedConsumption as 'local' | 'delivery',
+          appetizers: selectedAppetizers.length > 0 ? selectedAppetizers : undefined,
+          has_ticket: false, // TODO: Implement ticket upload
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al guardar la valoración')
+      }
+
+      // Store the result to show in success screen
+      setRatingResult({
+        pointsEarned: data.pointsEarned,
+        newTotal: data.newTotal
+      })
+
+      // Advance to success step
+      advanceStep(4)
+    } catch (error) {
+      console.error('Error submitting rating:', error)
+      setRatingError(error instanceof Error ? error.message : 'Error al guardar la valoración')
+    } finally {
+      setSubmittingRating(false)
+    }
   }
 
   const filteredBurgers = burgers.filter(b =>
@@ -246,7 +365,11 @@ export default function RatePage() {
                 />
               </div>
               <div id="burgerSearchResults" style={{ marginBottom: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
-                {filteredBurgers.length > 0 ? (
+                {loadingBurgers ? (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
+                    ⏳ Cargando hamburguesas...
+                  </div>
+                ) : filteredBurgers.length > 0 ? (
                   filteredBurgers.map(burger => (
                     <div
                       key={burger.id}
@@ -274,7 +397,7 @@ export default function RatePage() {
                   ))
                 ) : (
                   <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
-                    No se encontraron hamburguesas
+                    {searchQuery ? 'No se encontraron hamburguesas con esa búsqueda' : 'No hay hamburguesas disponibles. ¡Crea la primera!'}
                   </div>
                 )}
               </div>
@@ -470,12 +593,33 @@ export default function RatePage() {
                   <input type="file" id="ticketInput" style={{ display: 'none' }} accept="image/*" />
                 </div>
 
+                {ratingError && (
+                  <div style={{
+                    backgroundColor: '#dc2626',
+                    color: 'white',
+                    padding: '1rem',
+                    borderRadius: '0.5rem',
+                    marginBottom: '1rem',
+                    textAlign: 'center'
+                  }}>
+                    ❌ {ratingError}
+                  </div>
+                )}
+
                 <div className="btn-group" style={{ marginTop: '2rem' }}>
-                  <button className="btn btn-secondary" onClick={() => advanceStep(2)}>
+                  <button 
+                    className="btn btn-secondary" 
+                    onClick={() => advanceStep(2)}
+                    disabled={submittingRating}
+                  >
                     ← Atrás
                   </button>
-                  <button className="btn btn-primary" onClick={() => advanceStep(4)}>
-                    Enviar Valoración ✓
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={submitRating}
+                    disabled={submittingRating}
+                  >
+                    {submittingRating ? 'Enviando...' : 'Enviar Valoración ✓'}
                   </button>
                 </div>
               </div>
@@ -491,8 +635,12 @@ export default function RatePage() {
                 <p className="text-muted mb-4">Gracias por tu participación en la comunidad.</p>
 
                 <div className="success-box">
-                  <div className="font-semibold mb-2">🏆 +75 puntos ganados</div>
-                  <div className="text-sm mb-3">Puntuación final: 8.2/10 (70% general + 30% secciones)</div>
+                  <div className="font-semibold mb-2">
+                    🏆 +{ratingResult?.pointsEarned || 0} puntos ganados
+                  </div>
+                  <div className="text-sm mb-3">
+                    Puntuación: {generalRating}/5 ⭐ para {selectedBurger?.name || 'la hamburguesa'}
+                  </div>
                   <div
                     className="text-sm font-semibold"
                     style={{
@@ -753,24 +901,7 @@ export default function RatePage() {
                       let finalRestaurantId = newBurgerRestaurantId
                       let finalCityId = newBurgerCityId
                       
-                      // Create new restaurant if needed
-                      if (showNewRestaurant) {
-                        const resRes = await fetch('/api/restaurants/create', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ name: newBurgerRestaurantName, city_id: finalCityId })
-                        })
-                        
-                        if (!resRes.ok) {
-                          const error = await resRes.json()
-                          throw new Error('Error al crear restaurante: ' + error.error)
-                        }
-                        
-                        const restaurant = await resRes.json()
-                        finalRestaurantId = restaurant.id
-                      }
-                      
-                      // Create new city if needed
+                      // PRIMERO: Create new city if needed (restaurante necesita city_id)
                       if (showNewCity) {
                         const cityRes = await fetch('/api/cities/create', {
                           method: 'POST',
@@ -785,6 +916,23 @@ export default function RatePage() {
                         
                         const city = await cityRes.json()
                         finalCityId = city.id
+                      }
+                      
+                      // SEGUNDO: Create new restaurant if needed (ahora tenemos city_id)
+                      if (showNewRestaurant) {
+                        const resRes = await fetch('/api/restaurants/create', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ name: newBurgerRestaurantName, city_id: finalCityId })
+                        })
+                        
+                        if (!resRes.ok) {
+                          const error = await resRes.json()
+                          throw new Error('Error al crear restaurante: ' + error.error)
+                        }
+                        
+                        const restaurant = await resRes.json()
+                        finalRestaurantId = restaurant.id
                       }
                       
                       const response = await fetch('/api/burgers/create', {
@@ -812,13 +960,16 @@ export default function RatePage() {
                         name: burger.name,
                         description: burger.description || '',
                         restaurant: newBurgerRestaurantName || restaurants.find(r => r.id === burger.restaurant_id)?.name || 'Restaurante',
+                        restaurant_id: burger.restaurant_id,
                         city: newBurgerCityName || cities.find(c => c.id === burger.city_id)?.name || 'Ciudad',
+                        city_id: burger.city_id,
                         rating: 0,
                         reviews: 0,
                         userRating: 0,
                         type: 'premium',
                         position: 0,
-                        tags: burger.tags || []
+                        tags: burger.tags || [],
+                        image_url: burger.image_url
                       })
                       
                       // Clear form

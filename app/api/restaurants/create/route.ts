@@ -26,12 +26,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!city_id) {
+      return NextResponse.json(
+        { error: 'Ciudad requerida para crear restaurante' },
+        { status: 400 }
+      );
+    }
+
     // Insert restaurant with default values
     const { data, error } = await supabase
       .from('restaurants')
       .insert({
         name,
-        city_id: city_id || null,
+        city_id,
         average_rating: 0,
         total_ratings: 0,
         status: 'approved',

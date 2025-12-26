@@ -1,14 +1,36 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Sidebar from '@/components/layout/Sidebar'
 import RegistrationPromptModal from '@/app/components/RegistrationPromptModal'
-import { burgers } from '@/lib/data/mockData'
 import { useAdmin } from '@/app/contexts/AdminContext'
 import { useAuth } from '@/app/contexts/AuthContext'
 import { AdminBadge } from '@/app/components/AdminBadge'
+import { createClient } from '@/lib/supabase/client'
+
+// Type for burgers loaded from Supabase
+interface BurgerData {
+  id: string
+  name: string
+  description: string
+  restaurant: string
+  restaurant_id: string
+  city: string
+  city_id: string
+  rating: number
+  reviews: number
+  tags: string[]
+  image_url?: string
+  is_featured: boolean
+  created_at: string
+}
+
+interface CityData {
+  id: string
+  name: string
+}
 
 export default function RankingPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -19,6 +41,72 @@ export default function RankingPage() {
   const [showRegistrationModal, setShowRegistrationModal] = useState(false)
   const { isAdmin } = useAdmin()
   const { authUser } = useAuth()
+  
+  // Supabase data
+  const [burgers, setBurgers] = useState<BurgerData[]>([])
+  const [cities, setCities] = useState<CityData[]>([])
+  const [loading, setLoading] = useState(true)
+  
+  // Load data from Supabase
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const supabase = createClient()
+        
+        const [burgersRes, citiesRes] = await Promise.all([
+          supabase.from('burgers').select(`
+            id,
+            name,
+            description,
+            image_url,
+            average_rating,
+            total_ratings,
+            tags,
+            restaurant_id,
+            city_id,
+            is_featured,
+            created_at,
+            restaurants(id, name),
+            cities(id, name)
+          `).eq('status', 'approved'),
+          supabase.from('cities').select('id, name')
+        ])
+        
+        if (burgersRes.error) {
+          console.error('Error loading burgers:', burgersRes.error)
+        } else if (burgersRes.data) {
+          const transformedBurgers: BurgerData[] = burgersRes.data.map((b: any) => ({
+            id: b.id,
+            name: b.name,
+            description: b.description || '',
+            restaurant: b.restaurants?.name || 'Restaurante',
+            restaurant_id: b.restaurant_id,
+            city: b.cities?.name || 'Ciudad',
+            city_id: b.city_id,
+            rating: b.average_rating || 0,
+            reviews: b.total_ratings || 0,
+            tags: b.tags || [],
+            image_url: b.image_url,
+            is_featured: b.is_featured || false,
+            created_at: b.created_at
+          }))
+          setBurgers(transformedBurgers)
+        }
+        
+        if (citiesRes.error) {
+          console.error('Error loading cities:', citiesRes.error)
+        } else if (citiesRes.data) {
+          setCities(citiesRes.data)
+        }
+      } catch (error) {
+        console.error('Error loading data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadData()
+  }, [])
 
   const handleMenuClick = () => {
     setSidebarOpen(true)
@@ -44,8 +132,10 @@ export default function RankingPage() {
     // Tendencias: por rating pero reciente (simulado con reviews)
     filteredBurgers = [...filteredBurgers].sort((a, b) => b.rating - a.rating || b.reviews - a.reviews)
   } else if (viewMode === 'nuevas') {
-    // Nuevas: ordenadas por posición descendente (más nuevas primero)
-    filteredBurgers = [...filteredBurgers].sort((a, b) => b.position - a.position)
+    // Nuevas: ordenadas por fecha de creación (más nuevas primero)
+    filteredBurgers = [...filteredBurgers].sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
   }
 
   const renderStars = (rating: number) => {
@@ -65,8 +155,25 @@ export default function RankingPage() {
     }
   }
 
-  // Get top 3 featured burgers
-  const featuredBurgers = [...burgers].sort((a, b) => b.rating - a.rating).slice(0, 3)
+  // Get featured burgers (marked as featured, or top 3 by rating if none are featured)
+  const featuredBurgers = burgers.filter(b => b.is_featured).length > 0
+    ? burgers.filter(b => b.is_featured).slice(0, 3)
+    : [...burgers].sort((a, b) => b.rating - a.rating).slice(0, 3)
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="container">
+        <TopBar onMenuClick={handleMenuClick} />
+        <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} />
+        <div className="main" style={{ textAlign: 'center', paddingTop: '4rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
+          <p>Cargando ranking...</p>
+        </div>
+        <BottomNav />
+      </div>
+    )
+  }
 
   return (
     <div className="container">
@@ -83,13 +190,16 @@ export default function RankingPage() {
 
         {/* Filtros principales */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '0.5rem', marginBottom: '1.5rem' }}>
-          <select className="filter-select" style={{ padding: '0.5rem', border: '1px solid #4b5563', backgroundColor: '#1f2937', color: '#e5e7eb', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.85rem' }}>
-            <option>📍 Ciudad</option>
-            <option>Madrid</option>
-            <option>Barcelona</option>
-            <option>Valencia</option>
-            <option>Sevilla</option>
-            <option>Bilbao</option>
+          <select 
+            className="filter-select" 
+            style={{ padding: '0.5rem', border: '1px solid #4b5563', backgroundColor: '#1f2937', color: '#e5e7eb', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.85rem' }}
+            value={selectedCity}
+            onChange={(e) => setSelectedCity(e.target.value)}
+          >
+            <option value="">📍 Todas las Ciudades</option>
+            {cities.map(city => (
+              <option key={city.id} value={city.name}>{city.name}</option>
+            ))}
           </select>
           <select className="filter-select" style={{ padding: '0.5rem', border: '1px solid #4b5563', backgroundColor: '#1f2937', color: '#e5e7eb', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.85rem' }}>
             <option>🥖 Pan</option>
