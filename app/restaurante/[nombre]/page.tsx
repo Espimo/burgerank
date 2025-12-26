@@ -78,22 +78,71 @@ export default function RestaurantePage() {
 
   useEffect(() => {
     async function loadRestaurantData() {
-      const supabase = createClient();
-
-      // Buscar restaurante por nombre
-      const { data: restData, error: restError } = await supabase
-        .from('restaurants')
-        .select('*, city:cities(name)')
-        .ilike('name', nombre)
-        .single();
-
-      if (restError || !restData) {
+      if (!nombre) {
+        console.log('No restaurant name provided');
         setLoading(false);
         return;
       }
 
-      const restaurant = restData as Restaurant;
-      setRestaurant(restaurant);
+      console.log('Loading restaurant data for:', nombre);
+      const supabase = createClient();
+
+      try {
+        // Buscar restaurante por nombre - intentar coincidencia exacta primero
+        let { data: restData, error: restError } = await supabase
+          .from('restaurants')
+          .select('*, city:cities(name)')
+          .ilike('name', nombre)
+          .single();
+
+        console.log('First query result:', { restData, restError });
+
+        // Si no encuentra, intentar con búsqueda parcial
+        if (restError || !restData) {
+          const { data: partialData, error: partialError } = await supabase
+            .from('restaurants')
+            .select('*, city:cities(name)')
+            .ilike('name', `%${nombre}%`)
+            .limit(1)
+            .single();
+          
+          console.log('Partial search result:', { partialData, partialError });
+          
+          if (partialData) {
+            restData = partialData;
+            restError = null;
+          }
+        }
+
+        // También intentar buscar si el nombre está en formato slug
+        if (restError || !restData) {
+          // Convertir slug a nombre (reemplazar - por espacios)
+          const nameFromSlug = nombre.replace(/-/g, ' ');
+          console.log('Trying slug format:', nameFromSlug);
+          
+          const { data: slugData, error: slugError } = await supabase
+            .from('restaurants')
+            .select('*, city:cities(name)')
+            .ilike('name', nameFromSlug)
+            .single();
+          
+          console.log('Slug search result:', { slugData, slugError });
+          
+          if (slugData) {
+            restData = slugData;
+            restError = null;
+          }
+        }
+
+        if (restError || !restData) {
+          console.log('Restaurant not found after all attempts:', nombre);
+          setLoading(false);
+          return;
+        }
+
+        const restaurant = restData as Restaurant;
+        console.log('Restaurant found:', restaurant.name);
+        setRestaurant(restaurant);
 
       // Cargar hamburguesas del restaurante
       const { data: burgersData } = await supabase
@@ -115,23 +164,29 @@ export default function RestaurantePage() {
       if (promoData) setPromotions(promoData);
 
       // Cargar valoraciones de las hamburguesas de este restaurante
-      const { data: ratingsData } = await supabase
-        .from('ratings')
-        .select(`
-          id,
-          overall_rating,
-          comment,
-          created_at,
-          user:users(username),
-          burger:burgers(name)
-        `)
-        .in('burger_id', (burgersData as any[])?.map(b => b.id) || [])
-        .order('created_at', { ascending: false })
-        .limit(10);
+      if (burgersData && burgersData.length > 0) {
+        const { data: ratingsData } = await supabase
+          .from('ratings')
+          .select(`
+            id,
+            overall_rating,
+            comment,
+            created_at,
+            user:users(username),
+            burger:burgers(name)
+          `)
+          .in('burger_id', burgersData.map(b => b.id))
+          .order('created_at', { ascending: false })
+          .limit(10);
 
-      if (ratingsData) setRatings(ratingsData as any);
+        if (ratingsData) setRatings(ratingsData as any);
+      }
 
       setLoading(false);
+      } catch (error) {
+        console.error('Error loading restaurant:', error);
+        setLoading(false);
+      }
     }
 
     if (nombre) {

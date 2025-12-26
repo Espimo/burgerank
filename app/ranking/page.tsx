@@ -5,6 +5,8 @@ import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Sidebar from '@/components/layout/Sidebar'
 import RegistrationPromptModal from '@/app/components/RegistrationPromptModal'
+import SmartSearch from '@/app/components/SmartSearch'
+import FavoriteButton from '@/app/components/FavoriteButton'
 import { useAdmin } from '@/app/contexts/AdminContext'
 import { useAuth } from '@/app/contexts/AuthContext'
 import { AdminBadge } from '@/app/components/AdminBadge'
@@ -59,11 +61,24 @@ export default function RankingPage() {
   const [salsaFilter, setSalsaFilter] = useState<string | null>(null)
   const [toppingsFilter, setToppingsFilter] = useState<string | null>(null)
   
+  // Filtros de accesibilidad/dietéticos
+  const [dietaryFilters, setDietaryFilters] = useState<string[]>([])
+  
   // Tags disponibles por categoría
   const panTags = ['brioche', 'artesanal', 'integral', 'premium']
   const carneTags = ['ternera', 'pollo', 'waygu', 'smash', 'vegana']
   const salsaTags = ['bbq', 'mayonesa', 'trufa', 'picante', 'casera']
   const toppingsTags = ['queso', 'bacon', 'cebolla', 'jalapeños', 'aguacate']
+  
+  // Filtros dietéticos/accesibilidad
+  const dietaryOptions = [
+    { id: 'vegetariana', label: '🥬 Vegetariana', tags: ['vegetariana', 'veggie'] },
+    { id: 'vegana', label: '🌱 Vegana', tags: ['vegana', 'vegan'] },
+    { id: 'sin-gluten', label: '🌾 Sin Gluten', tags: ['sin-gluten', 'gluten-free', 'celíaco', 'celiaco'] },
+    { id: 'sin-lactosa', label: '🥛 Sin Lactosa', tags: ['sin-lactosa', 'lactose-free'] },
+    { id: 'halal', label: '☪️ Halal', tags: ['halal'] },
+    { id: 'kosher', label: '✡️ Kosher', tags: ['kosher'] },
+  ]
   
   // Data from API
   const [rankedBurgers, setRankedBurgers] = useState<RankedBurger[]>([])
@@ -72,7 +87,28 @@ export default function RankingPage() {
   const [loading, setLoading] = useState(true)
   const [showAllBurgers, setShowAllBurgers] = useState(true) // Modo desarrollo: mostrar todas
   const [featuredIndex, setFeaturedIndex] = useState(0)
-  
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([])
+
+  // Load favorites when user is authenticated
+  useEffect(() => {
+    const loadFavorites = async () => {
+      if (!authUser) {
+        setFavoriteIds([])
+        return
+      }
+      try {
+        const response = await fetch('/api/favorites')
+        if (response.ok) {
+          const data = await response.json()
+          setFavoriteIds(data.favoriteIds || [])
+        }
+      } catch (error) {
+        console.error('Error loading favorites:', error)
+      }
+    }
+    loadFavorites()
+  }, [authUser])
+
   // Load ranking data from API
   const loadData = useCallback(async () => {
     try {
@@ -136,6 +172,15 @@ export default function RankingPage() {
     setSidebarOpen(false)
   }
 
+  // Toggle dietary filter
+  const toggleDietaryFilter = (filterId: string) => {
+    setDietaryFilters(prev => 
+      prev.includes(filterId) 
+        ? prev.filter(f => f !== filterId)
+        : [...prev, filterId]
+    )
+  }
+
   // Filter burgers based on search
   const filteredBurgers = rankedBurgers.filter(burger => {
     if (!searchQuery) return true
@@ -149,6 +194,18 @@ export default function RankingPage() {
     if (carneFilter && !(burger.tags || []).some(tag => tag.toLowerCase().includes(carneFilter.toLowerCase()))) return false
     if (salsaFilter && !(burger.tags || []).some(tag => tag.toLowerCase().includes(salsaFilter.toLowerCase()))) return false
     if (toppingsFilter && !(burger.tags || []).some(tag => tag.toLowerCase().includes(toppingsFilter.toLowerCase()))) return false
+    
+    // Filtrar por opciones dietéticas
+    if (dietaryFilters.length > 0) {
+      const burgerTags = (burger.tags || []).map(t => t.toLowerCase())
+      for (const dietaryId of dietaryFilters) {
+        const dietary = dietaryOptions.find(d => d.id === dietaryId)
+        if (dietary && !dietary.tags.some(tag => burgerTags.includes(tag.toLowerCase()))) {
+          return false
+        }
+      }
+    }
+    
     return true
   })
 
@@ -240,6 +297,11 @@ export default function RankingPage() {
       {isAdmin && <AdminBadge />}
 
       <div className="main">
+        {/* Búsqueda Inteligente */}
+        <div style={{ marginBottom: '1.25rem' }}>
+          <SmartSearch placeholder="Buscar burgers, restaurantes, ciudades..." />
+        </div>
+
         {/* Header del Ranking */}
         <div className="ranking-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
           <h2 className="ranking-title" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>🏆 Ranking de Hamburguesas</h2>
@@ -557,6 +619,34 @@ export default function RankingPage() {
               </div>
             </div>
 
+            {/* Filtros dietéticos/accesibilidad */}
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.5rem' }}>
+                ♿ Opciones Dietéticas
+              </label>
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                {dietaryOptions.map(option => (
+                  <button
+                    key={option.id}
+                    onClick={() => toggleDietaryFilter(option.id)}
+                    style={{
+                      padding: '0.4rem 0.7rem',
+                      border: dietaryFilters.includes(option.id) ? '2px solid #10b981' : '1px solid #4b5563',
+                      backgroundColor: dietaryFilters.includes(option.id) ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
+                      color: dietaryFilters.includes(option.id) ? '#10b981' : '#e5e7eb',
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      fontWeight: dietaryFilters.includes(option.id) ? 600 : 400,
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Limpiar filtros */}
             <button
               onClick={() => {
@@ -564,6 +654,7 @@ export default function RankingPage() {
                 setCarneFilter(null)
                 setSalsaFilter(null)
                 setToppingsFilter(null)
+                setDietaryFilters([])
               }}
               style={{
                 width: '100%',
@@ -658,6 +749,31 @@ export default function RankingPage() {
                   >
                     {badge.emoji}
                   </div>
+
+                  {/* Botón de Favoritos */}
+                  {authUser && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        zIndex: 10
+                      }}
+                    >
+                      <FavoriteButton
+                        burgerId={burger.id}
+                        isFavorite={favoriteIds.includes(burger.id)}
+                        size="medium"
+                        onToggle={(isFav) => {
+                          if (isFav) {
+                            setFavoriteIds(prev => [...prev, burger.id])
+                          } else {
+                            setFavoriteIds(prev => prev.filter(id => id !== burger.id))
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
 
                   {/* Imagen de la Hamburguesa - Rectangular Horizontal */}
                   <div 

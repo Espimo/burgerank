@@ -43,6 +43,8 @@ export default function RatePage() {
   // Edición de valoración existente
   const [isEditing, setIsEditing] = useState(false)
   const [existingRatingId, setExistingRatingId] = useState<string | null>(null)
+  const [showUpdateConfirm, setShowUpdateConfirm] = useState(false)
+  const [pendingExistingRating, setPendingExistingRating] = useState<any>(null)
   
   // Burgers loaded from Supabase
   const [burgers, setBurgers] = useState<BurgerData[]>([])
@@ -212,6 +214,73 @@ export default function RatePage() {
     setHasTicketUploaded(false)
     setIsEditing(false)
     setExistingRatingId(null)
+    setShowUpdateConfirm(false)
+    setPendingExistingRating(null)
+  }
+
+  // Confirmar actualización de valoración existente
+  const confirmUpdateRating = async () => {
+    if (!pendingExistingRating || !selectedBurger) return
+    
+    setShowUpdateConfirm(false)
+    setSubmittingRating(true)
+    setRatingError(null)
+
+    const ratingIdToUpdate = pendingExistingRating.id
+
+    try {
+      const ratingData = {
+        burger_id: selectedBurger.id,
+        overall_rating: generalRating,
+        pan_rating: panRating,
+        carne_rating: meatRating,
+        toppings_rating: toppingsRating,
+        salsa_rating: sauceRating,
+        price: parseFloat(price) || undefined,
+        comment: comment || undefined,
+        consumption_type: selectedConsumption as 'local' | 'delivery',
+        appetizers: selectedAppetizers.length > 0 ? selectedAppetizers : undefined,
+        has_ticket: hasTicketUploaded,
+      }
+
+      const response = await fetch('/api/ratings/create', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rating_id: ratingIdToUpdate,
+          ...ratingData
+        })
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al actualizar la valoración')
+      }
+
+      setRatingResult({
+        pointsEarned: data.pointsDiff || 0,
+        newTotal: data.newTotal,
+        hasTicket: data.hasTicket || false,
+        newBadges: data.newBadges || []
+      })
+
+      setPendingExistingRating(null)
+      setIsEditing(true)
+      setExistingRatingId(ratingIdToUpdate)
+      advanceStep(4)
+    } catch (error) {
+      console.error('Error updating rating:', error)
+      setRatingError(error instanceof Error ? error.message : 'Error al actualizar')
+    } finally {
+      setSubmittingRating(false)
+    }
+  }
+
+  // Cancelar actualización
+  const cancelUpdateRating = () => {
+    setShowUpdateConfirm(false)
+    setPendingExistingRating(null)
+    resetRate()
   }
 
   // Submit rating to the database
@@ -263,24 +332,11 @@ export default function RatePage() {
         data = await response.json()
       }
 
-      // Manejar error de valoración existente - ofrecer editar
+      // Manejar error de valoración existente - mostrar modal de confirmación
       if (!response.ok && response.status === 409 && data.canEdit) {
-        const existing = data.existingRating
-        // Cargar datos de la valoración existente
-        setGeneralRating(existing.overall_rating)
-        setPanRating(existing.pan_rating || 2)
-        setMeatRating(existing.carne_rating || 2)
-        setToppingsRating(existing.toppings_rating || 2)
-        setSauceRating(existing.salsa_rating || 2)
-        setPrice(existing.price?.toString() || '8.50')
-        setComment(existing.comment || '')
-        setSelectedConsumption(existing.consumption_type || 'local')
-        setSelectedAppetizers(existing.appetizers || [])
-        setHasTicketUploaded(existing.has_ticket || false)
-        setIsEditing(true)
-        setExistingRatingId(existing.id)
-        
-        setRatingError('Ya has valorado esta burger. Puedes modificar tu valoración.')
+        setPendingExistingRating(data.existingRating)
+        setShowUpdateConfirm(true)
+        setSubmittingRating(false)
         return
       }
 
@@ -1236,6 +1292,136 @@ export default function RatePage() {
           )}
         </div>
       </div>
+
+      {/* Modal de confirmación para actualizar valoración existente */}
+      {showUpdateConfirm && pendingExistingRating && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem'
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) cancelUpdateRating()
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#1f2937',
+              borderRadius: '1rem',
+              padding: '2rem',
+              maxWidth: '400px',
+              width: '100%',
+              border: '2px solid #f59e0b',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+            }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <span style={{ fontSize: '3rem' }}>🍔</span>
+            </div>
+            
+            <h3 style={{ 
+              color: '#f59e0b', 
+              textAlign: 'center', 
+              marginBottom: '1rem',
+              fontSize: '1.25rem',
+              fontWeight: '700'
+            }}>
+              ¡Ya valoraste esta burger!
+            </h3>
+            
+            <p style={{ 
+              color: '#d1d5db', 
+              textAlign: 'center', 
+              marginBottom: '0.5rem',
+              fontSize: '0.95rem'
+            }}>
+              Tu valoración anterior fue:
+            </p>
+            
+            <div style={{
+              backgroundColor: '#374151',
+              borderRadius: '0.75rem',
+              padding: '1rem',
+              marginBottom: '1.5rem',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>
+                {'⭐'.repeat(pendingExistingRating.overall_rating || 0)}
+              </div>
+              <div style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
+                {pendingExistingRating.overall_rating}/5 estrellas
+              </div>
+              {pendingExistingRating.comment && (
+                <div style={{ 
+                  color: '#d1d5db', 
+                  marginTop: '0.5rem', 
+                  fontStyle: 'italic',
+                  fontSize: '0.9rem'
+                }}>
+                  "{pendingExistingRating.comment}"
+                </div>
+              )}
+            </div>
+            
+            <p style={{ 
+              color: '#9ca3af', 
+              textAlign: 'center', 
+              marginBottom: '1.5rem',
+              fontSize: '0.9rem'
+            }}>
+              ¿Quieres actualizar tu puntuación con los nuevos valores?
+            </p>
+            
+            <div style={{ 
+              display: 'flex', 
+              gap: '1rem', 
+              justifyContent: 'center' 
+            }}>
+              <button
+                onClick={cancelUpdateRating}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#374151',
+                  color: '#d1d5db',
+                  border: '1px solid #4b5563',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '0.95rem',
+                  transition: 'all 0.2s'
+                }}
+              >
+                ❌ Cancelar
+              </button>
+              <button
+                onClick={confirmUpdateRating}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#f59e0b',
+                  color: '#1f2937',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: '700',
+                  fontSize: '0.95rem',
+                  transition: 'all 0.2s'
+                }}
+              >
+                ✅ Actualizar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomNav />
     </div>
