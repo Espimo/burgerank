@@ -128,7 +128,8 @@ export default function RankingPage() {
     return stars.join('')
   }
 
-  const getPositionBadge = (position: number) => {
+  const getPositionBadge = (position: number | null) => {
+    if (!position) return { emoji: '⭐', color: '#9ca3af' }
     if (position === 1) return { emoji: '🥇', color: '#ffd700' }
     if (position === 2) return { emoji: '🥈', color: '#c0c0c0' }
     if (position === 3) return { emoji: '🥉', color: '#cd7f32' }
