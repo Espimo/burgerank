@@ -92,25 +92,51 @@ export async function POST(request: Request) {
 
     console.log('POST favorites - burger_id recibido:', burger_id, 'tipo:', typeof burger_id)
 
+    // Verificar formato UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(burger_id)) {
+      console.error('Invalid UUID format:', burger_id)
+      return NextResponse.json({ 
+        error: 'ID de burger inválido (debe ser UUID)',
+        received: burger_id
+      }, { status: 400 })
+    }
+
     // Verificar que la burger existe (usando admin para evitar RLS)
     const { data: burgers, error: burgerError } = await adminClient
       .from('burgers')
       .select('id, name')
       .eq('id', burger_id)
 
-    console.log('Burger search result:', { burgers, error: burgerError })
+    console.log('Burger search result:', { 
+      burgers, 
+      error: burgerError,
+      searchedId: burger_id,
+      foundCount: burgers?.length || 0
+    })
 
     if (burgerError) {
       console.error('Error buscando burger:', burgerError)
       return NextResponse.json({ 
         error: 'Error al buscar burger', 
-        details: burgerError.message 
+        details: burgerError.message,
+        code: burgerError.code
       }, { status: 500 })
     }
 
     if (!burgers || burgers.length === 0) {
       console.error('Burger no encontrada con ID:', burger_id)
-      return NextResponse.json({ error: 'Burger no encontrada' }, { status: 404 })
+      
+      // Verificar cuántas burgers hay en total
+      const { count } = await adminClient
+        .from('burgers')
+        .select('*', { count: 'exact', head: true })
+      
+      return NextResponse.json({ 
+        error: 'Burger no encontrada',
+        burgerId: burger_id,
+        totalBurgersInDB: count || 0
+      }, { status: 404 })
     }
 
     const burger = burgers[0]
