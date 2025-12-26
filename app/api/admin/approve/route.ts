@@ -14,11 +14,11 @@ export async function POST(request: NextRequest) {
     // Check if user is admin
     const { data: userData } = await supabase
       .from('users')
-      .select('role')
+      .select('is_admin')
       .eq('id', user.id)
       .single();
 
-    if (userData?.role !== 'admin') {
+    if (!userData?.is_admin) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
