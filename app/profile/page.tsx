@@ -291,7 +291,7 @@ export default function ProfilePage() {
                   url={typeof window !== 'undefined' ? window.location.href : ''}
                   title={`Perfil de ${user.username} en BurgeRank`}
                   text={`¡Mira mi perfil de BurgeRank! Soy ${stats.category} con ${stats.points} puntos y ${stats.totalRatings} valoraciones.`}
-                  size="sm"
+                  variant="icon"
                 />
               </div>
               <div className="text-sm text-muted" style={{ marginBottom: '0.25rem' }}>
