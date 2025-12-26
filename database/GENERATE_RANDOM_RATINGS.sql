@@ -12,7 +12,6 @@
 DO $$
 DECLARE
     v_user_ids UUID[];
-    v_user_id UUID;
     v_burger RECORD;
     v_num_ratings INTEGER;
     v_rating NUMERIC;
@@ -20,29 +19,11 @@ DECLARE
     v_random_user_id UUID;
 BEGIN
     -- Buscar usuarios existentes
-    SELECT ARRAY_AGG(id) INTO v_user_ids FROM users LIMIT 20;
+    SELECT ARRAY_AGG(id) INTO v_user_ids FROM users;
     
-    -- Si no hay suficientes usuarios, crear usuarios temporales para ratings
-    IF v_user_ids IS NULL OR array_length(v_user_ids, 1) < 5 THEN
-        v_user_ids := ARRAY[]::UUID[];
-        
-        RAISE NOTICE 'Creando usuarios temporales para generar ratings...';
-        
-        -- Crear 10 usuarios bot
-        FOR i IN 1..10 LOOP
-            INSERT INTO users (id, username, email, is_admin)
-            VALUES (
-                gen_random_uuid(),
-                'rating_bot_' || i,
-                'bot' || i || '@burgerank.dev',
-                false
-            )
-            RETURNING id INTO v_user_id;
-            
-            v_user_ids := array_append(v_user_ids, v_user_id);
-        END LOOP;
-        
-        RAISE NOTICE 'Creados % usuarios temporales', array_length(v_user_ids, 1);
+    -- Verificar que hay usuarios disponibles
+    IF v_user_ids IS NULL OR array_length(v_user_ids, 1) = 0 THEN
+        RAISE EXCEPTION 'No hay usuarios en la base de datos. Por favor, crea al menos un usuario primero.';
     END IF;
     
     RAISE NOTICE 'Usando % usuarios para generar ratings', array_length(v_user_ids, 1);
