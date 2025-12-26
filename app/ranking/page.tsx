@@ -379,22 +379,12 @@ export default function RankingPage() {
                             }}>
                               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                                 <div>
-                                  <span style={{ color: '#9ca3af' }}>Bayesian Score: </span>
-                                  <span style={{ color: '#fbbf24' }}>{burger.bayesian_score?.toFixed(2)}</span>
+                                  <span style={{ color: '#9ca3af' }}>Total Reviews: </span>
+                                  <span style={{ color: '#fbbf24' }}>{burger.total_reviews}</span>
                                 </div>
                                 <div>
-                                  <span style={{ color: '#9ca3af' }}>Wilson Score: </span>
-                                  <span style={{ color: '#fbbf24' }}>{burger.wilson_score?.toFixed(2)}</span>
-                                </div>
-                                <div>
-                                  <span style={{ color: '#9ca3af' }}>Reviews positivas: </span>
-                                  <span style={{ color: '#10b981' }}>{burger.positive_reviews_count}</span>
-                                </div>
-                                <div>
-                                  <span style={{ color: '#9ca3af' }}>Desviación: </span>
-                                  <span style={{ color: burger.standard_deviation < 0.5 ? '#10b981' : '#ef4444' }}>
-                                    {burger.standard_deviation?.toFixed(2)}
-                                  </span>
+                                  <span style={{ color: '#9ca3af' }}>Verificadas: </span>
+                                  <span style={{ color: '#10b981' }}>{burger.verified_reviews_count}</span>
                                 </div>
                                 <div style={{ gridColumn: 'span 2' }}>
                                   <span style={{ color: '#9ca3af' }}>Ranking Score: </span>
