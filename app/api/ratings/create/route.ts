@@ -44,10 +44,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calcular puntos: base 1 + bonificación
-    let points = 1;
-    if (validated.overall_rating === 5) points += 5;
-    if (validated.overall_rating === 4) points += 3;
+    // Calcular puntos: SOLO si hay ticket
+    // Si has_ticket = true: base 1 + bonificación por rating
+    // Si has_ticket = false: 0 puntos
+    let points = 0;
+    const hasTicket = validated.has_ticket || false;
+    
+    if (hasTicket) {
+      points = 1; // Base point
+      if (validated.overall_rating === 5) points += 5;
+      else if (validated.overall_rating === 4) points += 3;
+      else if (validated.overall_rating === 3) points += 1;
+    }
 
     // Insertar rating
     const { data: rating, error: ratingError } = await (supabase
@@ -64,7 +72,7 @@ export async function POST(request: NextRequest) {
         comment: validated.comment,
         consumption_type: validated.consumption_type,
         appetizers: validated.appetizers,
-        has_ticket: validated.has_ticket || false,
+        has_ticket: hasTicket,
         ticket_url: validated.ticket_url,
         points_awarded: points,
       })
@@ -97,32 +105,80 @@ export async function POST(request: NextRequest) {
 
     if (updateBurgerError) throw updateBurgerError;
 
-    // Actualizar puntos del usuario
-    const { data: userData } = await supabase
-      .from('users')
-      .select('points')
-      .eq('id', user.id)
-      .single();
+    // Actualizar puntos del usuario (solo si hay puntos que sumar)
+    let newPoints = 0;
+    if (points > 0) {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('points')
+        .eq('id', user.id)
+        .single();
 
-    const newPoints = ((userData as any)?.points || 0) + points;
+      newPoints = ((userData as any)?.points || 0) + points;
 
-    const { error: updateUserError } = await (supabase
-      .from('users')
-      .update as any)({ points: newPoints })
-      .eq('id', user.id);
+      const { error: updateUserError } = await (supabase
+        .from('users')
+        .update as any)({ points: newPoints })
+        .eq('id', user.id);
 
-    if (updateUserError) throw updateUserError;
+      if (updateUserError) throw updateUserError;
+    } else {
+      // Obtener puntos actuales sin modificar
+      const { data: userData } = await supabase
+        .from('users')
+        .select('points')
+        .eq('id', user.id)
+        .single();
+      newPoints = (userData as any)?.points || 0;
+    }
 
-    // Verificar y otorgar badges
-    // TODO: Implementar lógica de badges
+    // Verificar y otorgar badges usando la función de PostgreSQL
+    let newBadges: any[] = [];
+    try {
+      const { data: badgesResult, error: badgesError } = await supabase
+        .rpc('check_and_unlock_badges', { p_user_id: user.id });
+      
+      if (!badgesError && badgesResult) {
+        // Obtener badges recién desbloqueados
+        const { data: allUserBadges } = await supabase
+          .from('user_badges')
+          .select('badge_id, unlocked_at, badges(name, emoji)')
+          .eq('user_id', user.id)
+          .order('unlocked_at', { ascending: false })
+          .limit(3);
+        
+        // Filtrar badges desbloqueados en los últimos 5 segundos (nuevos)
+        const recentBadges = (allUserBadges || []).filter(b => {
+          const unlockedAt = new Date(b.unlocked_at);
+          const now = new Date();
+          return (now.getTime() - unlockedAt.getTime()) < 5000;
+        });
+        
+        newBadges = recentBadges.map(b => ({
+          name: (b.badges as any)?.name,
+          emoji: (b.badges as any)?.emoji
+        }));
+      }
+    } catch (badgeError) {
+      console.error('Error checking badges:', badgeError);
+      // No interrumpir el flujo si falla el check de badges
+    }
 
     // Crear notificación
+    let notificationMessage = hasTicket 
+      ? `Tu valoración de la burger fue guardada. +${points} puntos`
+      : `Tu valoración fue guardada. Sube ticket para ganar puntos.`;
+    
+    if (newBadges.length > 0) {
+      notificationMessage += ` 🏅 ¡Nueva insignia: ${newBadges[0].name}!`;
+    }
+
     await (supabase.from('notifications').insert as any)({
       user_id: user.id,
-      title: '🌟 Rating guardado',
-      description: `Tu valoración de la burger fue guardada. +${points} puntos`,
-      type: 'rating_saved',
-      icon_emoji: '✅',
+      title: hasTicket ? '🌟 Rating guardado' : '📝 Valoración guardada',
+      description: notificationMessage,
+      type: hasTicket ? 'rating_saved' : 'rating_no_ticket',
+      icon_emoji: hasTicket ? '✅' : '📝',
     });
 
     return NextResponse.json({
@@ -130,7 +186,9 @@ export async function POST(request: NextRequest) {
       rating,
       pointsEarned: points,
       newTotal: newPoints,
-      message: `Valoración guardada. +${points} puntos`,
+      hasTicket,
+      newBadges,
+      message: notificationMessage,
     });
   } catch (error) {
     console.error('Error creating rating:', error);

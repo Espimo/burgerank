@@ -1,16 +1,111 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
 import Sidebar from '@/components/layout/Sidebar'
+import { useAuth } from '@/app/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
+
+interface BadgeData {
+  id: string
+  name: string
+  description: string
+  emoji: string
+  unlocked_at?: string
+  requirement_type?: string
+  requirement_value?: number
+}
+
+interface RewardData {
+  id: string
+  name: string
+  description: string
+  emoji: string
+  cost_points: number
+}
+
+interface ProfileData {
+  user: {
+    id: string
+    username: string
+    email: string
+    avatar_url: string | null
+    bio: string | null
+    public_profile: boolean
+    created_at: string
+  }
+  stats: {
+    points: number
+    totalRatings: number
+    avgRating: number
+    citiesVisited: number
+    category: string
+  }
+  badges: {
+    unlocked: BadgeData[]
+    locked: BadgeData[]
+    totalUnlocked: number
+    totalAvailable: number
+  }
+  top3: { name: string; rating: number }[]
+  recentRatings: { name: string; rating: number; created_at: string }[]
+  rewards: {
+    available: RewardData[]
+    next: RewardData | null
+    previous: RewardData | null
+    progress: number
+    pointsToNext: number
+  }
+}
 
 export default function ProfilePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [profileData, setProfileData] = useState<ProfileData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
+  // Form state
+  const [profileName, setProfileName] = useState('')
+  const [profileEmail, setProfileEmail] = useState('')
   const [publicProfileChecked, setPublicProfileChecked] = useState(false)
-  const [profileName, setProfileName] = useState('Cristhian Guzmán')
-  const [profileEmail, setProfileEmail] = useState('cristhian@example.com')
+  const [saving, setSaving] = useState(false)
+  
+  const { authUser } = useAuth()
+  const router = useRouter()
+
+  // Load profile data
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!authUser) {
+        router.push('/auth/signin')
+        return
+      }
+
+      try {
+        setLoading(true)
+        const response = await fetch('/api/profile')
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Error al cargar perfil')
+        }
+
+        setProfileData(data)
+        setProfileName(data.user.username)
+        setProfileEmail(data.user.email)
+        setPublicProfileChecked(data.user.public_profile)
+      } catch (err) {
+        console.error('Error loading profile:', err)
+        setError(err instanceof Error ? err.message : 'Error al cargar perfil')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadProfile()
+  }, [authUser, router])
 
   const handleMenuClick = () => {
     setSidebarOpen(true)
@@ -20,31 +115,128 @@ export default function ProfilePage() {
     setSidebarOpen(false)
   }
 
-  const showBadgeInfo = (badgeName: string, description: string) => {
-    alert(`🏅 ${badgeName}\n\n${description}`)
+  const showBadgeInfo = (badge: BadgeData) => {
+    const isUnlocked = !!badge.unlocked_at
+    alert(`🏅 ${badge.name}\n\n${badge.description}\n\n${isUnlocked ? '✅ Desbloqueado' : '🔒 Bloqueado'}`)
   }
 
-  const showRewardInfo = (rewardName: string, description: string, points: number) => {
-    alert(`🎁 ${rewardName}\n\n${description}\n\nCosto: ${points} puntos`)
+  const showRewardInfo = (reward: RewardData, userPoints: number) => {
+    const canRedeem = userPoints >= reward.cost_points
+    alert(`🎁 ${reward.name}\n\n${reward.description}\n\nCosto: ${reward.cost_points} puntos\n\n${canRedeem ? '✅ Puedes canjear esta recompensa' : `❌ Te faltan ${reward.cost_points - userPoints} puntos`}`)
   }
 
-  const togglePublicLink = () => {
-    setPublicProfileChecked(!publicProfileChecked)
-  }
+  const saveSettings = async () => {
+    if (!profileData) return
 
-  const copyToClipboard = () => {
-    const link = document.querySelector('#publicLink input') as HTMLInputElement
-    if (link) {
-      link.select()
-      document.execCommand('copy')
-      alert('Enlace copiado al portapapeles')
+    setSaving(true)
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: profileName,
+          public_profile: publicProfileChecked,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al guardar')
+      }
+
+      alert('Configuración guardada correctamente')
+      setShowSettings(false)
+
+      // Reload profile data
+      const newData = await (await fetch('/api/profile')).json()
+      setProfileData(newData)
+    } catch (err) {
+      alert('Error al guardar configuración')
+    } finally {
+      setSaving(false)
     }
   }
 
-  const saveSettings = () => {
-    alert('Configuración guardada correctamente')
-    setShowSettings(false)
+  const copyToClipboard = () => {
+    const link = `https://burgerank.com/profile/${profileData?.user.username}`
+    navigator.clipboard.writeText(link)
+    alert('Enlace copiado al portapapeles')
   }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 0) return 'Hoy'
+    if (diffDays === 1) return 'Ayer'
+    if (diffDays < 7) return `${diffDays} días`
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} semanas`
+    return `${Math.floor(diffDays / 30)} meses`
+  }
+
+  const renderStars = (rating: number) => {
+    return '★'.repeat(rating) + '☆'.repeat(5 - rating)
+  }
+
+  const getCategoryEmoji = (category: string) => {
+    switch (category) {
+      case 'Burger Obsessed': return '🔥'
+      case 'Burger Lover': return '❤️'
+      default: return '🍔'
+    }
+  }
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="container">
+        <TopBar onMenuClick={handleMenuClick} />
+        <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} />
+        <div className="main" style={{ textAlign: 'center', paddingTop: '4rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
+          <p>Cargando perfil...</p>
+        </div>
+        <BottomNav />
+      </div>
+    )
+  }
+
+  // Error state
+  if (error || !profileData) {
+    return (
+      <div className="container">
+        <TopBar onMenuClick={handleMenuClick} />
+        <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} />
+        <div className="main" style={{ textAlign: 'center', paddingTop: '4rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>❌</div>
+          <p>{error || 'Error al cargar perfil'}</p>
+          <button
+            onClick={() => router.push('/auth/signin')}
+            style={{
+              marginTop: '1rem',
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#fbbf24',
+              color: '#1a1a1a',
+              border: 'none',
+              borderRadius: '0.5rem',
+              cursor: 'pointer',
+              fontWeight: 600
+            }}
+          >
+            Iniciar sesión
+          </button>
+        </div>
+        <BottomNav />
+      </div>
+    )
+  }
+
+  const { user, stats, badges, top3, recentRatings, rewards } = profileData
 
   return (
     <div className="container">
@@ -72,139 +264,128 @@ export default function ProfilePage() {
             <div
               className="avatar avatar-lg"
               style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                background: user.avatar_url 
+                  ? `url(${user.avatar_url}) center/cover`
+                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 color: 'white',
                 fontWeight: 'bold',
                 fontSize: '1.2rem',
+                width: '60px',
+                height: '60px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
             >
-              CG
+              {!user.avatar_url && getInitials(user.username)}
             </div>
             <div style={{ flex: 1 }}>
-              <h3 className="text-lg font-bold">Cristhian Guzmán</h3>
+              <h3 className="text-lg font-bold">{user.username}</h3>
               <div className="text-sm text-muted" style={{ marginBottom: '0.25rem' }}>
-                @cristhian_guzman
+                @{user.username.toLowerCase().replace(/\s+/g, '_')}
               </div>
-              <div style={{ color: '#fbbf24', fontWeight: '600', fontSize: '0.9rem' }}>🔥 Burger Obsessed</div>
+              <div style={{ color: '#fbbf24', fontWeight: '600', fontSize: '0.9rem' }}>
+                {getCategoryEmoji(stats.category)} {stats.category}
+              </div>
             </div>
           </div>
 
           {/* Insignias en Header */}
           <div style={{ marginBottom: '1rem' }}>
             <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#9ca3af', marginBottom: '0.5rem' }}>
-              Insignias Desbloqueadas (7)
+              Insignias Desbloqueadas ({badges.totalUnlocked}/{badges.totalAvailable})
             </div>
             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-              <div
-                style={{ fontSize: '1.5rem', cursor: 'pointer' }}
-                title="Primer Rating"
-                onClick={() => showBadgeInfo('Primer Rating', 'Realiza tu primera valoración')}
-              >
-                ⭐
-              </div>
-              <div
-                style={{ fontSize: '1.5rem', cursor: 'pointer' }}
-                title="Crítico Ardiente"
-                onClick={() => showBadgeInfo('Crítico Ardiente', 'Valora 10 hamburguesas')}
-              >
-                🔥
-              </div>
-              <div
-                style={{ fontSize: '1.5rem', cursor: 'pointer' }}
-                title="Maestro de Sabores"
-                onClick={() => showBadgeInfo('Maestro de Sabores', 'Valora 25 hamburguesas')}
-              >
-                👑
-              </div>
-              <div
-                style={{ fontSize: '1.5rem', cursor: 'pointer' }}
-                title="Coleccionista"
-                onClick={() => showBadgeInfo('Coleccionista', 'Valora 50 hamburguesas')}
-              >
-                🏆
-              </div>
-              <div
-                style={{ fontSize: '1.5rem', cursor: 'pointer' }}
-                title="Explorador de Ciudades"
-                onClick={() => showBadgeInfo('Explorador de Ciudades', 'Valora burgers en 5 ciudades')}
-              >
-                🗺️
-              </div>
-              <div
-                style={{ fontSize: '1.5rem', cursor: 'pointer' }}
-                title="Paladar Exigente"
-                onClick={() => showBadgeInfo('Paladar Exigente', 'Promedio de 4.5+ en ratings')}
-              >
-                💎
-              </div>
-              <div
-                style={{ fontSize: '1.5rem', cursor: 'pointer' }}
-                title="Crítico Leyenda"
-                onClick={() => showBadgeInfo('Crítico Leyenda', 'Valora 100 hamburguesas')}
-              >
-                🌟
-              </div>
-              <div
-                style={{ fontSize: '1.5rem', opacity: 0.3, cursor: 'pointer' }}
-                title="Próxima insignia bloqueada"
-                onClick={() => showBadgeInfo('Bloqueado', 'Gana más puntos para desbloquear')}
-              >
-                ⏰
-              </div>
+              {/* Badges desbloqueados */}
+              {badges.unlocked.map(badge => (
+                <div
+                  key={badge.id}
+                  style={{ fontSize: '1.5rem', cursor: 'pointer' }}
+                  title={badge.name}
+                  onClick={() => showBadgeInfo(badge)}
+                >
+                  {badge.emoji}
+                </div>
+              ))}
+              {/* Badges bloqueados (mostrar primero 2 como preview) */}
+              {badges.locked.slice(0, 2).map(badge => (
+                <div
+                  key={badge.id}
+                  style={{ fontSize: '1.5rem', opacity: 0.3, cursor: 'pointer' }}
+                  title={`${badge.name} - Bloqueado`}
+                  onClick={() => showBadgeInfo(badge)}
+                >
+                  {badge.emoji}
+                </div>
+              ))}
+              {badges.locked.length > 2 && (
+                <div
+                  style={{ fontSize: '1rem', opacity: 0.5, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  title="Ver más insignias"
+                >
+                  +{badges.locked.length - 2}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem' }}>
             <div style={{ textAlign: 'center', padding: '0.5rem', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '0.5rem' }}>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#fbbf24' }}>340</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#fbbf24' }}>{stats.points}</div>
               <div style={{ fontSize: '0.7rem', color: '#9ca3af' }}>Puntos</div>
             </div>
             <div style={{ textAlign: 'center', padding: '0.5rem', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '0.5rem' }}>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#fbbf24' }}>48</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#fbbf24' }}>{stats.totalRatings}</div>
               <div style={{ fontSize: '0.7rem', color: '#9ca3af' }}>Valoraciones</div>
             </div>
           </div>
         </div>
 
         {/* Próxima Recompensa */}
-        <div className="card mb-4">
-          <div className="font-semibold mb-2" style={{ fontSize: '0.9rem' }}>
-            🎁 Próxima Recompensa
-          </div>
-          <div style={{ padding: '0.75rem', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '0.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <span style={{ fontSize: '1rem' }}>🍔</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: '600', fontSize: '0.8rem' }}>Hamburguesa Gratis</div>
-                <div className="text-xs text-muted" style={{ fontSize: '0.65rem' }}>
-                  Restaurante favorito
+        {rewards.next && (
+          <div className="card mb-4">
+            <div className="font-semibold mb-2" style={{ fontSize: '0.9rem' }}>
+              🎁 Próxima Recompensa
+            </div>
+            <div style={{ padding: '0.75rem', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '1rem' }}>{rewards.next.emoji}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: '600', fontSize: '0.8rem' }}>{rewards.next.name}</div>
+                  <div className="text-xs text-muted" style={{ fontSize: '0.65rem' }}>
+                    {rewards.next.description}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ color: '#fbbf24', fontWeight: '600', fontSize: '0.75rem' }}>+{rewards.pointsToNext}</div>
                 </div>
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ color: '#fbbf24', fontWeight: '600', fontSize: '0.75rem' }}>+250</div>
-              </div>
-            </div>
-            <div
-              style={{
-                background: '#4b5563',
-                height: '4px',
-                borderRadius: '2px',
-                overflow: 'hidden',
-                marginBottom: '0.3rem',
-              }}
-            >
               <div
                 style={{
-                  background: 'linear-gradient(90deg, #fbbf24, #f59e0b)',
-                  height: '100%',
-                  width: '68%',
+                  background: '#4b5563',
+                  height: '4px',
+                  borderRadius: '2px',
+                  overflow: 'hidden',
+                  marginBottom: '0.3rem',
                 }}
-              />
+              >
+                <div
+                  style={{
+                    background: 'linear-gradient(90deg, #fbbf24, #f59e0b)',
+                    height: '100%',
+                    width: `${rewards.progress}%`,
+                    transition: 'width 0.3s ease'
+                  }}
+                />
+              </div>
+              <div style={{ textAlign: 'right', fontSize: '0.65rem', color: '#9ca3af' }}>
+                {stats.points}/{rewards.next.cost_points} • {rewards.pointsToNext} pts restantes
+              </div>
             </div>
-            <div style={{ textAlign: 'right', fontSize: '0.65rem', color: '#9ca3af' }}>68/100 • 32 pts</div>
           </div>
-        </div>
+        )}
 
         {/* Recompensas Disponibles */}
         <div className="card mb-4">
@@ -212,181 +393,97 @@ export default function ProfilePage() {
             💰 Recompensas
           </div>
           <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-            <div
-              style={{
-                flexShrink: 0,
-                padding: '0.6rem',
-                background: 'rgba(75, 85, 99, 0.5)',
-                borderRadius: '0.5rem',
-                borderLeft: '3px solid #fbbf24',
-                minWidth: '120px',
-                cursor: 'pointer',
-              }}
-              onClick={() => showRewardInfo('10% Descuento', '10% en tu próxima burger', 50)}
-            >
-              <div style={{ fontWeight: '600', color: '#fbbf24', fontSize: '0.75rem' }}>10% 🏷️</div>
-              <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>50 pts</div>
-            </div>
-            <div
-              style={{
-                flexShrink: 0,
-                padding: '0.6rem',
-                background: 'rgba(75, 85, 99, 0.5)',
-                borderRadius: '0.5rem',
-                borderLeft: '3px solid #fbbf24',
-                minWidth: '120px',
-                cursor: 'pointer',
-              }}
-              onClick={() => showRewardInfo('Bebida Gratis', 'Una bebida con tu burger', 75)}
-            >
-              <div style={{ fontWeight: '600', color: '#fbbf24', fontSize: '0.75rem' }}>Bebida 🥤</div>
-              <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>75 pts</div>
-            </div>
-            <div
-              style={{
-                flexShrink: 0,
-                padding: '0.6rem',
-                background: 'rgba(75, 85, 99, 0.5)',
-                borderRadius: '0.5rem',
-                borderLeft: '3px solid #fbbf24',
-                minWidth: '120px',
-                cursor: 'pointer',
-              }}
-              onClick={() => showRewardInfo('Aperitivo Gratis', 'Papas, nachos o alitas', 100)}
-            >
-              <div style={{ fontWeight: '600', color: '#fbbf24', fontSize: '0.75rem' }}>Aperitivo 🍟</div>
-              <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>100 pts</div>
-            </div>
-            <div
-              style={{
-                flexShrink: 0,
-                padding: '0.6rem',
-                background: 'rgba(75, 85, 99, 0.5)',
-                borderRadius: '0.5rem',
-                borderLeft: '3px solid #fbbf24',
-                minWidth: '120px',
-                cursor: 'pointer',
-              }}
-              onClick={() => showRewardInfo('Hamburguesa Gratis', 'Una hamburguesa completa', 150)}
-            >
-              <div style={{ fontWeight: '600', color: '#fbbf24', fontSize: '0.75rem' }}>Burger 🍔</div>
-              <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>150 pts</div>
-            </div>
-            <div
-              style={{
-                flexShrink: 0,
-                padding: '0.6rem',
-                background: 'rgba(75, 85, 99, 0.5)',
-                borderRadius: '0.5rem',
-                borderLeft: '3px solid #fbbf24',
-                minWidth: '120px',
-                cursor: 'pointer',
-              }}
-              onClick={() => showRewardInfo('50% Descuento', '50% en menú completo', 200)}
-            >
-              <div style={{ fontWeight: '600', color: '#fbbf24', fontSize: '0.75rem' }}>50% 🎉</div>
-              <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>200 pts</div>
-            </div>
+            {rewards.available.map(reward => (
+              <div
+                key={reward.id}
+                style={{
+                  flexShrink: 0,
+                  padding: '0.6rem',
+                  background: 'rgba(75, 85, 99, 0.5)',
+                  borderRadius: '0.5rem',
+                  borderLeft: `3px solid ${stats.points >= reward.cost_points ? '#22c55e' : '#fbbf24'}`,
+                  minWidth: '120px',
+                  cursor: 'pointer',
+                  opacity: stats.points >= reward.cost_points ? 1 : 0.7
+                }}
+                onClick={() => showRewardInfo(reward, stats.points)}
+              >
+                <div style={{ fontWeight: '600', color: stats.points >= reward.cost_points ? '#22c55e' : '#fbbf24', fontSize: '0.75rem' }}>
+                  {reward.name.split(' ')[0]} {reward.emoji}
+                </div>
+                <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>{reward.cost_points} pts</div>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Mi Ranking Personal */}
-        <div className="card mb-4">
-          <div className="font-semibold" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-            📊 Mi Top 3
+        {top3.length > 0 && (
+          <div className="card mb-4">
+            <div className="font-semibold" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+              📊 Mi Top 3
+            </div>
+            <div>
+              {top3.map((item, index) => (
+                <div 
+                  key={index}
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    padding: '0.6rem', 
+                    background: 'rgba(251, 191, 36, 0.05)', 
+                    borderRadius: '0.375rem', 
+                    borderLeft: `3px solid ${['#fbbf24', '#f59e0b', '#d97706'][index]}`, 
+                    fontSize: '0.85rem',
+                    marginBottom: index < top3.length - 1 ? '0.25rem' : 0
+                  }}
+                >
+                  <div>
+                    <span style={{ color: ['#fbbf24', '#f59e0b', '#d97706'][index], fontWeight: 'bold' }}>
+                      {['🥇', '🥈', '🥉'][index]} 
+                    </span>
+                    {item.name}
+                  </div>
+                  <div style={{ color: ['#fbbf24', '#f59e0b', '#d97706'][index], fontWeight: 'bold', fontSize: '0.8rem' }}>
+                    {item.rating}/5
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <a
-            href="/profile/ratings"
-            className="btn btn-secondary"
-            style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem', marginBottom: '1rem', width: '100%', textAlign: 'center', textDecoration: 'none', display: 'block' }}
-          >
-            Ver Todo →
-          </a>
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem', background: 'rgba(251, 191, 36, 0.05)', borderRadius: '0.375rem', borderLeft: '3px solid #fbbf24', fontSize: '0.85rem' }}>
-              <div>
-                <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>🥇 </span>The King
-              </div>
-              <div style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '0.8rem' }}>9.2</div>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem', background: 'rgba(251, 191, 36, 0.05)', borderRadius: '0.375rem', borderLeft: '3px solid #f59e0b', fontSize: '0.85rem' }}>
-              <div>
-                <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>🥈 </span>Smoky BBQ
-              </div>
-              <div style={{ color: '#f59e0b', fontWeight: 'bold', fontSize: '0.8rem' }}>8.5</div>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem', background: 'rgba(251, 191, 36, 0.05)', borderRadius: '0.375rem', borderLeft: '3px solid #d97706', fontSize: '0.85rem' }}>
-              <div>
-                <span style={{ color: '#d97706', fontWeight: 'bold' }}>🥉 </span>Doble Sabor
-              </div>
-              <div style={{ color: '#d97706', fontWeight: 'bold', fontSize: '0.8rem' }}>8.0</div>
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Últimas Valoraciones */}
-        <div className="card mb-4">
-          <div className="font-semibold" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-            ⭐ Últimas
-          </div>
-          <a
-            href="/profile/ratings"
-            className="btn btn-secondary"
-            style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem', marginBottom: '1rem', width: '100%', textAlign: 'center', textDecoration: 'none', display: 'block' }}
-          >
-            Ver Todo →
-          </a>
-          <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-            <div
-              style={{
-                flexShrink: 0,
-                padding: '0.6rem',
-                background: 'rgba(75, 85, 99, 0.5)',
-                borderRadius: '0.5rem',
-                border: '1px solid #4b5563',
-                minWidth: '120px',
-                textAlign: 'center',
-                cursor: 'pointer',
-              }}
-            >
-              <div style={{ fontWeight: '600', fontSize: '0.75rem' }}>The King</div>
-              <div style={{ color: '#fbbf24', fontSize: '0.7rem', margin: '0.2rem 0' }}>★★★★★</div>
-              <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>2 días</div>
+        {recentRatings.length > 0 && (
+          <div className="card mb-4">
+            <div className="font-semibold" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+              ⭐ Últimas
             </div>
-            <div
-              style={{
-                flexShrink: 0,
-                padding: '0.6rem',
-                background: 'rgba(75, 85, 99, 0.5)',
-                borderRadius: '0.5rem',
-                border: '1px solid #4b5563',
-                minWidth: '120px',
-                textAlign: 'center',
-                cursor: 'pointer',
-              }}
-            >
-              <div style={{ fontWeight: '600', fontSize: '0.75rem' }}>Smoky BBQ</div>
-              <div style={{ color: '#fbbf24', fontSize: '0.7rem', margin: '0.2rem 0' }}>★★★★☆</div>
-              <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>5 días</div>
-            </div>
-            <div
-              style={{
-                flexShrink: 0,
-                padding: '0.6rem',
-                background: 'rgba(75, 85, 99, 0.5)',
-                borderRadius: '0.5rem',
-                border: '1px solid #4b5563',
-                minWidth: '120px',
-                textAlign: 'center',
-                cursor: 'pointer',
-              }}
-            >
-              <div style={{ fontWeight: '600', fontSize: '0.75rem' }}>Doble Sabor</div>
-              <div style={{ color: '#fbbf24', fontSize: '0.7rem', margin: '0.2rem 0' }}>★★★★☆</div>
-              <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>1 semana</div>
+            <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+              {recentRatings.map((rating, index) => (
+                <div
+                  key={index}
+                  style={{
+                    flexShrink: 0,
+                    padding: '0.6rem',
+                    background: 'rgba(75, 85, 99, 0.5)',
+                    borderRadius: '0.5rem',
+                    border: '1px solid #4b5563',
+                    minWidth: '120px',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div style={{ fontWeight: '600', fontSize: '0.75rem' }}>{rating.name}</div>
+                  <div style={{ color: '#fbbf24', fontSize: '0.7rem', margin: '0.2rem 0' }}>
+                    {renderStars(rating.rating)}
+                  </div>
+                  <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>{formatDate(rating.created_at)}</div>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        )}
 
         {/* Configuración */}
         {showSettings && (
@@ -399,6 +496,14 @@ export default function ProfilePage() {
                 className="form-input"
                 value={profileName}
                 onChange={e => setProfileName(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #4b5563',
+                  borderRadius: '0.5rem',
+                  backgroundColor: '#1f2937',
+                  color: '#e5e7eb'
+                }}
               />
             </div>
             <div className="form-group">
@@ -407,47 +512,99 @@ export default function ProfilePage() {
                 type="email"
                 className="form-input"
                 value={profileEmail}
-                onChange={e => setProfileEmail(e.target.value)}
+                disabled
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #4b5563',
+                  borderRadius: '0.5rem',
+                  backgroundColor: '#374151',
+                  color: '#9ca3af'
+                }}
               />
+              <div style={{ fontSize: '0.7rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                El email no se puede cambiar
+              </div>
             </div>
-            <div className="form-group">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
-                  id="publicProfile"
                   checked={publicProfileChecked}
-                  onChange={togglePublicLink}
+                  onChange={(e) => setPublicProfileChecked(e.target.checked)}
                 />
                 Perfil Público
               </label>
             </div>
             {publicProfileChecked && (
-              <div id="publicLink" style={{ padding: '0.75rem', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '0.5rem', marginBottom: '1rem' }}>
-                <div className="text-xs text-muted mb-2">Comparte tu perfil:</div>
+              <div style={{ padding: '0.75rem', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '0.5rem', marginBottom: '1rem' }}>
+                <div className="text-xs text-muted mb-2" style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                  Comparte tu perfil:
+                </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <input
                     type="text"
                     className="form-input"
-                    value="https://burgerank.com/profile/cristhian_guzman"
+                    value={`https://burgerank.com/profile/${user.username}`}
                     readOnly
-                    style={{ fontSize: '0.85rem' }}
+                    style={{ 
+                      fontSize: '0.85rem',
+                      flex: 1,
+                      padding: '0.5rem',
+                      border: '1px solid #4b5563',
+                      borderRadius: '0.375rem',
+                      backgroundColor: '#1f2937',
+                      color: '#e5e7eb'
+                    }}
                   />
                   <button
-                    className="btn btn-secondary"
-                    style={{ flex: '0 0 auto' }}
+                    style={{
+                      padding: '0.5rem 0.75rem',
+                      backgroundColor: '#374151',
+                      color: '#e5e7eb',
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem'
+                    }}
                     onClick={copyToClipboard}
                   >
-                    📋 Copiar
+                    📋
                   </button>
                 </div>
               </div>
             )}
-            <div className="btn-group">
-              <button className="btn btn-secondary" onClick={() => setShowSettings(false)}>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button 
+                style={{
+                  flex: 1,
+                  padding: '0.75rem',
+                  backgroundColor: '#374151',
+                  color: '#e5e7eb',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: 600
+                }}
+                onClick={() => setShowSettings(false)}
+              >
                 Cancelar
               </button>
-              <button className="btn btn-primary" onClick={saveSettings}>
-                Guardar
+              <button 
+                style={{
+                  flex: 1,
+                  padding: '0.75rem',
+                  backgroundColor: '#fbbf24',
+                  color: '#1a1a1a',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: 600
+                }}
+                onClick={saveSettings}
+                disabled={saving}
+              >
+                {saving ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
           </div>

@@ -38,6 +38,7 @@ export default function RatePage() {
   const [comment, setComment] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedBurger, setSelectedBurger] = useState<BurgerData | null>(null)
+  const [hasTicketUploaded, setHasTicketUploaded] = useState(false)
   
   // Burgers loaded from Supabase
   const [burgers, setBurgers] = useState<BurgerData[]>([])
@@ -45,7 +46,12 @@ export default function RatePage() {
   
   // Rating submission state
   const [submittingRating, setSubmittingRating] = useState(false)
-  const [ratingResult, setRatingResult] = useState<{ pointsEarned: number; newTotal: number } | null>(null)
+  const [ratingResult, setRatingResult] = useState<{ 
+    pointsEarned: number; 
+    newTotal: number; 
+    hasTicket: boolean;
+    newBadges?: { name: string; emoji: string }[]
+  } | null>(null)
   const [ratingError, setRatingError] = useState<string | null>(null)
   
   // New burger form
@@ -199,6 +205,7 @@ export default function RatePage() {
     setSelectedBurger(null)
     setRatingResult(null)
     setRatingError(null)
+    setHasTicketUploaded(false)
   }
 
   // Submit rating to the database
@@ -226,7 +233,7 @@ export default function RatePage() {
           comment: comment || undefined,
           consumption_type: selectedConsumption as 'local' | 'delivery',
           appetizers: selectedAppetizers.length > 0 ? selectedAppetizers : undefined,
-          has_ticket: false, // TODO: Implement ticket upload
+          has_ticket: hasTicketUploaded, // Use the actual ticket upload state
         })
       })
 
@@ -239,7 +246,9 @@ export default function RatePage() {
       // Store the result to show in success screen
       setRatingResult({
         pointsEarned: data.pointsEarned,
-        newTotal: data.newTotal
+        newTotal: data.newTotal,
+        hasTicket: data.hasTicket || false,
+        newBadges: data.newBadges || []
       })
 
       // Advance to success step
@@ -580,18 +589,64 @@ export default function RatePage() {
 
                 <div
                   style={{
-                    border: '2px dashed #4b5563',
+                    border: hasTicketUploaded ? '2px solid #22c55e' : '2px dashed #4b5563',
                     borderRadius: '0.5rem',
                     padding: '2rem',
                     marginBottom: '1rem',
                     cursor: 'pointer',
+                    backgroundColor: hasTicketUploaded ? 'rgba(34, 197, 94, 0.1)' : 'transparent',
+                    transition: 'all 0.2s'
                   }}
                   onClick={() => document.getElementById('ticketInput')?.click()}
                 >
-                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📸</div>
-                  <p className="text-muted">Haz clic para seleccionar imagen</p>
-                  <input type="file" id="ticketInput" style={{ display: 'none' }} accept="image/*" />
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
+                    {hasTicketUploaded ? '✅' : '📸'}
+                  </div>
+                  <p className="text-muted">
+                    {hasTicketUploaded 
+                      ? '¡Ticket cargado! Haz clic para cambiar' 
+                      : 'Haz clic para seleccionar imagen'}
+                  </p>
+                  <input 
+                    type="file" 
+                    id="ticketInput" 
+                    style={{ display: 'none' }} 
+                    accept="image/*" 
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        // TODO: Implementar subida real a Supabase Storage
+                        setHasTicketUploaded(true)
+                      }
+                    }}
+                  />
                 </div>
+
+                {hasTicketUploaded && (
+                  <div style={{ 
+                    padding: '0.75rem', 
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)', 
+                    borderRadius: '0.5rem',
+                    marginBottom: '1rem',
+                    fontSize: '0.85rem',
+                    color: '#22c55e'
+                  }}>
+                    🎉 ¡Ganarás +{generalRating === 5 ? 6 : generalRating === 4 ? 4 : generalRating === 3 ? 2 : 1} puntos con esta valoración!
+                  </div>
+                )}
+
+                {!hasTicketUploaded && (
+                  <div style={{ 
+                    padding: '0.75rem', 
+                    backgroundColor: 'rgba(251, 191, 36, 0.1)', 
+                    borderRadius: '0.5rem',
+                    marginBottom: '1rem',
+                    fontSize: '0.85rem',
+                    color: '#fbbf24'
+                  }}>
+                    ⚠️ Sin ticket no ganarás puntos, pero tu valoración se guardará igualmente.
+                  </div>
+                )}
 
                 {ratingError && (
                   <div style={{
@@ -626,41 +681,176 @@ export default function RatePage() {
             </div>
           )}
 
-          {/* Step 4: Success */}
-          {currentStep === 4 && (
+          {/* Step 4: Success WITH Ticket (Points Earned) */}
+          {currentStep === 4 && ratingResult?.hasTicket && (
             <div className="wizard-step active">
               <div style={{ textAlign: 'center', padding: '2rem 0' }}>
                 <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎉</div>
                 <h3 className="text-2xl font-bold mb-2">¡Valoración Enviada!</h3>
                 <p className="text-muted mb-4">Gracias por tu participación en la comunidad.</p>
 
-                <div className="success-box">
-                  <div className="font-semibold mb-2">
-                    🏆 +{ratingResult?.pointsEarned || 0} puntos ganados
+                <div style={{
+                  backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                  border: '2px solid #22c55e',
+                  borderRadius: '0.75rem',
+                  padding: '1.5rem',
+                  marginBottom: '1rem'
+                }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🏆</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#22c55e', marginBottom: '0.25rem' }}>
+                    +{ratingResult?.pointsEarned || 0} puntos
                   </div>
-                  <div className="text-sm mb-3">
+                  <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
                     Puntuación: {generalRating}/5 ⭐ para {selectedBurger?.name || 'la hamburguesa'}
                   </div>
-                  <div
-                    className="text-sm font-semibold"
-                    style={{
-                      color: '#fbbf24',
-                      borderTop: '1px solid #22c55e',
-                      paddingTop: '1rem',
+                  
+                  {/* Badges nuevos */}
+                  {ratingResult?.newBadges && ratingResult.newBadges.length > 0 && (
+                    <div style={{
                       marginTop: '1rem',
-                    }}
-                  >
-                    📈 Próxima insignia en <strong>125 puntos</strong>
-                    <br />
-                    Progreso: ▓▓▓▓▓░░░░ 68%
+                      padding: '0.75rem',
+                      backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                      borderRadius: '0.5rem'
+                    }}>
+                      <div style={{ fontSize: '0.8rem', color: '#fbbf24', fontWeight: 600, marginBottom: '0.25rem' }}>
+                        🏅 ¡Nueva insignia desbloqueada!
+                      </div>
+                      {ratingResult.newBadges.map((badge: any, idx: number) => (
+                        <div key={idx} style={{ fontSize: '1.2rem' }}>
+                          {badge.emoji} {badge.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div style={{
+                    marginTop: '1rem',
+                    padding: '0.75rem',
+                    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.8rem',
+                    color: '#fbbf24'
+                  }}>
+                    📈 Total de puntos: <strong>{ratingResult?.newTotal || 0}</strong>
                   </div>
                 </div>
 
-                <div className="btn-group" style={{ marginTop: '2rem' }}>
-                  <button className="btn btn-secondary" onClick={() => advanceStep(0)}>
-                    ↩️ Ir al Ranking
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1.5rem' }}>
+                  <a 
+                    href="/ranking"
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      backgroundColor: '#374151',
+                      color: '#e5e7eb',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    🏆 Ver Ranking
+                  </a>
+                  <button 
+                    onClick={() => resetRate()}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      backgroundColor: '#fbbf24',
+                      color: '#1a1a1a',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    ⭐ Valorar Otra
                   </button>
-                  <button className="btn btn-primary" onClick={() => resetRate()}>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Success WITHOUT Ticket (No Points) */}
+          {currentStep === 4 && !ratingResult?.hasTicket && (
+            <div className="wizard-step active">
+              <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📝</div>
+                <h3 className="text-2xl font-bold mb-2">Valoración Guardada</h3>
+                <p className="text-muted mb-4">Tu opinión ayuda a la comunidad a encontrar las mejores burgers.</p>
+
+                <div style={{
+                  backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                  border: '2px solid #fbbf24',
+                  borderRadius: '0.75rem',
+                  padding: '1.5rem',
+                  marginBottom: '1rem'
+                }}>
+                  <div style={{ fontSize: '0.9rem', color: '#e5e7eb', marginBottom: '1rem' }}>
+                    Puntuación: {generalRating}/5 ⭐ para {selectedBurger?.name || 'la hamburguesa'}
+                  </div>
+                  
+                  <div style={{
+                    padding: '1rem',
+                    backgroundColor: 'rgba(75, 85, 99, 0.3)',
+                    borderRadius: '0.5rem',
+                    border: '1px dashed #6b7280'
+                  }}>
+                    <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🎫</div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fbbf24', marginBottom: '0.25rem' }}>
+                      ¿Tienes tu ticket?
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginBottom: '0.75rem' }}>
+                      Sube una foto de tu ticket en tu próxima valoración para ganar puntos y desbloquear recompensas.
+                    </div>
+                    <div style={{ 
+                      display: 'flex', 
+                      gap: '0.5rem', 
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      fontSize: '0.75rem',
+                      color: '#6b7280'
+                    }}>
+                      <span>⭐5 = +6pts</span>
+                      <span>•</span>
+                      <span>⭐4 = +4pts</span>
+                      <span>•</span>
+                      <span>⭐3 = +2pts</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1.5rem' }}>
+                  <a 
+                    href="/ranking"
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      backgroundColor: '#374151',
+                      color: '#e5e7eb',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    🏆 Ver Ranking
+                  </a>
+                  <button 
+                    onClick={() => resetRate()}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      backgroundColor: '#fbbf24',
+                      color: '#1a1a1a',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: '0.9rem'
+                    }}
+                  >
                     ⭐ Valorar Otra
                   </button>
                 </div>
