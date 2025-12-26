@@ -10,7 +10,7 @@ import { useAuth } from '@/app/contexts/AuthContext'
 import { AdminBadge } from '@/app/components/AdminBadge'
 import { createClient } from '@/lib/supabase/client'
 
-// Type for burgers with ranking data (simplificado)
+// Type for burgers with ranking data
 interface RankedBurger {
   id: string
   name: string
@@ -35,20 +35,12 @@ interface CityData {
   name: string
 }
 
-interface RankingStats {
-  totalInRanking: number
-  totalNew: number
-  minReviewsForRanking: number
-}
-
 export default function RankingPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [selectedCity, setSelectedCity] = useState('')
   const [selectedType, setSelectedType] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [scrollPosition, setScrollPosition] = useState(0)
   const [showRegistrationModal, setShowRegistrationModal] = useState(false)
-  const [expandedBurger, setExpandedBurger] = useState<string | null>(null)
   const { isAdmin } = useAdmin()
   const { authUser } = useAuth()
   
@@ -64,7 +56,7 @@ export default function RankingPage() {
       try {
         setLoading(true)
         
-        // Build query params - modo desarrollo incluye todas las burgers
+        // Build query params
         const params = new URLSearchParams()
         if (selectedCity) params.append('city', selectedCity)
         if (selectedType) params.append('type', selectedType)
@@ -120,34 +112,13 @@ export default function RankingPage() {
       if (i < fullStars) {
         stars.push('★')
       } else if (i === fullStars && hasHalf) {
-        stars.push('☆')
+        stars.push('★')
       } else {
         stars.push('☆')
       }
     }
     return stars.join('')
   }
-
-  const getPositionBadge = (position: number | null) => {
-    if (!position) return { emoji: '⭐', color: '#9ca3af' }
-    if (position === 1) return { emoji: '🥇', color: '#ffd700' }
-    if (position === 2) return { emoji: '🥈', color: '#c0c0c0' }
-    if (position === 3) return { emoji: '🥉', color: '#cd7f32' }
-    if (position <= 10) return { emoji: '🔥', color: '#ef4444' }
-    return { emoji: '#', color: '#6b7280' }
-  }
-
-  const handleScrollSlider = (direction: 'left' | 'right') => {
-    const slider = document.getElementById('featured-slider')
-    if (slider) {
-      const newPos = scrollPosition + (direction === 'left' ? -200 : 200)
-      slider.scrollLeft = newPos
-      setScrollPosition(newPos)
-    }
-  }
-
-  // Get top 3 for featured section
-  const featuredBurgers = rankedBurgers.slice(0, 3)
 
   // Show loading state
   if (loading) {
@@ -175,115 +146,74 @@ export default function RankingPage() {
       {isAdmin && <AdminBadge />}
 
       <div className="main">
-        <h2 className="text-2xl font-bold mb-4">🏆 Ranking Nacional de Hamburguesas</h2>
-        
-        {/* Filtros principales */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.5rem', marginBottom: '1.5rem' }}>
-          <select 
-            className="filter-select" 
-            style={{ padding: '0.5rem', border: '1px solid #4b5563', backgroundColor: '#1f2937', color: '#e5e7eb', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.85rem' }}
-            value={selectedCity}
-            onChange={(e) => setSelectedCity(e.target.value)}
-          >
-            <option value="">📍 Todas las Ciudades</option>
-            {cities.map(city => (
-              <option key={city.id} value={city.id}>{city.name}</option>
-            ))}
-          </select>
-          <select 
-            className="filter-select" 
-            style={{ padding: '0.5rem', border: '1px solid #4b5563', backgroundColor: '#1f2937', color: '#e5e7eb', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.85rem' }}
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-          >
-            <option value="">🍔 Tipo</option>
-            <option value="classic">Clásica</option>
-            <option value="smash">Smash</option>
-            <option value="gourmet">Gourmet</option>
-            <option value="veggie">Vegetariana</option>
-          </select>
+        {/* Header del Ranking */}
+        <div className="ranking-header" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+          <h2 className="ranking-title" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>🏆 Ranking de Hamburguesas</h2>
         </div>
 
-        {/* Toggle mostrar todas */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.85rem', color: '#9ca3af' }}>🏆 Ranking</span>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#9ca3af', cursor: 'pointer' }}>
+        {/* Filtros rápidos */}
+        <div className="ranking-filters" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', overflowX: 'auto' }}>
+          <button 
+            className={`filter-btn ${selectedCity === '' ? 'active' : ''}`}
+            onClick={() => setSelectedCity('')}
+            style={{ 
+              padding: '0.5rem 1rem', 
+              border: '1px solid #4b5563', 
+              backgroundColor: selectedCity === '' ? '#fbbf24' : 'transparent',
+              color: selectedCity === '' ? '#1a1a1a' : '#e5e7eb',
+              borderRadius: '0.5rem', 
+              cursor: 'pointer', 
+              whiteSpace: 'nowrap',
+              transition: 'all 0.2s'
+            }}
+          >
+            📍 Todas
+          </button>
+          {cities.slice(0, 4).map(city => (
+            <button 
+              key={city.id}
+              className={`filter-btn ${selectedCity === city.id ? 'active' : ''}`}
+              onClick={() => setSelectedCity(city.id)}
+              style={{ 
+                padding: '0.5rem 1rem', 
+                border: '1px solid #4b5563', 
+                backgroundColor: selectedCity === city.id ? '#fbbf24' : 'transparent',
+                color: selectedCity === city.id ? '#1a1a1a' : '#e5e7eb',
+                borderRadius: '0.5rem', 
+                cursor: 'pointer', 
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s'
+              }}
+            >
+              {city.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Toggle mostrar todas (solo en desarrollo) */}
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#6b7280', cursor: 'pointer' }}>
             <input 
               type="checkbox" 
               checked={showAllBurgers}
               onChange={(e) => setShowAllBurgers(e.target.checked)}
               style={{ cursor: 'pointer' }}
             />
-            Mostrar todas (incluso sin reviews)
+            🛠️ Dev: Mostrar todas (incluso sin reviews)
           </label>
         </div>
 
-        {/* Podio Top 3 */}
-        {featuredBurgers.length >= 3 && (
-          <div style={{ marginBottom: '2rem' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              🏆 Podio
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
-              {/* 2do lugar */}
-              <div style={{ 
-                backgroundColor: '#1f2937', 
-                borderRadius: '0.5rem', 
-                padding: '1rem', 
-                textAlign: 'center',
-                border: '2px solid #c0c0c0',
-                marginTop: '1rem'
-              }}>
-                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🥈</div>
-                <div style={{ fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.3rem' }}>{featuredBurgers[1]?.name}</div>
-                <div style={{ fontSize: '0.7rem', color: '#9ca3af', marginBottom: '0.3rem' }}>{featuredBurgers[1]?.restaurant?.name}</div>
-                <div style={{ fontSize: '0.9rem', color: '#fbbf24' }}>{featuredBurgers[1]?.average_rating?.toFixed(1)} ⭐</div>
-                <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>({featuredBurgers[1]?.total_reviews} reviews)</div>
-              </div>
-              {/* 1er lugar */}
-              <div style={{ 
-                backgroundColor: '#1f2937', 
-                borderRadius: '0.5rem', 
-                padding: '1rem', 
-                textAlign: 'center',
-                border: '2px solid #ffd700',
-                transform: 'scale(1.05)'
-              }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🥇</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '0.3rem', color: '#fbbf24' }}>{featuredBurgers[0]?.name}</div>
-                <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginBottom: '0.3rem' }}>{featuredBurgers[0]?.restaurant?.name}</div>
-                <div style={{ fontSize: '1rem', color: '#fbbf24', fontWeight: '600' }}>{featuredBurgers[0]?.average_rating?.toFixed(1)} ⭐</div>
-                <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>({featuredBurgers[0]?.total_reviews} reviews)</div>
-              </div>
-              {/* 3er lugar */}
-              <div style={{ 
-                backgroundColor: '#1f2937', 
-                borderRadius: '0.5rem', 
-                padding: '1rem', 
-                textAlign: 'center',
-                border: '2px solid #cd7f32',
-                marginTop: '1rem'
-              }}>
-                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🥉</div>
-                <div style={{ fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.3rem' }}>{featuredBurgers[2]?.name}</div>
-                <div style={{ fontSize: '0.7rem', color: '#9ca3af', marginBottom: '0.3rem' }}>{featuredBurgers[2]?.restaurant?.name}</div>
-                <div style={{ fontSize: '0.9rem', color: '#fbbf24' }}>{featuredBurgers[2]?.average_rating?.toFixed(1)} ⭐</div>
-                <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>({featuredBurgers[2]?.total_reviews} reviews)</div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Buscador */}
-        <div style={{ marginBottom: '1.5rem' }}>
-          <input
-            type="text"
-            placeholder="🔍 Buscar hamburguesa o restaurante..."
+        <div className="form-group" style={{ marginBottom: '1rem' }}>
+          <input 
+            type="text" 
+            className="search-input"
+            placeholder="🔍 Busca hamburguesas, restaurantes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
               width: '100%',
-              padding: '0.75rem',
+              padding: '0.75rem 1rem',
               border: '1px solid #4b5563',
               borderRadius: '0.5rem',
               backgroundColor: '#1f2937',
@@ -293,167 +223,160 @@ export default function RankingPage() {
           />
         </div>
 
-        {/* Vista: Ranking oficial */}
-        {filteredBurgers.length > 0 ? (
-          <div style={{ display: 'grid', gap: '1rem' }}>
-            {filteredBurgers.map((burger) => {
-              const badge = getPositionBadge(burger.ranking_position)
-              const isExpanded = expandedBurger === burger.id
+        {/* Lista de Hamburguesas */}
+        <div id="rankingList">
+          {filteredBurgers.length > 0 ? (
+            filteredBurgers.map((burger, index) => {
+              const position = burger.ranking_position || (index + 1)
               
               return (
-                <div key={burger.id} className="card" style={{ padding: '1rem', borderRadius: '0.5rem', overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    {/* Posición */}
-                    <div style={{ 
-                          display: 'flex', 
-                          flexDirection: 'column', 
-                          alignItems: 'center', 
-                          justifyContent: 'center',
-                          minWidth: '50px',
-                          padding: '0.5rem',
-                          backgroundColor: '#111827',
-                          borderRadius: '0.5rem'
-                        }}>
-                          <span style={{ fontSize: '1.5rem' }}>{badge.emoji}</span>
-                          <span style={{ fontSize: '1.2rem', fontWeight: '700', color: badge.color }}>
-                            {burger.ranking_position && burger.ranking_position <= 3 ? '' : burger.ranking_position || ''}
-                          </span>
+                <div 
+                  key={burger.id} 
+                  className="card burger-card" 
+                  style={{ 
+                    display: 'flex', 
+                    gap: '0.75rem', 
+                    marginBottom: '0.75rem', 
+                    position: 'relative',
+                    alignItems: 'stretch',
+                    cursor: 'pointer',
+                    padding: '1rem'
+                  }}
+                >
+                  {/* Posición Badge */}
+                  <div 
+                    className="burger-position"
+                    style={{
+                      position: 'absolute',
+                      top: '-8px',
+                      left: '-8px',
+                      width: '40px',
+                      height: '40px',
+                      background: position <= 3 
+                        ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
+                        : position <= 10 
+                          ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                          : '#374151',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 'bold',
+                      fontSize: position <= 3 ? '1.2rem' : '0.9rem',
+                      color: position <= 10 ? '#1a1a1a' : '#e5e7eb',
+                      boxShadow: position <= 3 
+                        ? '0 2px 8px rgba(251, 191, 36, 0.3)'
+                        : position <= 10
+                          ? '0 2px 8px rgba(239, 68, 68, 0.3)'
+                          : 'none'
+                    }}
+                  >
+                    {position <= 3 ? ['🥇', '🥈', '🥉'][position - 1] : `#${position}`}
+                  </div>
+
+                  {/* Imagen de la Hamburguesa */}
+                  <div 
+                    className="burger-image"
+                    style={{
+                      width: '70px',
+                      height: '70px',
+                      borderRadius: '0.5rem',
+                      objectFit: 'cover',
+                      backgroundColor: '#4b5563',
+                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '2rem',
+                      background: burger.image_url 
+                        ? `url(${burger.image_url}) center/cover`
+                        : 'linear-gradient(135deg, #92400e 0%, #b45309 100%)'
+                    }}
+                  >
+                    {!burger.image_url && '🍔'}
+                  </div>
+
+                  {/* Contenido */}
+                  <div className="burger-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div className="burger-name" style={{ fontWeight: 600, marginBottom: '0.25rem', fontSize: '0.95rem' }}>
+                        {burger.name}
+                      </div>
+                      <div className="burger-restaurant" style={{ fontSize: '0.8rem', color: '#9ca3af', marginBottom: '0.3rem' }}>
+                        🏪 {burger.restaurant?.name}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="burger-rating" style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', fontSize: '0.85rem', marginBottom: '0.3rem' }}>
+                        <div className="rating-item" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <span className="stars" style={{ color: '#fbbf24' }}>{renderStars(burger.average_rating || 0)}</span>
+                          <span>{(burger.average_rating || 0).toFixed(1)} ({burger.total_reviews})</span>
                         </div>
-                        
-                        {/* Contenido */}
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
-                            <div>
-                              <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.2rem' }}>
-                                {burger.name}
-                              </div>
-                              <div style={{ fontSize: '0.85rem', color: '#9ca3af', marginBottom: '0.3rem' }}>
-                                {burger.restaurant?.name} • {burger.restaurant?.cities?.name}
-                              </div>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontSize: '1.1rem', fontWeight: '600', color: '#fbbf24' }}>
-                                {burger.average_rating?.toFixed(1)} ⭐
-                              </div>
-                              <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
-                                ({burger.total_reviews} reviews)
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Indicadores de calidad */}
-                          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
-                            <span style={{ 
-                              fontSize: '0.7rem', 
-                              backgroundColor: burger.verified_percentage >= 70 ? '#059669' : '#4b5563', 
-                              color: '#fff', 
-                              padding: '0.2rem 0.5rem', 
-                              borderRadius: '0.25rem' 
-                            }}>
-                              📸 {burger.verified_percentage}% verificadas
-                            </span>
-                          </div>
-
-                          {/* Detalles expandidos */}
-                          <button 
-                            onClick={() => setExpandedBurger(isExpanded ? null : burger.id)}
-                            style={{ 
-                              fontSize: '0.75rem', 
-                              color: '#60a5fa', 
-                              background: 'none', 
-                              border: 'none', 
+                      </div>
+                      <div className="burger-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>📍 {burger.restaurant?.cities?.name}</span>
+                        <div className="burger-actions" style={{ display: 'flex', gap: '0.4rem' }}>
+                          <a 
+                            href={`/restaurante/${encodeURIComponent(burger.restaurant?.name || '')}`}
+                            className="btn-tiny"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              padding: '0.4rem 0.8rem',
+                              fontSize: '0.75rem',
+                              border: 'none',
+                              backgroundColor: '#374151',
+                              color: '#e5e7eb',
+                              borderRadius: '0.375rem',
                               cursor: 'pointer',
-                              padding: '0.25rem 0'
+                              fontWeight: 600,
+                              transition: 'all 0.2s',
+                              textDecoration: 'none'
                             }}
                           >
-                            {isExpanded ? '▲ Ocultar detalles' : '▼ Ver detalles del score'}
-                          </button>
-                          
-                          {isExpanded && (
-                            <div style={{ 
-                              marginTop: '0.75rem', 
-                              padding: '0.75rem', 
-                              backgroundColor: '#111827', 
+                            🏪 Restaurante
+                          </a>
+                          <a 
+                            href={authUser ? "/rate" : undefined}
+                            className="btn-tiny"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (!authUser) {
+                                e.preventDefault()
+                                setShowRegistrationModal(true)
+                              }
+                            }}
+                            style={{
+                              padding: '0.4rem 0.8rem',
+                              fontSize: '0.75rem',
+                              border: 'none',
+                              backgroundColor: '#fbbf24',
+                              color: '#1a1a1a',
                               borderRadius: '0.375rem',
-                              fontSize: '0.8rem'
-                            }}>
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                                <div>
-                                  <span style={{ color: '#9ca3af' }}>Total Reviews: </span>
-                                  <span style={{ color: '#fbbf24' }}>{burger.total_reviews}</span>
-                                </div>
-                                <div>
-                                  <span style={{ color: '#9ca3af' }}>Verificadas: </span>
-                                  <span style={{ color: '#10b981' }}>{burger.verified_reviews_count}</span>
-                                </div>
-                                <div style={{ gridColumn: 'span 2' }}>
-                                  <span style={{ color: '#9ca3af' }}>Ranking Score: </span>
-                                  <span style={{ color: '#fbbf24', fontWeight: '600' }}>{burger.ranking_score?.toFixed(4)}</span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Botones */}
-                          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-                            <a 
-                              href={`/restaurante/${encodeURIComponent(burger.restaurant?.name || '')}`}
-                              style={{ 
-                                flex: 1, 
-                                padding: '0.5rem', 
-                                backgroundColor: '#374151', 
-                                color: '#e5e7eb',
-                                border: '1px solid #4b5563',
-                                borderRadius: '0.375rem',
-                                cursor: 'pointer',
-                                fontSize: '0.85rem',
-                                fontWeight: '500',
-                                textAlign: 'center',
-                                textDecoration: 'none'
-                              }}
-                            >
-                              🏪 Restaurante
-                            </a>
-                            <a 
-                              href={authUser ? "/rate" : undefined}
-                              onClick={(e) => {
-                                if (!authUser) {
-                                  e.preventDefault()
-                                  setShowRegistrationModal(true)
-                                }
-                              }}
-                              style={{ 
-                                flex: 1, 
-                                padding: '0.5rem', 
-                                backgroundColor: '#fbbf24', 
-                                color: '#000',
-                                border: 'none',
-                                borderRadius: '0.375rem',
-                                cursor: 'pointer',
-                                fontSize: '0.85rem',
-                                fontWeight: '600',
-                                textAlign: 'center',
-                                textDecoration: 'none'
-                              }}
-                            >
-                              ⭐ Valorar
-                            </a>
-                          </div>
+                              cursor: 'pointer',
+                              fontWeight: 600,
+                              transition: 'all 0.2s',
+                              textDecoration: 'none'
+                            }}
+                          >
+                            ⭐ Valorar
+                          </a>
                         </div>
                       </div>
                     </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
-                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔍</div>
-                <div>No hay hamburguesas en el ranking aún</div>
-                <div style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                  Las burgers necesitan reviews para entrar al ranking
+                  </div>
                 </div>
+              )
+            })
+          ) : (
+            <div style={{ textAlign: 'center', padding: '3rem', color: '#9ca3af' }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🍔</div>
+              <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>No hay hamburguesas en el ranking</div>
+              <div style={{ fontSize: '0.85rem' }}>
+                ¡Sé el primero en valorar una hamburguesa!
               </div>
-            )}
+            </div>
+          )}
+        </div>
       </div>
 
       <BottomNav />
