@@ -694,8 +694,6 @@ CREATE OR REPLACE VIEW v_burger_ranking AS
 SELECT 
     b.id,
     b.name,
-    b.description,
-    b.price,
     b.image_url,
     r.name as restaurant_name,
     c.name as city_name,
@@ -725,8 +723,6 @@ CREATE OR REPLACE VIEW v_new_burgers AS
 SELECT 
     b.id,
     b.name,
-    b.description,
-    b.price,
     b.image_url,
     r.name as restaurant_name,
     c.name as city_name,
