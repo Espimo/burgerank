@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Insert burger with status='approved' (immediate publication)
+    // Insert burger with status='pending' (requires admin approval)
     const { data, error } = await supabase
       .from('burgers')
       .insert({
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         type: type || null,
         tags: tags || [],
         image_url: image_url || null,
-        status: 'approved', // Users' burgers are immediately approved
+        status: 'pending', // Requires admin approval
         submitted_by: user.id,
         is_featured: false,
         featured_order: null,

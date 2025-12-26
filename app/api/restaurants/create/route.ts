@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Insert restaurant with default values
+    // Insert restaurant with status='pending' (requires admin approval)
     const { data, error } = await supabase
       .from('restaurants')
       .insert({
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         city_id,
         average_rating: 0,
         total_ratings: 0,
-        status: 'approved',
+        status: 'pending', // Requires admin approval
         submitted_by: user.id
       })
       .select()

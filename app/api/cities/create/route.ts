@@ -26,12 +26,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Insert city
+    // Insert city with status='pending' (requires admin approval)
     const { data, error } = await supabase
       .from('cities')
       .insert({
         name,
-        country: 'España'
+        country: 'España',
+        status: 'pending', // Requires admin approval
+        submitted_by: user.id
       })
       .select()
       .single();

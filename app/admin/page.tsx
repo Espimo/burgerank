@@ -94,7 +94,7 @@ interface PendingItem {
   created_at: string;
 }
 
-type ActiveSection = 'dashboard' | 'burgers' | 'restaurants' | 'users' | 'promotions' | 'ratings' | 'featured' | 'pending';
+type ActiveSection = 'dashboard' | 'burgers' | 'restaurants' | 'users' | 'promotions' | 'ratings' | 'featured' | 'pending' | 'import';
 
 export default function AdminPanel() {
   const router = useRouter();
@@ -447,39 +447,49 @@ export default function AdminPanel() {
     loadAllData();
   };
 
-  // Approval functions
+  // Approval functions - Using API to give bonus points and notifications
   const handleApprove = async (type: 'burger' | 'restaurant', id: string) => {
-    const supabase = createAdminClient();
-    const tableName = type === 'burger' ? 'burgers' : 'restaurants';
-    
-    const { error } = await supabase
-      .from(tableName)
-      .update({ status: 'approved' })
-      .eq('id', id);
-    
-    if (error) {
-      alert('Error aprobando: ' + error.message);
-      return;
+    try {
+      const response = await fetch('/api/admin/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, id, action: 'approve' })
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        alert('Error aprobando: ' + data.error);
+        return;
+      }
+      
+      alert(`✅ ${type === 'burger' ? 'Hamburguesa' : 'Restaurante'} aprobado correctamente`);
+      loadAllData();
+    } catch (error) {
+      alert('Error de conexión');
     }
-    
-    loadAllData();
   };
 
   const handleReject = async (type: 'burger' | 'restaurant', id: string) => {
-    const supabase = createAdminClient();
-    const tableName = type === 'burger' ? 'burgers' : 'restaurants';
+    if (!confirm('¿Seguro que quieres rechazar este elemento?')) return;
     
-    const { error } = await supabase
-      .from(tableName)
-      .update({ status: 'rejected' })
-      .eq('id', id);
-    
-    if (error) {
-      alert('Error rechazando: ' + error.message);
-      return;
+    try {
+      const response = await fetch('/api/admin/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, id, action: 'reject' })
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        alert('Error rechazando: ' + data.error);
+        return;
+      }
+      
+      alert(`❌ ${type === 'burger' ? 'Hamburguesa' : 'Restaurante'} rechazado`);
+      loadAllData();
+    } catch (error) {
+      alert('Error de conexión');
     }
-    
-    loadAllData();
   };
 
   // Featured burgers functions
@@ -616,6 +626,7 @@ export default function AdminPanel() {
             { id: 'featured', icon: '⭐', label: 'Destacados' },
             { id: 'promotions', icon: '🎉', label: 'Promociones' },
             { id: 'pending', icon: '⏳', label: `Pendientes ${stats.pendingApprovals > 0 ? `(${stats.pendingApprovals})` : ''}` },
+            { id: 'import', icon: '📥', label: 'Importar CSV' },
             { id: 'users', icon: '👥', label: 'Usuarios' },
             { id: 'ratings', icon: '💬', label: 'Valoraciones' },
           ].map(item => (
@@ -718,6 +729,10 @@ export default function AdminPanel() {
               setShowModal(true);
             }}
           />
+        )}
+
+        {activeSection === 'import' && (
+          <ImportCSVSection onImportComplete={loadAllData} />
         )}
       </main>
 
@@ -1603,6 +1618,267 @@ function PendingSection({ pendingItems, burgers, restaurants, onApprove, onRejec
               })}
             </tbody>
           </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==========================================
+// IMPORT CSV SECTION
+// ==========================================
+function ImportCSVSection({ onImportComplete }: { onImportComplete: () => void }) {
+  const [importType, setImportType] = useState<'cities' | 'restaurants' | 'burgers'>('cities');
+  const [csvData, setCsvData] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [results, setResults] = useState<{ success: number; errors: string[] } | null>(null);
+
+  const parseCSV = (text: string) => {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return [];
+    
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const rows = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim());
+      const row: any = {};
+      headers.forEach((header, index) => {
+        row[header] = values[index] || '';
+      });
+      rows.push(row);
+    }
+    
+    return rows;
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setCsvData(event.target?.result as string || '');
+    };
+    reader.readAsText(file);
+  };
+
+  const handleImport = async () => {
+    if (!csvData.trim()) {
+      alert('Por favor, pega datos CSV o sube un archivo');
+      return;
+    }
+    
+    const rows = parseCSV(csvData);
+    if (rows.length === 0) {
+      alert('No se encontraron datos válidos en el CSV');
+      return;
+    }
+    
+    setImporting(true);
+    setResults(null);
+    
+    try {
+      const response = await fetch('/api/admin/import-csv', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: importType, data: rows })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        alert('Error: ' + data.error);
+        return;
+      }
+      
+      setResults({ success: data.success, errors: data.errors });
+      
+      if (data.success > 0) {
+        onImportComplete();
+      }
+    } catch (error) {
+      alert('Error de conexión');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const getExampleCSV = () => {
+    switch (importType) {
+      case 'cities':
+        return 'name,country\nMadrid,España\nBarcelona,España\nValencia,España';
+      case 'restaurants':
+        return 'name,city,address,phone\nGoiko,Madrid,Calle Gran Vía 15,912345678\nTGB,Barcelona,Passeig de Gràcia 20,934567890';
+      case 'burgers':
+        return 'name,restaurant,city,description,type,tags\nKevin Bacon,Goiko,Madrid,Hamburguesa con bacon crujiente,Smash,bacon,queso,cebolla\nLa Vegana,TGB,Barcelona,Hamburguesa vegana,Vegana,vegana,tofu';
+      default:
+        return '';
+    }
+  };
+
+  return (
+    <div>
+      <h2 style={styles.sectionTitle}>📥 Importar desde CSV</h2>
+      
+      <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#1f2937', borderRadius: '0.5rem' }}>
+        <p style={{ color: '#9ca3af', marginBottom: '1rem' }}>
+          Importa ciudades, restaurantes y hamburguesas masivamente desde un archivo CSV.
+          <br />
+          <strong>Orden recomendado:</strong> 1) Ciudades → 2) Restaurantes → 3) Hamburguesas
+        </p>
+      </div>
+
+      {/* Type selector */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+          Tipo de datos a importar:
+        </label>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {[
+            { value: 'cities', label: '📍 Ciudades', color: '#3b82f6' },
+            { value: 'restaurants', label: '🏪 Restaurantes', color: '#10b981' },
+            { value: 'burgers', label: '🍔 Hamburguesas', color: '#f59e0b' },
+          ].map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setImportType(opt.value as any)}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: importType === opt.value ? opt.color : '#374151',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.5rem',
+                cursor: 'pointer',
+                fontWeight: importType === opt.value ? '600' : 'normal'
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Format info */}
+      <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#374151', borderRadius: '0.5rem' }}>
+        <h4 style={{ marginBottom: '0.5rem', color: '#fbbf24' }}>📋 Formato esperado para {importType}:</h4>
+        <pre style={{ 
+          backgroundColor: '#1f2937', 
+          padding: '1rem', 
+          borderRadius: '0.25rem',
+          fontSize: '0.85rem',
+          overflowX: 'auto'
+        }}>
+          {getExampleCSV()}
+        </pre>
+        <button
+          onClick={() => setCsvData(getExampleCSV())}
+          style={{
+            marginTop: '0.5rem',
+            padding: '0.5rem 1rem',
+            backgroundColor: '#4b5563',
+            color: 'white',
+            border: 'none',
+            borderRadius: '0.25rem',
+            cursor: 'pointer',
+            fontSize: '0.85rem'
+          }}
+        >
+          📝 Usar ejemplo
+        </button>
+      </div>
+
+      {/* File upload */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+          Subir archivo CSV:
+        </label>
+        <input
+          type="file"
+          accept=".csv,.txt"
+          onChange={handleFileUpload}
+          style={{
+            padding: '0.5rem',
+            backgroundColor: '#374151',
+            color: 'white',
+            border: '1px solid #4b5563',
+            borderRadius: '0.5rem',
+            width: '100%'
+          }}
+        />
+      </div>
+
+      {/* Text area for CSV data */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+          O pega los datos CSV aquí:
+        </label>
+        <textarea
+          value={csvData}
+          onChange={(e) => setCsvData(e.target.value)}
+          placeholder={`Pega tu CSV aquí...\n\n${getExampleCSV()}`}
+          style={{
+            width: '100%',
+            height: '200px',
+            padding: '1rem',
+            backgroundColor: '#1f2937',
+            color: '#e5e7eb',
+            border: '1px solid #4b5563',
+            borderRadius: '0.5rem',
+            fontFamily: 'monospace',
+            fontSize: '0.9rem',
+            resize: 'vertical'
+          }}
+        />
+      </div>
+
+      {/* Import button */}
+      <button
+        onClick={handleImport}
+        disabled={importing || !csvData.trim()}
+        style={{
+          padding: '1rem 2rem',
+          backgroundColor: importing ? '#4b5563' : '#10b981',
+          color: 'white',
+          border: 'none',
+          borderRadius: '0.5rem',
+          cursor: importing ? 'not-allowed' : 'pointer',
+          fontWeight: '600',
+          fontSize: '1rem',
+          width: '100%'
+        }}
+      >
+        {importing ? '⏳ Importando...' : `📥 Importar ${importType}`}
+      </button>
+
+      {/* Results */}
+      {results && (
+        <div style={{ 
+          marginTop: '1.5rem', 
+          padding: '1rem', 
+          backgroundColor: results.errors.length > 0 ? '#7c2d12' : '#065f46',
+          borderRadius: '0.5rem'
+        }}>
+          <h4 style={{ marginBottom: '0.5rem' }}>
+            ✅ Importados correctamente: {results.success}
+          </h4>
+          {results.errors.length > 0 && (
+            <>
+              <h4 style={{ marginBottom: '0.5rem', color: '#fbbf24' }}>
+                ⚠️ Errores ({results.errors.length}):
+              </h4>
+              <ul style={{ 
+                maxHeight: '150px', 
+                overflowY: 'auto', 
+                fontSize: '0.85rem',
+                paddingLeft: '1.5rem'
+              }}>
+                {results.errors.map((err, i) => (
+                  <li key={i}>{err}</li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       )}
     </div>
