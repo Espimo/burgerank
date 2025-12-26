@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
 
     const formattedNewBurgers = newBurgers.map(burger => ({
       ...burger,
-      reviews_needed: (config?.min_reviews_for_ranking || 15) - burger.total_reviews,
+      reviews_needed: (config?.min_reviews_for_ranking || 1) - burger.total_reviews,
       verified_percentage: burger.total_reviews > 0 
         ? Math.round((burger.verified_reviews_count / burger.total_reviews) * 100)
         : 0,
@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
       stats: {
         totalInRanking: totalInRanking || 0,
         totalNew: totalNew || 0,
-        minReviewsForRanking: config?.min_reviews_for_ranking || 15,
+        minReviewsForRanking: config?.min_reviews_for_ranking || 1,
       },
       pagination: {
         limit,

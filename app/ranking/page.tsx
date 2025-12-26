@@ -82,7 +82,7 @@ export default function RankingPage() {
   const [rankedBurgers, setRankedBurgers] = useState<RankedBurger[]>([])
   const [newBurgers, setNewBurgers] = useState<NewBurger[]>([])
   const [cities, setCities] = useState<CityData[]>([])
-  const [stats, setStats] = useState<RankingStats>({ totalInRanking: 0, totalNew: 0, minReviewsForRanking: 15 })
+  const [stats, setStats] = useState<RankingStats>({ totalInRanking: 0, totalNew: 0, minReviewsForRanking: 1 })
   const [loading, setLoading] = useState(true)
   
   // Load ranking data from API
