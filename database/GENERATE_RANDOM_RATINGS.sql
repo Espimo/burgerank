@@ -11,35 +11,41 @@
 
 DO $$
 DECLARE
+    v_user_ids UUID[];
     v_user_id UUID;
     v_burger RECORD;
     v_num_ratings INTEGER;
     v_rating NUMERIC;
     i INTEGER;
+    v_random_user_id UUID;
 BEGIN
-    -- Buscar un usuario existente (preferiblemente admin)
-    SELECT id INTO v_user_id FROM users WHERE is_admin = true LIMIT 1;
+    -- Buscar usuarios existentes
+    SELECT ARRAY_AGG(id) INTO v_user_ids FROM users LIMIT 20;
     
-    -- Si no hay admin, buscar cualquier usuario
-    IF v_user_id IS NULL THEN
-        SELECT id INTO v_user_id FROM users LIMIT 1;
-    END IF;
-    
-    -- Si no hay usuarios, crear uno temporal para los ratings
-    IF v_user_id IS NULL THEN
-        INSERT INTO users (id, username, email, is_admin)
-        VALUES (
-            gen_random_uuid(),
-            'rating_bot',
-            'bot@burgerank.dev',
-            false
-        )
-        RETURNING id INTO v_user_id;
+    -- Si no hay suficientes usuarios, crear usuarios temporales para ratings
+    IF v_user_ids IS NULL OR array_length(v_user_ids, 1) < 5 THEN
+        v_user_ids := ARRAY[]::UUID[];
         
-        RAISE NOTICE 'Usuario temporal creado con ID: %', v_user_id;
+        RAISE NOTICE 'Creando usuarios temporales para generar ratings...';
+        
+        -- Crear 10 usuarios bot
+        FOR i IN 1..10 LOOP
+            INSERT INTO users (id, username, email, is_admin)
+            VALUES (
+                gen_random_uuid(),
+                'rating_bot_' || i,
+                'bot' || i || '@burgerank.dev',
+                false
+            )
+            RETURNING id INTO v_user_id;
+            
+            v_user_ids := array_append(v_user_ids, v_user_id);
+        END LOOP;
+        
+        RAISE NOTICE 'Creados % usuarios temporales', array_length(v_user_ids, 1);
     END IF;
     
-    RAISE NOTICE 'Usando usuario ID: % para generar ratings', v_user_id;
+    RAISE NOTICE 'Usando % usuarios para generar ratings', array_length(v_user_ids, 1);
     
     -- Iterar sobre todas las burgers aprobadas
     FOR v_burger IN 
@@ -47,22 +53,26 @@ BEGIN
         FROM burgers 
         WHERE status = 'approved'
     LOOP
-        -- Verificar si ya tiene ratings
-        IF NOT EXISTS (SELECT 1 FROM ratings WHERE burger_id = v_burger.id) THEN
-            -- Generar número aleatorio de ratings (1-8)
-            v_num_ratings := 1 + floor(random() * 8)::INTEGER;
+        -- Generar número aleatorio de ratings (1-8, limitado por usuarios disponibles)
+        v_num_ratings := LEAST(
+            array_length(v_user_ids, 1), 
+            1 + floor(random() * 8)::INTEGER
+        );
+        
+        RAISE NOTICE 'Generando % ratings para burger: %', v_num_ratings, v_burger.name;
+        
+        -- Insertar los ratings usando usuarios diferentes
+        FOR i IN 1..v_num_ratings LOOP
+            -- Seleccionar un usuario aleatorio del array
+            v_random_user_id := v_user_ids[1 + floor(random() * array_length(v_user_ids, 1))::INT];
             
-            RAISE NOTICE 'Generando % ratings para burger: %', v_num_ratings, v_burger.name;
+            -- Rating aleatorio entre 2.5 y 5.0 (más realista)
+            v_rating := 2.5 + (random() * 2.5);
+            -- Redondear a 0.5
+            v_rating := round(v_rating * 2) / 2;
             
-            -- Insertar los ratings
-            FOR i IN 1..v_num_ratings LOOP
-                -- Rating aleatorio entre 2.5 y 5.0 (más realista - nadie pone 1 a menos que sea terrible)
-                v_rating := 2.5 + (random() * 2.5);
-                -- Redondear a 0.5
-                v_rating := round(v_rating * 2) / 2;
-                
-                -- Insertar el rating
-                -- Nota: overall_rating es 1-5, pan/carne/toppings/salsa son 1-3
+            -- Insertar el rating (con manejo de duplicados)
+            BEGIN
                 INSERT INTO ratings (
                     id,
                     user_id,
@@ -80,7 +90,7 @@ BEGIN
                     created_at
                 ) VALUES (
                     gen_random_uuid(),
-                    v_user_id,
+                    v_random_user_id,
                     v_burger.id,
                     LEAST(5, GREATEST(1, ROUND(v_rating)::INT)), -- overall_rating: 1-5
                     LEAST(3, GREATEST(1, 1 + floor(random() * 3)::INT)), -- pan_rating: 1-3
@@ -103,10 +113,12 @@ BEGIN
                     10, -- puntos otorgados
                     NOW() - (random() * INTERVAL '30 days') -- Fechas aleatorias en los últimos 30 días
                 );
-            END LOOP;
-        ELSE
-            RAISE NOTICE 'Burger % ya tiene ratings, saltando...', v_burger.name;
-        END IF;
+            EXCEPTION
+                WHEN unique_violation THEN
+                    -- Si el usuario ya valoró esta burger, saltamos
+                    RAISE NOTICE 'Usuario ya valoró esta burger, saltando...';
+            END;
+        END LOOP;
     END LOOP;
     
     RAISE NOTICE '¡Ratings generados exitosamente!';
