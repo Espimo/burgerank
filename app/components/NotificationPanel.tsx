@@ -39,7 +39,7 @@ export default function NotificationPanel({ isOpen, onClose, userId }: Notificat
     if (!userId) return;
     
     setLoading(true);
-    const supabase = createClient();
+    const supabase = createClient() as any;
     
     const { data, error } = await supabase
       .from('notifications')
@@ -49,8 +49,8 @@ export default function NotificationPanel({ isOpen, onClose, userId }: Notificat
       .limit(20);
 
     if (data && !error) {
-      setNotifications(data);
-      setUnreadCount(data.filter(n => !n.is_read).length);
+      setNotifications(data as Notification[]);
+      setUnreadCount(data.filter((n: any) => !n.is_read).length);
     }
     setLoading(false);
   };
@@ -58,7 +58,7 @@ export default function NotificationPanel({ isOpen, onClose, userId }: Notificat
   const markAsRead = async (notificationId: string) => {
     if (!userId) return;
     
-    const supabase = createClient();
+    const supabase = createClient() as any;
     await supabase
       .from('notifications')
       .update({ is_read: true })
@@ -73,7 +73,7 @@ export default function NotificationPanel({ isOpen, onClose, userId }: Notificat
   const markAllAsRead = async () => {
     if (!userId) return;
     
-    const supabase = createClient();
+    const supabase = createClient() as any;
     await supabase
       .from('notifications')
       .update({ is_read: true })
