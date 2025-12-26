@@ -32,6 +32,12 @@ export function createAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   
+  if (!serviceRoleKey) {
+    console.error('⚠️ SUPABASE_SERVICE_ROLE_KEY no está configurado');
+    console.error('El admin client usará anon key y puede fallar con RLS');
+    console.error('Configura SUPABASE_SERVICE_ROLE_KEY en las variables de entorno');
+  }
+  
   // Si no hay service role key, usar anon key (puede fallar con RLS)
   const key = serviceRoleKey || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
   
