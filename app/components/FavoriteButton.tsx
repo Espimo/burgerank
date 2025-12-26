@@ -67,7 +67,9 @@ export default function FavoriteButton({
         } else {
           const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
           console.error('Error adding favorite:', errorData);
-          alert('Error al agregar a favoritos: ' + (errorData.error || 'Error desconocido'));
+          const errorMsg = errorData.details || errorData.error || 'Error desconocido';
+          const extraInfo = errorData.code ? ` (${errorData.code})` : '';
+          alert('Error al agregar a favoritos: ' + errorMsg + extraInfo);
         }
       }
     } catch (error) {

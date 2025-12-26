@@ -120,7 +120,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ 
         error: 'Error al buscar burger', 
         details: burgerError.message,
-        code: burgerError.code
+        code: burgerError.code,
+        hint: burgerError.hint,
+        burgerId: burger_id
       }, { status: 500 })
     }
 
