@@ -316,7 +316,7 @@ export default function RankingPage() {
                         }}>
                           <span style={{ fontSize: '1.5rem' }}>{badge.emoji}</span>
                           <span style={{ fontSize: '1.2rem', fontWeight: '700', color: badge.color }}>
-                            {burger.ranking_position <= 3 ? '' : burger.ranking_position}
+                            {burger.ranking_position && burger.ranking_position <= 3 ? '' : burger.ranking_position || ''}
                           </span>
                         </div>
                         
