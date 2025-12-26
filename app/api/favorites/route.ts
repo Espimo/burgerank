@@ -85,6 +85,8 @@ export async function POST(request: Request) {
     }
 
     // Agregar a favoritos
+    console.log('Intentando agregar a favoritos:', { user_id: user.id, burger_id })
+    
     const { data: favorite, error } = await supabase
       .from('user_favorites')
       .insert({
@@ -95,11 +97,18 @@ export async function POST(request: Request) {
       .single()
 
     if (error) {
+      console.error('Error adding favorite - CODE:', error.code, 'MESSAGE:', error.message, 'DETAILS:', error.details, 'HINT:', error.hint)
       if (error.code === '23505') { // Unique violation
         return NextResponse.json({ error: 'Ya está en favoritos' }, { status: 409 })
       }
-      console.error('Error adding favorite:', error)
-      return NextResponse.json({ error: 'Error al agregar a favoritos' }, { status: 500 })
+      if (error.code === '42P01') { // Table does not exist
+        return NextResponse.json({ error: 'La tabla user_favorites no existe. Ejecuta el script SQL de migración.' }, { status: 500 })
+      }
+      return NextResponse.json({ 
+        error: 'Error al agregar a favoritos', 
+        details: error.message,
+        code: error.code 
+      }, { status: 500 })
     }
 
     return NextResponse.json({

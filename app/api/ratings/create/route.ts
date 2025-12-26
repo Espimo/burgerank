@@ -216,8 +216,13 @@ export async function PUT(request: NextRequest) {
 
     // Parsear y validar datos
     const body = await request.json();
+    console.log('PUT rating - Request body:', JSON.stringify(body, null, 2))
+    
     const { rating_id, ...updateData } = body;
+    console.log('PUT rating - rating_id:', rating_id, 'updateData:', updateData)
+    
     const validated = ratingSchema.parse(updateData);
+    console.log('PUT rating - Validated:', validated)
 
     if (!rating_id) {
       throw new Error('rating_id es requerido');
@@ -252,8 +257,10 @@ export async function PUT(request: NextRequest) {
     // Calcular diferencia de puntos
     const oldPoints = existingRating.points_awarded || 0;
     const pointsDiff = points - oldPoints;
+    console.log('PUT rating - Points:', { oldPoints, newPoints: points, pointsDiff })
 
     // Actualizar rating
+    console.log('PUT rating - Actualizando en DB...')
     const { data: rating, error: ratingError } = await (supabase
       .from('ratings')
       .update as any)({
@@ -274,6 +281,8 @@ export async function PUT(request: NextRequest) {
       .eq('id', rating_id)
       .select()
       .single();
+    
+    console.log('PUT rating - Update result:', { success: !ratingError, error: ratingError })
 
     if (ratingError) throw ratingError;
 
@@ -329,10 +338,15 @@ export async function PUT(request: NextRequest) {
       message: `Valoración actualizada. ${pointsDiff > 0 ? `+${pointsDiff}` : pointsDiff < 0 ? pointsDiff : 0} puntos`,
     });
   } catch (error) {
-    console.error('Error updating rating:', error);
+    console.error('Error updating rating - FULL ERROR:', error);
     const message = error instanceof Error ? error.message : 'Error al actualizar valoración';
+    const stack = error instanceof Error ? error.stack : undefined;
+    console.error('Error stack:', stack);
     return NextResponse.json(
-      { error: message },
+      { 
+        error: message,
+        details: error instanceof Error ? error.toString() : String(error)
+      },
       { status: 500 }
     );
   }
