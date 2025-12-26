@@ -176,42 +176,6 @@ export default function RankingPage() {
       <div className="main">
         <h2 className="text-2xl font-bold mb-4">🏆 Ranking Nacional de Hamburguesas</h2>
         
-        {/* Stats del ranking */}
-        <div style={{ 
-          display: 'flex', 
-          gap: '1rem', 
-          marginBottom: '1.5rem',
-          flexWrap: 'wrap'
-        }}>
-          <div style={{ 
-            backgroundColor: '#1f2937', 
-            padding: '0.75rem 1rem', 
-            borderRadius: '0.5rem',
-            border: '1px solid #374151'
-          }}>
-            <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>En ranking: </span>
-            <span style={{ color: '#fbbf24', fontWeight: '600' }}>{stats.totalInRanking}</span>
-          </div>
-          <div style={{ 
-            backgroundColor: '#1f2937', 
-            padding: '0.75rem 1rem', 
-            borderRadius: '0.5rem',
-            border: '1px solid #374151'
-          }}>
-            <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>Nuevas: </span>
-            <span style={{ color: '#10b981', fontWeight: '600' }}>{stats.totalNew}</span>
-          </div>
-          <div style={{ 
-            backgroundColor: '#1f2937', 
-            padding: '0.75rem 1rem', 
-            borderRadius: '0.5rem',
-            border: '1px solid #374151'
-          }}>
-            <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>Mín. reviews: </span>
-            <span style={{ color: '#60a5fa', fontWeight: '600' }}>{stats.minReviewsForRanking}</span>
-          </div>
-        </div>
-
         {/* Filtros principales */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.5rem', marginBottom: '1.5rem' }}>
           <select 
