@@ -54,10 +54,16 @@ export default function RankingPage() {
   // Filtros avanzados
   const [sortMode, setSortMode] = useState<SortMode>('ranking')
   const [showFilters, setShowFilters] = useState(false)
-  const [panFilter, setPanFilter] = useState<number | null>(null)
-  const [carneFilter, setCarneFilter] = useState<number | null>(null)
-  const [salsaFilter, setSalsaFilter] = useState<number | null>(null)
-  const [toppingsFilter, setToppingsFilter] = useState<number | null>(null)
+  const [panFilter, setPanFilter] = useState<string | null>(null)
+  const [carneFilter, setCarneFilter] = useState<string | null>(null)
+  const [salsaFilter, setSalsaFilter] = useState<string | null>(null)
+  const [toppingsFilter, setToppingsFilter] = useState<string | null>(null)
+  
+  // Tags disponibles por categoría
+  const panTags = ['brioche', 'artesanal', 'integral', 'premium']
+  const carneTags = ['ternera', 'pollo', 'waygu', 'smash', 'vegana']
+  const salsaTags = ['bbq', 'mayonesa', 'trufa', 'picante', 'casera']
+  const toppingsTags = ['queso', 'bacon', 'cebolla', 'jalapeños', 'aguacate']
   
   // Data from API
   const [rankedBurgers, setRankedBurgers] = useState<RankedBurger[]>([])
@@ -137,6 +143,13 @@ export default function RankingPage() {
     return burger.name.toLowerCase().includes(query) ||
            burger.restaurant?.name?.toLowerCase().includes(query) ||
            burger.restaurant?.cities?.name?.toLowerCase().includes(query)
+  }).filter(burger => {
+    // Filtrar por tags de sección
+    if (panFilter && !(burger.tags || []).some(tag => tag.toLowerCase().includes(panFilter.toLowerCase()))) return false
+    if (carneFilter && !(burger.tags || []).some(tag => tag.toLowerCase().includes(carneFilter.toLowerCase()))) return false
+    if (salsaFilter && !(burger.tags || []).some(tag => tag.toLowerCase().includes(salsaFilter.toLowerCase()))) return false
+    if (toppingsFilter && !(burger.tags || []).some(tag => tag.toLowerCase().includes(toppingsFilter.toLowerCase()))) return false
+    return true
   })
 
   const renderStars = (rating: number) => {
@@ -444,22 +457,22 @@ export default function RankingPage() {
                 <label style={{ fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
                   🍞 Pan
                 </label>
-                <div style={{ display: 'flex', gap: '0.25rem' }}>
-                  {[1, 2, 3].map(n => (
+                <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                  {panTags.map(tag => (
                     <button
-                      key={n}
-                      onClick={() => setPanFilter(panFilter === n ? null : n)}
+                      key={tag}
+                      onClick={() => setPanFilter(panFilter === tag ? null : tag)}
                       style={{
                         padding: '0.3rem 0.6rem',
                         border: '1px solid #4b5563',
-                        backgroundColor: panFilter === n ? '#fbbf24' : 'transparent',
-                        color: panFilter === n ? '#1a1a1a' : '#e5e7eb',
+                        backgroundColor: panFilter === tag ? '#fbbf24' : 'transparent',
+                        color: panFilter === tag ? '#1a1a1a' : '#e5e7eb',
                         borderRadius: '0.25rem',
                         cursor: 'pointer',
-                        fontSize: '0.75rem'
+                        fontSize: '0.7rem'
                       }}
                     >
-                      {n}+
+                      {tag}
                     </button>
                   ))}
                 </div>
@@ -470,22 +483,22 @@ export default function RankingPage() {
                 <label style={{ fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
                   🥩 Carne
                 </label>
-                <div style={{ display: 'flex', gap: '0.25rem' }}>
-                  {[1, 2, 3].map(n => (
+                <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                  {carneTags.map(tag => (
                     <button
-                      key={n}
-                      onClick={() => setCarneFilter(carneFilter === n ? null : n)}
+                      key={tag}
+                      onClick={() => setCarneFilter(carneFilter === tag ? null : tag)}
                       style={{
                         padding: '0.3rem 0.6rem',
                         border: '1px solid #4b5563',
-                        backgroundColor: carneFilter === n ? '#fbbf24' : 'transparent',
-                        color: carneFilter === n ? '#1a1a1a' : '#e5e7eb',
+                        backgroundColor: carneFilter === tag ? '#fbbf24' : 'transparent',
+                        color: carneFilter === tag ? '#1a1a1a' : '#e5e7eb',
                         borderRadius: '0.25rem',
                         cursor: 'pointer',
-                        fontSize: '0.75rem'
+                        fontSize: '0.7rem'
                       }}
                     >
-                      {n}+
+                      {tag}
                     </button>
                   ))}
                 </div>
@@ -496,22 +509,22 @@ export default function RankingPage() {
                 <label style={{ fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
                   🥫 Salsa
                 </label>
-                <div style={{ display: 'flex', gap: '0.25rem' }}>
-                  {[1, 2, 3].map(n => (
+                <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                  {salsaTags.map(tag => (
                     <button
-                      key={n}
-                      onClick={() => setSalsaFilter(salsaFilter === n ? null : n)}
+                      key={tag}
+                      onClick={() => setSalsaFilter(salsaFilter === tag ? null : tag)}
                       style={{
                         padding: '0.3rem 0.6rem',
                         border: '1px solid #4b5563',
-                        backgroundColor: salsaFilter === n ? '#fbbf24' : 'transparent',
-                        color: salsaFilter === n ? '#1a1a1a' : '#e5e7eb',
+                        backgroundColor: salsaFilter === tag ? '#fbbf24' : 'transparent',
+                        color: salsaFilter === tag ? '#1a1a1a' : '#e5e7eb',
                         borderRadius: '0.25rem',
                         cursor: 'pointer',
-                        fontSize: '0.75rem'
+                        fontSize: '0.7rem'
                       }}
                     >
-                      {n}+
+                      {tag}
                     </button>
                   ))}
                 </div>
@@ -522,22 +535,22 @@ export default function RankingPage() {
                 <label style={{ fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
                   🧀 Toppings
                 </label>
-                <div style={{ display: 'flex', gap: '0.25rem' }}>
-                  {[1, 2, 3].map(n => (
+                <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                  {toppingsTags.map(tag => (
                     <button
-                      key={n}
-                      onClick={() => setToppingsFilter(toppingsFilter === n ? null : n)}
+                      key={tag}
+                      onClick={() => setToppingsFilter(toppingsFilter === tag ? null : tag)}
                       style={{
                         padding: '0.3rem 0.6rem',
                         border: '1px solid #4b5563',
-                        backgroundColor: toppingsFilter === n ? '#fbbf24' : 'transparent',
-                        color: toppingsFilter === n ? '#1a1a1a' : '#e5e7eb',
+                        backgroundColor: toppingsFilter === tag ? '#fbbf24' : 'transparent',
+                        color: toppingsFilter === tag ? '#1a1a1a' : '#e5e7eb',
                         borderRadius: '0.25rem',
                         cursor: 'pointer',
-                        fontSize: '0.75rem'
+                        fontSize: '0.7rem'
                       }}
                     >
-                      {n}+
+                      {tag}
                     </button>
                   ))}
                 </div>

@@ -40,6 +40,10 @@ export default function RatePage() {
   const [selectedBurger, setSelectedBurger] = useState<BurgerData | null>(null)
   const [hasTicketUploaded, setHasTicketUploaded] = useState(false)
   
+  // Edición de valoración existente
+  const [isEditing, setIsEditing] = useState(false)
+  const [existingRatingId, setExistingRatingId] = useState<string | null>(null)
+  
   // Burgers loaded from Supabase
   const [burgers, setBurgers] = useState<BurgerData[]>([])
   const [loadingBurgers, setLoadingBurgers] = useState(true)
@@ -206,6 +210,8 @@ export default function RatePage() {
     setRatingResult(null)
     setRatingError(null)
     setHasTicketUploaded(false)
+    setIsEditing(false)
+    setExistingRatingId(null)
   }
 
   // Submit rating to the database
@@ -219,25 +225,64 @@ export default function RatePage() {
     setRatingError(null)
 
     try {
-      const response = await fetch('/api/ratings/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          burger_id: selectedBurger.id,
-          overall_rating: generalRating,
-          pan_rating: panRating,
-          carne_rating: meatRating,
-          toppings_rating: toppingsRating,
-          salsa_rating: sauceRating,
-          price: parseFloat(price) || undefined,
-          comment: comment || undefined,
-          consumption_type: selectedConsumption as 'local' | 'delivery',
-          appetizers: selectedAppetizers.length > 0 ? selectedAppetizers : undefined,
-          has_ticket: hasTicketUploaded, // Use the actual ticket upload state
-        })
-      })
+      // Preparar datos
+      const ratingData = {
+        burger_id: selectedBurger.id,
+        overall_rating: generalRating,
+        pan_rating: panRating,
+        carne_rating: meatRating,
+        toppings_rating: toppingsRating,
+        salsa_rating: sauceRating,
+        price: parseFloat(price) || undefined,
+        comment: comment || undefined,
+        consumption_type: selectedConsumption as 'local' | 'delivery',
+        appetizers: selectedAppetizers.length > 0 ? selectedAppetizers : undefined,
+        has_ticket: hasTicketUploaded,
+      }
 
-      const data = await response.json()
+      let response, data
+
+      if (isEditing && existingRatingId) {
+        // Actualizar valoración existente
+        response = await fetch('/api/ratings/create', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rating_id: existingRatingId,
+            ...ratingData
+          })
+        })
+        data = await response.json()
+      } else {
+        // Crear nueva valoración
+        response = await fetch('/api/ratings/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(ratingData)
+        })
+        data = await response.json()
+      }
+
+      // Manejar error de valoración existente - ofrecer editar
+      if (!response.ok && response.status === 409 && data.canEdit) {
+        const existing = data.existingRating
+        // Cargar datos de la valoración existente
+        setGeneralRating(existing.overall_rating)
+        setPanRating(existing.pan_rating || 2)
+        setMeatRating(existing.carne_rating || 2)
+        setToppingsRating(existing.toppings_rating || 2)
+        setSauceRating(existing.salsa_rating || 2)
+        setPrice(existing.price?.toString() || '8.50')
+        setComment(existing.comment || '')
+        setSelectedConsumption(existing.consumption_type || 'local')
+        setSelectedAppetizers(existing.appetizers || [])
+        setHasTicketUploaded(existing.has_ticket || false)
+        setIsEditing(true)
+        setExistingRatingId(existing.id)
+        
+        setRatingError('Ya has valorado esta burger. Puedes modificar tu valoración.')
+        return
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Error al guardar la valoración')
@@ -245,7 +290,7 @@ export default function RatePage() {
 
       // Store the result to show in success screen
       setRatingResult({
-        pointsEarned: data.pointsEarned,
+        pointsEarned: isEditing ? (data.pointsDiff || 0) : data.pointsEarned,
         newTotal: data.newTotal,
         hasTicket: data.hasTicket || false,
         newBadges: data.newBadges || []

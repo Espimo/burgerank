@@ -62,6 +62,9 @@ interface ProfileData {
 export default function ProfilePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showAllBadges, setShowAllBadges] = useState(false)
+  const [showPersonalRanking, setShowPersonalRanking] = useState(false)
+  const [rankingSortMode, setRankingSortMode] = useState<'rating' | 'date'>('rating')
   const [profileData, setProfileData] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -293,11 +296,31 @@ export default function ProfilePage() {
 
           {/* Insignias en Header */}
           <div style={{ marginBottom: '1rem' }}>
-            <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#9ca3af', marginBottom: '0.5rem' }}>
-              Insignias Desbloqueadas ({badges.totalUnlocked}/{badges.totalAvailable})
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '0.5rem' 
+            }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#9ca3af' }}>
+                Insignias Desbloqueadas ({badges.totalUnlocked}/{badges.totalAvailable})
+              </div>
+              <button
+                onClick={() => setShowAllBadges(true)}
+                style={{
+                  fontSize: '0.75rem',
+                  color: '#fbbf24',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '0.25rem 0.5rem'
+                }}
+              >
+                Ver todos →
+              </button>
             </div>
             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-              {/* Badges desbloqueados */}
+              {/* Todas las badges desbloqueadas */}
               {badges.unlocked.map(badge => (
                 <div
                   key={badge.id}
@@ -320,12 +343,21 @@ export default function ProfilePage() {
                 </div>
               ))}
               {badges.locked.length > 2 && (
-                <div
-                  style={{ fontSize: '1rem', opacity: 0.5, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                  title="Ver más insignias"
+                <button
+                  onClick={() => setShowAllBadges(true)}
+                  style={{ 
+                    fontSize: '1rem', 
+                    opacity: 0.5, 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    background: 'none',
+                    border: 'none',
+                    color: '#e5e7eb'
+                  }}
                 >
                   +{badges.locked.length - 2}
-                </div>
+                </button>
               )}
             </div>
           </div>
@@ -420,8 +452,30 @@ export default function ProfilePage() {
         {/* Mi Ranking Personal */}
         {top3.length > 0 && (
           <div className="card mb-4">
-            <div className="font-semibold" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-              📊 Mi Top 3
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '0.5rem'
+            }}>
+              <div className="font-semibold" style={{ fontSize: '0.9rem' }}>
+                📊 Mi Top 3
+              </div>
+              <button
+                onClick={() => setShowPersonalRanking(true)}
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '0.4rem 0.8rem',
+                  backgroundColor: '#374151',
+                  color: '#fbbf24',
+                  border: '1px solid #4b5563',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                  fontWeight: 600
+                }}
+              >
+                Ver Ranking Personal →
+              </button>
             </div>
             <div>
               {top3.map((item, index) => (
@@ -606,6 +660,226 @@ export default function ProfilePage() {
               >
                 {saving ? 'Guardando...' : 'Guardar'}
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: Todas las Insignias */}
+        {showAllBadges && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+          }}
+          onClick={() => setShowAllBadges(false)}
+          >
+            <div style={{
+              backgroundColor: '#1f2937',
+              borderRadius: '0.75rem',
+              padding: '1.5rem',
+              maxWidth: '500px',
+              width: '100%',
+              maxHeight: '80vh',
+              overflowY: 'auto',
+              border: '1px solid #374151'
+            }}
+            onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>🏅 Todas las Insignias</h3>
+                <button
+                  onClick={() => setShowAllBadges(false)}
+                  style={{
+                    fontSize: '1.5rem',
+                    background: 'none',
+                    border: 'none',
+                    color: '#9ca3af',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              
+              {/* Desbloqueadas */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#22c55e', marginBottom: '0.75rem' }}>
+                  ✅ Desbloqueadas ({badges.unlocked.length})
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+                  {badges.unlocked.map(badge => (
+                    <div
+                      key={badge.id}
+                      style={{
+                        padding: '0.75rem',
+                        backgroundColor: '#374151',
+                        borderRadius: '0.5rem',
+                        border: '2px solid #22c55e',
+                        textAlign: 'center',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => showBadgeInfo(badge)}
+                    >
+                      <div style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>{badge.emoji}</div>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#e5e7eb' }}>{badge.name}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bloqueadas */}
+              {badges.locked.length > 0 && (
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#9ca3af', marginBottom: '0.75rem' }}>
+                    🔒 Bloqueadas ({badges.locked.length})
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+                    {badges.locked.map(badge => (
+                      <div
+                        key={badge.id}
+                        style={{
+                          padding: '0.75rem',
+                          backgroundColor: '#374151',
+                          borderRadius: '0.5rem',
+                          border: '1px solid #4b5563',
+                          textAlign: 'center',
+                          opacity: 0.6,
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => showBadgeInfo(badge)}
+                      >
+                        <div style={{ fontSize: '2rem', marginBottom: '0.25rem', filter: 'grayscale(1)' }}>{badge.emoji}</div>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#9ca3af' }}>{badge.name}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Modal: Ranking Personal */}
+        {showPersonalRanking && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+          }}
+          onClick={() => setShowPersonalRanking(false)}
+          >
+            <div style={{
+              backgroundColor: '#1f2937',
+              borderRadius: '0.75rem',
+              padding: '1.5rem',
+              maxWidth: '600px',
+              width: '100%',
+              maxHeight: '80vh',
+              overflowY: 'auto',
+              border: '1px solid #374151'
+            }}
+            onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>📊 Mi Ranking Personal</h3>
+                <button
+                  onClick={() => setShowPersonalRanking(false)}
+                  style={{
+                    fontSize: '1.5rem',
+                    background: 'none',
+                    border: 'none',
+                    color: '#9ca3af',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Ordenamiento */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                <button
+                  onClick={() => setRankingSortMode('rating')}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem',
+                    backgroundColor: rankingSortMode === 'rating' ? '#fbbf24' : '#374151',
+                    color: rankingSortMode === 'rating' ? '#1a1a1a' : '#e5e7eb',
+                    border: '1px solid #4b5563',
+                    borderRadius: '0.375rem',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontWeight: 600
+                  }}
+                >
+                  ⭐ Por Puntuación
+                </button>
+                <button
+                  onClick={() => setRankingSortMode('date')}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem',
+                    backgroundColor: rankingSortMode === 'date' ? '#fbbf24' : '#374151',
+                    color: rankingSortMode === 'date' ? '#1a1a1a' : '#e5e7eb',
+                    border: '1px solid #4b5563',
+                    borderRadius: '0.375rem',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontWeight: 600
+                  }}
+                >
+                  📅 Por Fecha
+                </button>
+              </div>
+
+              {/* Lista de valoraciones */}
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                {[...recentRatings]
+                  .sort((a, b) => {
+                    if (rankingSortMode === 'rating') {
+                      return b.rating - a.rating
+                    } else {
+                      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                    }
+                  })
+                  .map((rating, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        padding: '1rem',
+                        backgroundColor: '#374151',
+                        borderRadius: '0.5rem',
+                        border: '1px solid #4b5563'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{rating.name}</div>
+                        <div style={{ color: '#fbbf24', fontSize: '0.9rem' }}>
+                          {renderStars(rating.rating)}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                        {formatDate(rating.created_at)}
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
           </div>
         )}

@@ -32,15 +32,20 @@ export async function POST(request: NextRequest) {
     // Verificar si ya valoró esta burger
     const { data: existingRating } = await supabase
       .from('ratings')
-      .select('id')
+      .select('id, overall_rating, pan_rating, carne_rating, toppings_rating, salsa_rating, price, comment, consumption_type, appetizers, has_ticket, ticket_url, points_awarded')
       .eq('user_id', user.id)
       .eq('burger_id', validated.burger_id)
       .single();
 
     if (existingRating) {
+      // Devolver la valoración existente para permitir edición
       return NextResponse.json(
-        { error: 'Ya has valorado esta burger' },
-        { status: 400 }
+        { 
+          error: 'Ya has valorado esta burger',
+          existingRating: existingRating,
+          canEdit: true
+        },
+        { status: 409 } // 409 Conflict
       );
     }
 
@@ -193,6 +198,139 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating rating:', error);
     const message = error instanceof Error ? error.message : 'Error al guardar valoración';
+    return NextResponse.json(
+      { error: message },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT: Actualizar una valoración existente
+export async function PUT(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+
+    // Obtener usuario actual
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) throw new Error('No autenticado');
+
+    // Parsear y validar datos
+    const body = await request.json();
+    const { rating_id, ...updateData } = body;
+    const validated = ratingSchema.parse(updateData);
+
+    if (!rating_id) {
+      throw new Error('rating_id es requerido');
+    }
+
+    // Verificar que la valoración pertenece al usuario
+    const { data: existingRating } = await supabase
+      .from('ratings')
+      .select('id, burger_id, points_awarded, has_ticket')
+      .eq('id', rating_id)
+      .eq('user_id', user.id)
+      .single();
+
+    if (!existingRating) {
+      return NextResponse.json(
+        { error: 'Valoración no encontrada' },
+        { status: 404 }
+      );
+    }
+
+    // Calcular nuevos puntos
+    let points = 0;
+    const hasTicket = validated.has_ticket || false;
+    
+    if (hasTicket) {
+      points = 1;
+      if (validated.overall_rating === 5) points += 5;
+      else if (validated.overall_rating === 4) points += 3;
+      else if (validated.overall_rating === 3) points += 1;
+    }
+
+    // Calcular diferencia de puntos
+    const oldPoints = existingRating.points_awarded || 0;
+    const pointsDiff = points - oldPoints;
+
+    // Actualizar rating
+    const { data: rating, error: ratingError } = await (supabase
+      .from('ratings')
+      .update as any)({
+        overall_rating: validated.overall_rating,
+        pan_rating: validated.pan_rating,
+        carne_rating: validated.carne_rating,
+        toppings_rating: validated.toppings_rating,
+        salsa_rating: validated.salsa_rating,
+        price: validated.price,
+        comment: validated.comment,
+        consumption_type: validated.consumption_type,
+        appetizers: validated.appetizers,
+        has_ticket: hasTicket,
+        ticket_url: validated.ticket_url,
+        points_awarded: points,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', rating_id)
+      .select()
+      .single();
+
+    if (ratingError) throw ratingError;
+
+    // Recalcular promedio de la burger
+    const { data: allRatings, error: getAllError } = await supabase
+      .from('ratings')
+      .select('overall_rating')
+      .eq('burger_id', existingRating.burger_id);
+
+    if (getAllError) throw getAllError;
+
+    const averageRating = (allRatings as any) && (allRatings as any).length > 0
+      ? ((allRatings as any).reduce((sum: number, r: any) => sum + r.overall_rating, 0) / (allRatings as any).length)
+      : 0;
+
+    await (supabase
+      .from('burgers')
+      .update as any)({
+        average_rating: parseFloat(averageRating.toFixed(2)),
+      })
+      .eq('id', existingRating.burger_id);
+
+    // Actualizar puntos del usuario
+    let newPoints = 0;
+    if (pointsDiff !== 0) {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('points')
+        .eq('id', user.id)
+        .single();
+
+      newPoints = ((userData as any)?.points || 0) + pointsDiff;
+
+      await (supabase
+        .from('users')
+        .update as any)({ points: newPoints })
+        .eq('id', user.id);
+    } else {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('points')
+        .eq('id', user.id)
+        .single();
+      newPoints = (userData as any)?.points || 0;
+    }
+
+    return NextResponse.json({
+      success: true,
+      rating,
+      pointsDiff,
+      newTotal: newPoints,
+      hasTicket,
+      message: `Valoración actualizada. ${pointsDiff > 0 ? `+${pointsDiff}` : pointsDiff < 0 ? pointsDiff : 0} puntos`,
+    });
+  } catch (error) {
+    console.error('Error updating rating:', error);
+    const message = error instanceof Error ? error.message : 'Error al actualizar valoración';
     return NextResponse.json(
       { error: message },
       { status: 500 }

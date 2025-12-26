@@ -424,64 +424,103 @@ export default function RestaurantePage() {
               <div
                 key={burger.id}
                 style={{
-                  padding: '1rem',
                   backgroundColor: '#374151',
                   borderRadius: '0.5rem',
                   border: '1px solid #4b5563',
+                  overflow: 'hidden',
                   display: 'flex',
-                  gap: '1rem'
+                  flexDirection: 'column'
                 }}
               >
-                {/* Imagen de la hamburguesa */}
-                {burger.image_url && (
-                  <div style={{ flexShrink: 0 }}>
-                    <img 
-                      src={burger.image_url}
-                      alt={burger.name}
-                      style={{
-                        width: '100px',
-                        height: '100px',
-                        objectFit: 'cover',
-                        borderRadius: '0.5rem'
-                      }}
-                    />
-                  </div>
-                )}
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', flex: 1 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '600', fontSize: '0.95rem', marginBottom: '0.25rem' }}>
-                      {burger.position && <span style={{ color: '#fbbf24', marginRight: '0.5rem' }}>#{burger.position}</span>}
-                      {burger.name}
+                {/* Imagen de la hamburguesa - estilo ranking */}
+                <div style={{ 
+                  width: '100%',
+                  height: '140px',
+                  background: burger.image_url 
+                    ? `url(${burger.image_url}) center/cover`
+                    : 'linear-gradient(135deg, #92400e 0%, #b45309 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '3rem',
+                  position: 'relative'
+                }}>
+                  {!burger.image_url && '🍔'}
+                  {/* Badge de posición */}
+                  {burger.position && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '8px',
+                      left: '8px',
+                      width: '40px',
+                      height: '40px',
+                      background: burger.position <= 3 
+                        ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
+                        : burger.position <= 10 
+                          ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                          : '#374151',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 'bold',
+                      fontSize: burger.position <= 3 ? '1.2rem' : '0.9rem',
+                      color: burger.position <= 10 ? '#1a1a1a' : '#e5e7eb',
+                      boxShadow: burger.position <= 3 
+                        ? '0 2px 8px rgba(251, 191, 36, 0.3)'
+                        : burger.position <= 10
+                          ? '0 2px 8px rgba(239, 68, 68, 0.3)'
+                          : 'none'
+                    }}>
+                      {burger.position <= 3 ? ['🥇', '🥈', '🥉'][burger.position - 1] : `#${burger.position}`}
                     </div>
-                    {burger.description && (
-                      <div style={{ fontSize: '0.85rem', color: '#d1d5db', marginBottom: '0.5rem' }}>
-                        {burger.description}
-                      </div>
-                    )}
-                    {burger.tags && burger.tags.length > 0 && (
-                      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                        {burger.tags.map((tag, idx) => (
-                          <span
-                            key={idx}
-                            style={{
-                              fontSize: '0.7rem',
-                              backgroundColor: '#fbbf24',
-                              color: '#000',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '0.25rem',
-                              fontWeight: '500'
-                            }}
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                  )}
+                </div>
+                
+                <div style={{ padding: '1rem' }}>
+                  <div style={{ fontWeight: '700', fontSize: '1rem', marginBottom: '0.25rem' }}>
+                    {burger.name}
                   </div>
-                  <div style={{ textAlign: 'right', marginLeft: '1rem' }}>
-                    <div style={{ color: '#fbbf24', fontSize: '0.9rem', fontWeight: '600' }}>
-                      ★ {burger.average_rating.toFixed(1)}
+                  {burger.description && (
+                    <div style={{ 
+                      fontSize: '0.85rem', 
+                      color: '#d1d5db', 
+                      marginBottom: '0.5rem',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      lineHeight: '1.3'
+                    }}>
+                      {burger.description}
+                    </div>
+                  )}
+                  
+                  {/* Tags */}
+                  {burger.tags && burger.tags.length > 0 && (
+                    <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                      {burger.tags.slice(0, 4).map((tag, idx) => (
+                        <span
+                          key={idx}
+                          style={{
+                            padding: '0.15rem 0.4rem',
+                            fontSize: '0.65rem',
+                            backgroundColor: 'rgba(251, 191, 36, 0.15)',
+                            color: '#fbbf24',
+                            borderRadius: '0.25rem',
+                            fontWeight: 500
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Rating */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ color: '#fbbf24', fontSize: '0.85rem', fontWeight: '600' }}>
+                      ★ {burger.average_rating.toFixed(1)}/5
                     </div>
                     <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
                       {burger.total_ratings} valoraciones
