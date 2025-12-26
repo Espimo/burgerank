@@ -165,6 +165,7 @@ export default function RestaurantePage() {
 
       // Cargar valoraciones de las hamburguesas de este restaurante
       if (burgersData && burgersData.length > 0) {
+        const burgerIds = (burgersData as any[]).map((b: any) => b.id);
         const { data: ratingsData } = await supabase
           .from('ratings')
           .select(`
@@ -175,7 +176,7 @@ export default function RestaurantePage() {
             user:users(username),
             burger:burgers(name)
           `)
-          .in('burger_id', burgersData.map(b => b.id))
+          .in('burger_id', burgerIds)
           .order('created_at', { ascending: false })
           .limit(10);
 
