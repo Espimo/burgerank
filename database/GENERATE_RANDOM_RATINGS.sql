@@ -62,27 +62,32 @@ BEGIN
                 v_rating := round(v_rating * 2) / 2;
                 
                 -- Insertar el rating
+                -- Nota: overall_rating es 1-5, pan/carne/toppings/salsa son 1-3
                 INSERT INTO ratings (
                     id,
                     user_id,
                     burger_id,
                     overall_rating,
-                    taste_rating,
-                    texture_rating,
-                    presentation_rating,
-                    value_rating,
+                    pan_rating,
+                    carne_rating,
+                    toppings_rating,
+                    salsa_rating,
+                    price,
                     comment,
-                    is_verified,
+                    has_ticket,
+                    consumption_type,
+                    points_awarded,
                     created_at
                 ) VALUES (
                     gen_random_uuid(),
                     v_user_id,
                     v_burger.id,
-                    v_rating,
-                    v_rating + (random() - 0.5), -- Variación pequeña
-                    v_rating + (random() - 0.5),
-                    v_rating + (random() - 0.5),
-                    v_rating + (random() - 0.5),
+                    LEAST(5, GREATEST(1, ROUND(v_rating)::INT)), -- overall_rating: 1-5
+                    LEAST(3, GREATEST(1, 1 + floor(random() * 3)::INT)), -- pan_rating: 1-3
+                    LEAST(3, GREATEST(1, 1 + floor(random() * 3)::INT)), -- carne_rating: 1-3
+                    LEAST(3, GREATEST(1, 1 + floor(random() * 3)::INT)), -- toppings_rating: 1-3
+                    LEAST(3, GREATEST(1, 1 + floor(random() * 3)::INT)), -- salsa_rating: 1-3
+                    8.50 + (random() * 6.50), -- precio: 8.50 - 15.00
                     CASE 
                         WHEN v_rating >= 4.5 THEN '¡Excelente hamburguesa!'
                         WHEN v_rating >= 4.0 THEN 'Muy buena, la recomiendo'
@@ -90,7 +95,12 @@ BEGIN
                         WHEN v_rating >= 3.0 THEN 'Regular, puede mejorar'
                         ELSE 'No está mal'
                     END,
-                    random() > 0.5, -- 50% verificadas
+                    random() > 0.7, -- 30% con ticket
+                    CASE 
+                        WHEN random() > 0.5 THEN 'local'
+                        ELSE 'domicilio'
+                    END,
+                    10, -- puntos otorgados
                     NOW() - (random() * INTERVAL '30 days') -- Fechas aleatorias en los últimos 30 días
                 );
             END LOOP;
@@ -118,7 +128,7 @@ SET
     verified_reviews_count = (
         SELECT COUNT(*)
         FROM ratings r 
-        WHERE r.burger_id = b.id AND r.is_verified = true
+        WHERE r.burger_id = b.id AND r.has_ticket = true
     )
 WHERE status = 'approved';
 
