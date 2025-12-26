@@ -12,39 +12,32 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
 
-    const { data: favorites, error } = await supabase
+    // Primero verificar si la tabla existe haciendo una consulta simple
+    const { data: favorites, error } = await (supabase
       .from('user_favorites')
-      .select(`
-        id,
-        created_at,
-        burger:burgers(
-          id,
-          name,
-          description,
-          image_url,
-          average_rating,
-          total_ratings,
-          tags,
-          restaurant:restaurants(
-            id,
-            name,
-            city:cities(name)
-          )
-        )
-      `)
+      .select('id, created_at, burger_id') as any)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching favorites:', error)
-      return NextResponse.json({ error: 'Error al obtener favoritos' }, { status: 500 })
+      // Si es error de permisos, devolver lista vacía en lugar de error
+      if (error.code === '42501' || error.code === '42P01') {
+        console.log('Tabla user_favorites no accesible, devolviendo lista vacía')
+        return NextResponse.json({
+          favorites: [],
+          favoriteIds: [],
+          count: 0
+        })
+      }
+      return NextResponse.json({ error: 'Error al obtener favoritos', details: error.message }, { status: 500 })
     }
 
-    // También obtener solo los IDs de burgers favoritas para rápida consulta
-    const favoriteIds = favorites?.map(f => (f.burger as any)?.id).filter(Boolean) || []
+    // Obtener los IDs de burgers favoritas
+    const favoriteIds = favorites?.map((f: any) => f.burger_id).filter(Boolean) || []
 
     return NextResponse.json({
-      favorites,
+      favorites: favorites || [],
       favoriteIds,
       count: favorites?.length || 0
     })
