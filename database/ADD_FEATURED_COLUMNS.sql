@@ -68,6 +68,9 @@ WITH CHECK (
 -- FUNCIÓN HELPER: Obtener burgers destacadas ordenadas
 -- ================================================
 
+-- Eliminar función si existe (para evitar conflictos de tipo)
+DROP FUNCTION IF EXISTS get_featured_burgers();
+
 CREATE OR REPLACE FUNCTION get_featured_burgers()
 RETURNS TABLE (
   id UUID,
