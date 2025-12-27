@@ -37,13 +37,17 @@ COMMENT ON COLUMN burgers.featured_order IS 'Posición en el carousel (1, 2, 3).
 -- POLÍTICAS RLS (Row Level Security)
 -- ================================================
 
+-- Eliminar políticas si ya existen (para evitar errores)
+DROP POLICY IF EXISTS "Anyone can view featured burgers" ON burgers;
+DROP POLICY IF EXISTS "Only admins can update featured status" ON burgers;
+
 -- Permitir a usuarios leer burgers destacadas
-CREATE POLICY IF NOT EXISTS "Anyone can view featured burgers"
+CREATE POLICY "Anyone can view featured burgers"
 ON burgers FOR SELECT
 USING (is_featured = true);
 
 -- Solo admins pueden modificar el estado de featured
-CREATE POLICY IF NOT EXISTS "Only admins can update featured status"
+CREATE POLICY "Only admins can update featured status"
 ON burgers FOR UPDATE
 USING (
   EXISTS (
