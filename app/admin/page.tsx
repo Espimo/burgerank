@@ -708,12 +708,29 @@ export default function AdminPanel() {
         )}
 
         {activeSection === 'featured' && (
-          <FeaturedSection 
-            burgers={burgers.filter(b => b.is_featured)}
-            allBurgers={burgers}
-            onToggleFeatured={handleToggleFeatured}
-            onChangeOrder={handleChangeFeaturedOrder}
-          />
+          <div>
+            <Link 
+              href="/admin/featured"
+              style={{
+                display: 'inline-block',
+                padding: '1rem 2rem',
+                backgroundColor: '#fbbf24',
+                color: '#1a1a1a',
+                borderRadius: '0.5rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+                marginBottom: '1rem'
+              }}
+            >
+              🌟 Ir a Gestión de Destacados
+            </Link>
+            <FeaturedSection 
+              burgers={burgers.filter(b => b.is_featured)}
+              allBurgers={burgers}
+              onToggleFeatured={handleToggleFeatured}
+              onChangeOrder={handleChangeFeaturedOrder}
+            />
+          </div>
         )}
 
         {activeSection === 'pending' && (

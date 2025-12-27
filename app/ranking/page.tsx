@@ -7,6 +7,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import RegistrationPromptModal from '@/app/components/RegistrationPromptModal'
 import SmartSearch from '@/app/components/SmartSearch'
 import AffiliateCTAInline from '@/app/components/AffiliateCTAInline'
+import FeaturedCarousel from '@/app/components/FeaturedCarousel'
 import { useAdmin } from '@/app/contexts/AdminContext'
 import { useAuth } from '@/app/contexts/AuthContext'
 import { AdminBadge } from '@/app/components/AdminBadge'
@@ -82,11 +83,9 @@ export default function RankingPage() {
   
   // Data from API
   const [rankedBurgers, setRankedBurgers] = useState<RankedBurger[]>([])
-  const [featuredBurgers, setFeaturedBurgers] = useState<RankedBurger[]>([])
   const [cities, setCities] = useState<CityData[]>([])
   const [loading, setLoading] = useState(true)
   const [showAllBurgers, setShowAllBurgers] = useState(true) // Modo desarrollo: mostrar todas
-  const [featuredIndex, setFeaturedIndex] = useState(0)
 
   // Load ranking data from API
   const loadData = useCallback(async () => {
@@ -101,22 +100,16 @@ export default function RankingPage() {
       params.append('sortBy', sortMode)
       params.append('limit', '50')
       
-      // Cargar ranking y destacadas en paralelo
-      const [rankingRes, featuredRes, citiesData] = await Promise.all([
+      // Cargar ranking y ciudades
+      const [rankingRes, citiesData] = await Promise.all([
         fetch(`/api/burgers/ranking?${params.toString()}`),
-        fetch(`/api/burgers/ranking?featured=true`),
         createClient().from('cities').select('id, name').eq('status', 'approved')
       ])
       
       const rankingData = await rankingRes.json()
-      const featuredData = await featuredRes.json()
       
       if (rankingData.burgers) {
         setRankedBurgers(rankingData.burgers)
-      }
-      
-      if (featuredData.burgers) {
-        setFeaturedBurgers(featuredData.burgers)
       }
       
       if (citiesData.data) {
@@ -132,16 +125,6 @@ export default function RankingPage() {
   useEffect(() => {
     loadData()
   }, [loadData])
-
-  // Auto-rotate featured slider
-  useEffect(() => {
-    if (featuredBurgers.length > 1) {
-      const interval = setInterval(() => {
-        setFeaturedIndex(prev => (prev + 1) % featuredBurgers.length)
-      }, 5000)
-      return () => clearInterval(interval)
-    }
-  }, [featuredBurgers.length])
 
   const handleMenuClick = () => {
     setSidebarOpen(true)
@@ -301,118 +284,8 @@ export default function RankingPage() {
           </button>
         </div>
 
-        {/* Slider de Destacadas */}
-        {featuredBurgers.length > 0 && (
-          <div style={{ marginBottom: '1.5rem' }}>
-            <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', color: '#fbbf24' }}>
-              ⭐ Destacadas
-            </div>
-            <div style={{ 
-              position: 'relative', 
-              borderRadius: '0.75rem', 
-              overflow: 'hidden',
-              backgroundColor: '#1f2937',
-              border: '1px solid #374151'
-            }}>
-              {/* Slider Container */}
-              <div style={{
-                display: 'flex',
-                transition: 'transform 0.5s ease-in-out',
-                transform: `translateX(-${featuredIndex * 100}%)`
-              }}>
-                {featuredBurgers.map((burger, idx) => (
-                  <div 
-                    key={burger.id}
-                    style={{ 
-                      minWidth: '100%',
-                      padding: '1rem',
-                      display: 'flex',
-                      gap: '1rem',
-                      alignItems: 'center'
-                    }}
-                  >
-                    {/* Imagen Featured */}
-                    <div style={{
-                      width: '100px',
-                      height: '80px',
-                      borderRadius: '0.5rem',
-                      flexShrink: 0,
-                      background: burger.image_url 
-                        ? `url(${burger.image_url}) center/cover`
-                        : 'linear-gradient(135deg, #92400e 0%, #b45309 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '2.5rem'
-                    }}>
-                      {!burger.image_url && '🍔'}
-                    </div>
-                    {/* Info Featured */}
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>
-                        {burger.name}
-                      </div>
-                      <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginBottom: '0.25rem' }}>
-                        🏪 {burger.restaurant?.name} • 📍 {burger.restaurant?.cities?.name}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ color: '#fbbf24' }}>{renderStars(burger.average_rating || 0)}</span>
-                        <span style={{ fontSize: '0.8rem' }}>{(burger.average_rating || 0).toFixed(1)}</span>
-                      </div>
-                    </div>
-                    {/* Botón */}
-                    <a 
-                      href={authUser ? "/rate" : undefined}
-                      onClick={(e) => {
-                        if (!authUser) {
-                          e.preventDefault()
-                          setShowRegistrationModal(true)
-                        }
-                      }}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        backgroundColor: '#fbbf24',
-                        color: '#1a1a1a',
-                        borderRadius: '0.5rem',
-                        fontWeight: 600,
-                        fontSize: '0.8rem',
-                        textDecoration: 'none',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      ⭐ Valorar
-                    </a>
-                  </div>
-                ))}
-              </div>
-              {/* Dots */}
-              {featuredBurgers.length > 1 && (
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'center', 
-                  gap: '0.5rem', 
-                  paddingBottom: '0.75rem' 
-                }}>
-                  {featuredBurgers.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setFeaturedIndex(idx)}
-                      style={{
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        border: 'none',
-                        backgroundColor: idx === featuredIndex ? '#fbbf24' : '#4b5563',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s'
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Carousel de Destacadas */}
+        <FeaturedCarousel />
 
         {/* Modos de ordenamiento */}
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
