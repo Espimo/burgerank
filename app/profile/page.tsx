@@ -60,31 +60,13 @@ interface ProfileData {
   }
 }
 
-interface FavoriteItem {
-  id: string
-  burger_id: string
-  created_at: string
-  burger?: {
-    id: string
-    name: string
-    image_url: string
-    average_rating: number
-    restaurant?: {
-      name: string
-    }
-  }
-}
-
 export default function ProfilePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showAllBadges, setShowAllBadges] = useState(false)
   const [showPersonalRanking, setShowPersonalRanking] = useState(false)
-  const [showFavorites, setShowFavorites] = useState(false)
   const [rankingSortMode, setRankingSortMode] = useState<'rating' | 'date'>('rating')
   const [profileData, setProfileData] = useState<ProfileData | null>(null)
-  const [favorites, setFavorites] = useState<FavoriteItem[]>([])
-  const [loadingFavorites, setLoadingFavorites] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
@@ -128,43 +110,6 @@ export default function ProfilePage() {
 
     loadProfile()
   }, [authUser, router])
-
-  // Load favorites
-  const loadFavorites = async () => {
-    try {
-      setLoadingFavorites(true)
-      const response = await fetch('/api/favorites')
-      const data = await response.json()
-      
-      if (response.ok && data.favorites) {
-        setFavorites(data.favorites)
-      }
-    } catch (error) {
-      console.error('Error loading favorites:', error)
-    } finally {
-      setLoadingFavorites(false)
-    }
-  }
-
-  // Load favorites when modal opens
-  useEffect(() => {
-    if (showFavorites) {
-      loadFavorites()
-    }
-  }, [showFavorites])
-
-  const removeFavorite = async (burgerId: string) => {
-    try {
-      const response = await fetch(`/api/favorites?burger_id=${burgerId}`, {
-        method: 'DELETE'
-      })
-      if (response.ok) {
-        setFavorites(prev => prev.filter(f => f.burger_id !== burgerId))
-      }
-    } catch (error) {
-      console.error('Error removing favorite:', error)
-    }
-  }
 
   const handleMenuClick = () => {
     setSidebarOpen(true)
@@ -599,170 +544,6 @@ export default function ProfilePage() {
                   <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>{formatDate(rating.created_at)}</div>
                 </div>
               ))}
-            </div>
-          </div>
-        )}
-
-        {/* Mis Favoritos */}
-        <div className="card mb-4">
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginBottom: '0.5rem'
-          }}>
-            <div className="font-semibold" style={{ fontSize: '0.9rem' }}>
-              ❤️ Mis Favoritos
-            </div>
-            <button
-              onClick={() => setShowFavorites(true)}
-              style={{
-                fontSize: '0.75rem',
-                padding: '0.4rem 0.8rem',
-                backgroundColor: '#374151',
-                color: '#ef4444',
-                border: '1px solid #4b5563',
-                borderRadius: '0.375rem',
-                cursor: 'pointer',
-                fontWeight: 600
-              }}
-            >
-              Ver todos →
-            </button>
-          </div>
-          <div style={{ 
-            padding: '1rem', 
-            textAlign: 'center', 
-            color: '#9ca3af',
-            fontSize: '0.85rem'
-          }}>
-            <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '0.5rem' }}>❤️</span>
-            Pulsa el corazón en cualquier burger para guardarla como favorita
-          </div>
-        </div>
-
-        {/* Modal Favoritos */}
-        {showFavorites && (
-          <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.75)',
-              zIndex: 100,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '1rem'
-            }}
-            onClick={() => setShowFavorites(false)}
-          >
-            <div
-              style={{
-                backgroundColor: '#1f2937',
-                borderRadius: '1rem',
-                padding: '1.5rem',
-                maxWidth: '400px',
-                width: '100%',
-                maxHeight: '80vh',
-                overflowY: 'auto'
-              }}
-              onClick={e => e.stopPropagation()}
-            >
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                marginBottom: '1rem'
-              }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>❤️ Mis Favoritos</h3>
-                <button
-                  onClick={() => setShowFavorites(false)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    fontSize: '1.5rem',
-                    cursor: 'pointer',
-                    color: '#9ca3af'
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-
-              {loadingFavorites ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
-                  Cargando favoritos...
-                </div>
-              ) : favorites.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
-                  <span style={{ fontSize: '2rem', display: 'block', marginBottom: '0.5rem' }}>💔</span>
-                  Aún no tienes favoritos
-                  <div style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>
-                    Pulsa el corazón ❤️ en cualquier burger para añadirla
-                  </div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {favorites.map(fav => (
-                    <div
-                      key={fav.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        backgroundColor: 'rgba(75, 85, 99, 0.5)',
-                        borderRadius: '0.5rem',
-                        border: '1px solid #4b5563'
-                      }}
-                    >
-                      {fav.burger?.image_url && (
-                        <img
-                          src={fav.burger.image_url}
-                          alt={fav.burger?.name || 'Burger'}
-                          style={{
-                            width: '50px',
-                            height: '50px',
-                            borderRadius: '0.5rem',
-                            objectFit: 'cover'
-                          }}
-                        />
-                      )}
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: '600', fontSize: '0.9rem' }}>
-                          {fav.burger?.name || 'Burger'}
-                        </div>
-                        {fav.burger?.restaurant?.name && (
-                          <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
-                            📍 {fav.burger.restaurant.name}
-                          </div>
-                        )}
-                        {fav.burger?.average_rating && (
-                          <div style={{ fontSize: '0.75rem', color: '#fbbf24' }}>
-                            ⭐ {fav.burger.average_rating.toFixed(1)}
-                          </div>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => removeFavorite(fav.burger_id)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          fontSize: '1.2rem',
-                          cursor: 'pointer',
-                          color: '#ef4444'
-                        }}
-                        title="Quitar de favoritos"
-                      >
-                        ❤️
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         )}

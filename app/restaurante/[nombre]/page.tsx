@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import TopBar from '@/components/layout/TopBar';
 import BottomNav from '@/components/layout/BottomNav';
 import Sidebar from '@/components/layout/Sidebar';
+import AffiliateCTA from '@/app/components/AffiliateCTA';
 
 interface Restaurant {
   id: string;
@@ -627,6 +628,17 @@ export default function RestaurantePage() {
           </div>
         )}
       </div>
+
+      {/* CTA de Afiliación - Sticky en móvil */}
+      {restaurant && (
+        <AffiliateCTA
+          restaurantId={restaurant.id}
+          restaurantName={restaurant.name}
+          sourcePage="restaurant"
+          variant="sticky"
+          showAlternatives={true}
+        />
+      )}
 
       <BottomNav />
     </div>

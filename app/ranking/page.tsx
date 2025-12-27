@@ -6,7 +6,7 @@ import BottomNav from '@/components/layout/BottomNav'
 import Sidebar from '@/components/layout/Sidebar'
 import RegistrationPromptModal from '@/app/components/RegistrationPromptModal'
 import SmartSearch from '@/app/components/SmartSearch'
-import FavoriteButton from '@/app/components/FavoriteButton'
+import AffiliateCTAInline from '@/app/components/AffiliateCTAInline'
 import { useAdmin } from '@/app/contexts/AdminContext'
 import { useAuth } from '@/app/contexts/AuthContext'
 import { AdminBadge } from '@/app/components/AdminBadge'
@@ -87,27 +87,6 @@ export default function RankingPage() {
   const [loading, setLoading] = useState(true)
   const [showAllBurgers, setShowAllBurgers] = useState(true) // Modo desarrollo: mostrar todas
   const [featuredIndex, setFeaturedIndex] = useState(0)
-  const [favoriteIds, setFavoriteIds] = useState<string[]>([])
-
-  // Load favorites when user is authenticated
-  useEffect(() => {
-    const loadFavorites = async () => {
-      if (!authUser) {
-        setFavoriteIds([])
-        return
-      }
-      try {
-        const response = await fetch('/api/favorites')
-        if (response.ok) {
-          const data = await response.json()
-          setFavoriteIds(data.favoriteIds || [])
-        }
-      } catch (error) {
-        console.error('Error loading favorites:', error)
-      }
-    }
-    loadFavorites()
-  }, [authUser])
 
   // Load ranking data from API
   const loadData = useCallback(async () => {
@@ -750,31 +729,6 @@ export default function RankingPage() {
                     {badge.emoji}
                   </div>
 
-                  {/* Botón de Favoritos */}
-                  {authUser && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        zIndex: 10
-                      }}
-                    >
-                      <FavoriteButton
-                        burgerId={burger.id}
-                        isFavorite={favoriteIds.includes(burger.id)}
-                        size="medium"
-                        onToggle={(isFav) => {
-                          if (isFav) {
-                            setFavoriteIds(prev => [...prev, burger.id])
-                          } else {
-                            setFavoriteIds(prev => prev.filter(id => id !== burger.id))
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
-
                   {/* Imagen de la Hamburguesa - Rectangular Horizontal */}
                   <div 
                     className="burger-image"
@@ -833,6 +787,13 @@ export default function RankingPage() {
                       <div className="burger-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>📍 {burger.restaurant?.cities?.name}</span>
                         <div className="burger-actions" style={{ display: 'flex', gap: '0.4rem' }}>
+                          {/* Botón de afiliación */}
+                          <AffiliateCTAInline
+                            restaurantId={burger.restaurant?.id || ''}
+                            sourcePage="ranking"
+                            sourceBurgerId={burger.id}
+                            size="small"
+                          />
                           <a 
                             href={`/restaurante/${encodeURIComponent(burger.restaurant?.name || '')}`}
                             className="btn-tiny"
