@@ -2,6 +2,7 @@ import './globals.css'
 import type { Metadata, Viewport } from 'next'
 import { AdminProvider } from './contexts/AdminContext'
 import { AuthProvider } from './contexts/AuthContext'
+import { ServiceWorkerRegistration, PWAInstallPrompt } from './components/PWAComponents'
 
 export const metadata: Metadata = {
   title: 'BurgeRank - Ranking de Hamburguesas',
@@ -79,10 +80,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
+      <head>
+        {/* PWA Meta Tags */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="BurgeRank" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        {/* Splash screens for iOS */}
+        <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" />
+      </head>
       <body>
         <AuthProvider>
           <AdminProvider>
+            <ServiceWorkerRegistration />
             {children}
+            <PWAInstallPrompt />
           </AdminProvider>
         </AuthProvider>
       </body>

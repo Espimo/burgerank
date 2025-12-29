@@ -323,7 +323,8 @@ export default function RestaurantePage() {
                 rel="noopener noreferrer"
                 className="btn"
                 style={{
-                  padding: '0.75rem',
+                  padding: '0.875rem',
+                  minHeight: '2.75rem', // 44px touch target
                   backgroundColor: '#fbbf24',
                   color: '#000',
                   textAlign: 'center',
@@ -347,7 +348,8 @@ export default function RestaurantePage() {
                 rel="noopener noreferrer"
                 className="btn"
                 style={{
-                  padding: '0.75rem',
+                  padding: '0.875rem',
+                  minHeight: '2.75rem',
                   backgroundColor: '#10b981',
                   color: '#fff',
                   textAlign: 'center',
@@ -371,7 +373,8 @@ export default function RestaurantePage() {
                 rel="noopener noreferrer"
                 className="btn"
                 style={{
-                  padding: '0.75rem',
+                  padding: '0.875rem',
+                  minHeight: '2.75rem',
                   backgroundColor: '#374151',
                   color: '#e5e7eb',
                   textAlign: 'center',

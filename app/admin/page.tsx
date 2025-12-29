@@ -8,6 +8,23 @@ import { useAuth } from '../contexts/AuthContext';
 import { createAdminClient } from '@/lib/supabase/client';
 import { ImageUploader } from '../components/ImageUploader';
 
+// Mobile menu hook
+const useMediaQuery = (query: string) => {
+  const [matches, setMatches] = useState(false);
+  
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    if (media.matches !== matches) {
+      setMatches(media.matches);
+    }
+    const listener = () => setMatches(media.matches);
+    media.addEventListener('change', listener);
+    return () => media.removeEventListener('change', listener);
+  }, [matches, query]);
+  
+  return matches;
+};
+
 // Types
 interface Restaurant {
   id: string;
@@ -101,6 +118,8 @@ export default function AdminPanel() {
   const router = useRouter();
   const { isAdmin, adminLoading } = useAdmin();
   const { authUser, loading: authLoading, userProfile } = useAuth();
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const [activeSection, setActiveSection] = useState<ActiveSection>('dashboard');
   const [loading, setLoading] = useState(true);
@@ -612,12 +631,73 @@ export default function AdminPanel() {
 
   return (
     <div style={styles.container}>
-      {/* Sidebar */}
-      <aside style={styles.sidebar}>
-        <div style={styles.sidebarHeader}>
-          <h1 style={styles.logo}>🍔 BurgeRank</h1>
-          <span style={styles.adminBadge}>Admin</span>
-        </div>
+      {/* Mobile Header */}
+      {isMobile && (
+        <header style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '3.5rem',
+          backgroundColor: '#1f2937',
+          borderBottom: '1px solid #374151',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 1rem',
+          zIndex: 100,
+        }}>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#fbbf24',
+              fontSize: '1.5rem',
+              cursor: 'pointer',
+              minWidth: '2.75rem',
+              minHeight: '2.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {mobileMenuOpen ? '✕' : '☰'}
+          </button>
+          <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>🍔 Admin</span>
+          <Link href="/" style={{ 
+            color: '#9ca3af', 
+            textDecoration: 'none',
+            minWidth: '2.75rem',
+            minHeight: '2.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>←</Link>
+        </header>
+      )}
+      
+      {/* Sidebar - Desktop always visible, Mobile overlay */}
+      <aside style={{
+        ...styles.sidebar,
+        ...(isMobile ? {
+          position: 'fixed',
+          top: '3.5rem',
+          left: 0,
+          bottom: 0,
+          width: '85vw',
+          maxWidth: '300px',
+          zIndex: 90,
+          transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 0.3s ease-in-out',
+        } : {})
+      }}>
+        {!isMobile && (
+          <div style={styles.sidebarHeader}>
+            <h1 style={styles.logo}>🍔 BurgeRank</h1>
+            <span style={styles.adminBadge}>Admin</span>
+          </div>
+        )}
         
         <nav style={styles.nav}>
           {[
@@ -633,9 +713,13 @@ export default function AdminPanel() {
           ].map(item => (
             <button
               key={item.id}
-              onClick={() => setActiveSection(item.id as ActiveSection)}
+              onClick={() => {
+                setActiveSection(item.id as ActiveSection);
+                if (isMobile) setMobileMenuOpen(false);
+              }}
               style={{
                 ...styles.navButton,
+                minHeight: '2.75rem', // Touch target
                 ...(activeSection === item.id ? styles.navButtonActive : {}),
                 ...(item.id === 'pending' && stats.pendingApprovals > 0 ? { backgroundColor: '#7c2d12', color: '#fbbf24' } : {})
               }}
@@ -656,8 +740,30 @@ export default function AdminPanel() {
         </div>
       </aside>
 
+      {/* Mobile Overlay */}
+      {isMobile && mobileMenuOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '3.5rem',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 80,
+          }}
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Main Content */}
-      <main style={styles.main}>
+      <main style={{
+        ...styles.main,
+        ...(isMobile ? {
+          marginTop: '3.5rem',
+          padding: '1rem',
+        } : {})
+      }}>
         {activeSection === 'dashboard' && (
           <DashboardSection stats={stats} />
         )}
@@ -2032,21 +2138,25 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   addButton: {
     padding: '0.75rem 1.5rem',
+    minHeight: '2.75rem', // Touch target
     backgroundColor: '#fbbf24',
     color: '#000',
     border: 'none',
     borderRadius: '0.5rem',
     fontWeight: 'bold',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    fontSize: '0.9rem',
   },
   tableContainer: {
     backgroundColor: '#1f2937',
     borderRadius: '0.75rem',
     border: '1px solid #374151',
-    overflow: 'hidden'
+    overflow: 'auto', // Enable horizontal scroll on mobile
+    WebkitOverflowScrolling: 'touch' as const,
   },
   table: {
     width: '100%',
+    minWidth: '600px', // Force minimum width for horizontal scroll
     borderCollapse: 'collapse' as const
   },
   th: {
@@ -2066,21 +2176,25 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: '0.9rem'
   },
   editBtn: {
-    padding: '0.4rem 0.75rem',
+    padding: '0.5rem 0.75rem',
+    minHeight: '2.5rem', // Touch target
     backgroundColor: '#3b82f6',
     color: 'white',
     border: 'none',
     borderRadius: '0.25rem',
     cursor: 'pointer',
-    marginRight: '0.5rem'
+    marginRight: '0.5rem',
+    fontSize: '0.85rem',
   },
   deleteBtn: {
-    padding: '0.4rem 0.75rem',
+    padding: '0.5rem 0.75rem',
+    minHeight: '2.5rem',
     backgroundColor: '#dc2626',
     color: 'white',
     border: 'none',
     borderRadius: '0.25rem',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    fontSize: '0.85rem',
   },
   activeStatus: {
     color: '#10b981'
@@ -2103,11 +2217,12 @@ const styles: { [key: string]: React.CSSProperties } = {
   modal: {
     backgroundColor: '#1f2937',
     borderRadius: '0.75rem',
-    width: '100%',
+    width: '95%', // Better mobile width
     maxWidth: '600px',
     maxHeight: '90vh',
     overflow: 'auto' as const,
-    border: '1px solid #374151'
+    border: '1px solid #374151',
+    margin: '1rem',
   },
   modalHeader: {
     display: 'flex',

@@ -376,11 +376,24 @@ export default function RatePage() {
     b.restaurant.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const renderStarButton = (index: number, rating: number, onClick: () => void, fontSize = '1.5rem') => (
+  const renderStarButton = (index: number, rating: number, onClick: () => void, fontSize = '2rem') => (
     <button
       className={`star-btn ${index < rating ? 'active' : ''}`}
       onClick={onClick}
-      style={{ fontSize }}
+      style={{ 
+        fontSize,
+        minWidth: '2.75rem', // 44px touch target
+        minHeight: '2.75rem',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0.25rem',
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        color: index < rating ? '#fbbf24' : '#6b7280',
+        transition: 'transform 0.15s ease',
+      }}
     >
       {index < rating ? '★' : '☆'}
     </button>
@@ -536,9 +549,9 @@ export default function RatePage() {
             <div className="wizard-step active">
               <div className="form-group">
                 <label className="form-label">Puntuación General</label>
-                <div className="rating-input" style={{ fontSize: '0.9rem' }}>
+                <div className="rating-input" style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
                   {[1, 2, 3, 4, 5].map(i =>
-                    renderStarButton(i - 1, generalRating, () => setRating(i))
+                    renderStarButton(i - 1, generalRating, () => setRating(i), '2.5rem')
                   )}
                 </div>
               </div>
@@ -557,9 +570,9 @@ export default function RatePage() {
               {/* PAN Section */}
               <div className="form-group" style={{ marginBottom: '1.2rem' }}>
                 <label className="form-label">🥖 Pan</label>
-                <div className="rating-input" style={{ marginBottom: '0.5rem' }}>
+                <div className="rating-input" style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem' }}>
                   {[1, 2, 3].map(i =>
-                    renderStarButton(i - 1, panRating, () => setSectionRating('pan', i), '0.9rem')
+                    renderStarButton(i - 1, panRating, () => setSectionRating('pan', i), '1.5rem')
                   )}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
@@ -581,9 +594,9 @@ export default function RatePage() {
               {/* CARNE Section */}
               <div className="form-group" style={{ marginBottom: '1.2rem' }}>
                 <label className="form-label">🥩 Carne</label>
-                <div className="rating-input" style={{ marginBottom: '0.5rem' }}>
+                <div className="rating-input" style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem' }}>
                   {[1, 2, 3].map(i =>
-                    renderStarButton(i - 1, meatRating, () => setSectionRating('meat', i), '0.9rem')
+                    renderStarButton(i - 1, meatRating, () => setSectionRating('meat', i), '1.5rem')
                   )}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
@@ -605,9 +618,9 @@ export default function RatePage() {
               {/* TOPPINGS Section */}
               <div className="form-group" style={{ marginBottom: '1.2rem' }}>
                 <label className="form-label">🥗 Toppings</label>
-                <div className="rating-input" style={{ marginBottom: '0.5rem' }}>
+                <div className="rating-input" style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem' }}>
                   {[1, 2, 3].map(i =>
-                    renderStarButton(i - 1, toppingsRating, () => setSectionRating('toppings', i), '0.9rem')
+                    renderStarButton(i - 1, toppingsRating, () => setSectionRating('toppings', i), '1.5rem')
                   )}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
@@ -632,9 +645,9 @@ export default function RatePage() {
               {/* SALSA Section */}
               <div className="form-group" style={{ marginBottom: '1.2rem' }}>
                 <label className="form-label">🍯 Salsa</label>
-                <div className="rating-input" style={{ marginBottom: '0.5rem' }}>
+                <div className="rating-input" style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem' }}>
                   {[1, 2, 3].map(i =>
-                    renderStarButton(i - 1, sauceRating, () => setSectionRating('sauce', i), '0.9rem')
+                    renderStarButton(i - 1, sauceRating, () => setSectionRating('sauce', i), '1.5rem')
                   )}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>

@@ -72,94 +72,194 @@ export default function FeaturedCarousel() {
 
   if (isLoading) {
     return (
-      <div className="w-full bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-8 mb-8 animate-pulse">
-        <div className="h-64 bg-gray-200 rounded-xl"></div>
+      <div style={{
+        width: '100%',
+        background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.1) 100%)',
+        borderRadius: '1rem',
+        padding: '1rem',
+        marginBottom: '1.5rem',
+      }}>
+        <div className="skeleton" style={{ height: '12rem', borderRadius: '0.75rem' }}></div>
       </div>
     )
   }
 
   if (burgers.length === 0) {
-    return null // No mostrar nada si no hay burgers destacadas
+    return null
   }
 
   return (
-    <section className="w-full mb-8">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-3xl">🌟</span>
-          <h2 className="text-2xl font-bold text-gray-900">Destacadas</h2>
+    <section style={{ width: '100%', marginBottom: '1.5rem' }}>
+      {/* Header - Mobile optimized */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+        marginBottom: '0.75rem',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '1.5rem' }}>🌟</span>
+          <h2 style={{ 
+            fontSize: '1.25rem', 
+            fontWeight: 700, 
+            color: '#fbbf24',
+            margin: 0,
+          }}>
+            Destacadas
+          </h2>
         </div>
-        <div className="flex-1 h-px bg-gradient-to-r from-amber-300 to-transparent"></div>
+        <div style={{
+          flex: 1,
+          height: '2px',
+          background: 'linear-gradient(90deg, #fbbf24 0%, transparent 100%)',
+        }}></div>
       </div>
 
-      {/* Carousel Container */}
-      <div className="relative bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 rounded-2xl p-6 shadow-lg">
+      {/* Carousel Container - Touch friendly */}
+      <div style={{
+        position: 'relative',
+        background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.8) 0%, rgba(17, 24, 39, 0.9) 100%)',
+        borderRadius: '1rem',
+        padding: '0.75rem',
+        border: '1px solid rgba(251, 191, 36, 0.3)',
+      }}>
         {/* Main Slide */}
-        <div className="relative overflow-hidden rounded-xl">
+        <div style={{ position: 'relative', overflow: 'hidden', borderRadius: '0.75rem' }}>
           <div
-            className="flex transition-transform duration-500 ease-in-out"
-            style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+            style={{
+              display: 'flex',
+              transition: 'transform 0.5s ease-in-out',
+              transform: `translateX(-${currentIndex * 100}%)`,
+            }}
           >
             {burgers.map((burger) => (
-              <div key={burger.id} className="min-w-full flex-shrink-0">
+              <div key={burger.id} style={{ minWidth: '100%', flexShrink: 0 }}>
                 <Link href={`/restaurante/${encodeURIComponent(burger.restaurant_name)}`}>
-                  <div className="relative group cursor-pointer">
-                    {/* Image Container */}
-                    <div className="relative h-80 md:h-96 bg-gray-900 rounded-xl overflow-hidden">
+                  <div style={{ position: 'relative', cursor: 'pointer' }}>
+                    {/* Image Container - Mobile height */}
+                    <div style={{
+                      position: 'relative',
+                      height: '14rem', // Más pequeño en móvil
+                      background: '#1f2937',
+                      borderRadius: '0.75rem',
+                      overflow: 'hidden',
+                    }}>
                       {burger.imagen_principal ? (
                         <Image
                           src={burger.imagen_principal}
                           alt={burger.name}
                           fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+                          style={{ objectFit: 'cover' }}
+                          sizes="(max-width: 768px) 100vw, 600px"
                           priority={burger.featured_order === 1}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-                          <span className="text-8xl">🍔</span>
+                        <div style={{
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'linear-gradient(135deg, #374151 0%, #1f2937 100%)',
+                        }}>
+                          <span style={{ fontSize: '4rem' }}>🍔</span>
                         </div>
                       )}
                       
                       {/* Gradient Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)',
+                      }}></div>
                       
                       {/* Badge Destacada */}
-                      <div className="absolute top-4 left-4 bg-amber-500 text-white px-4 py-2 rounded-full font-bold text-sm shadow-lg flex items-center gap-2">
-                        <Star className="w-4 h-4 fill-white" />
+                      <div style={{
+                        position: 'absolute',
+                        top: '0.75rem',
+                        left: '0.75rem',
+                        background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+                        color: '#1a1a1a',
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: '9999px',
+                        fontWeight: 700,
+                        fontSize: '0.7rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        boxShadow: '0 2px 8px rgba(251, 191, 36, 0.4)',
+                      }}>
+                        <Star className="w-3 h-3" style={{ fill: '#1a1a1a' }} />
                         DESTACADA
                       </div>
 
-                      {/* Content Overlay */}
-                      <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                        <h3 className="text-3xl md:text-4xl font-bold mb-2 drop-shadow-lg">
+                      {/* Content Overlay - Mobile optimized text */}
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        padding: '1rem',
+                        color: 'white',
+                      }}>
+                        <h3 style={{
+                          fontSize: '1.25rem',
+                          fontWeight: 700,
+                          marginBottom: '0.25rem',
+                          textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+                          lineHeight: 1.2,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}>
                           {burger.name}
                         </h3>
-                        <p className="text-xl md:text-2xl mb-3 text-amber-300 drop-shadow-lg">
+                        <p style={{
+                          fontSize: '0.9rem',
+                          marginBottom: '0.5rem',
+                          color: '#fbbf24',
+                          textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                        }}>
                           {burger.restaurant_name}
                         </p>
-                        <div className="flex items-center gap-4 mb-4">
-                          <div className="flex items-center gap-2">
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          marginBottom: '0.75rem',
+                          flexWrap: 'wrap',
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.15rem' }}>
                             {[1, 2, 3, 4, 5].map((star) => (
                               <Star
                                 key={star}
-                                className={`w-5 h-5 ${
-                                  star <= Math.round(burger.simple_average)
-                                    ? 'fill-amber-400 text-amber-400'
-                                    : 'text-gray-400'
-                                }`}
+                                className="w-4 h-4"
+                                style={{
+                                  fill: star <= Math.round(burger.simple_average) ? '#fbbf24' : 'transparent',
+                                  color: star <= Math.round(burger.simple_average) ? '#fbbf24' : '#6b7280',
+                                }}
                               />
                             ))}
-                            <span className="font-bold text-lg ml-1">
+                            <span style={{ fontWeight: 700, fontSize: '0.9rem', marginLeft: '0.25rem' }}>
                               {burger.simple_average.toFixed(1)}
                             </span>
                           </div>
-                          <span className="text-gray-300">
+                          <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>
                             ({burger.total_ratings} valoraciones)
                           </span>
                         </div>
-                        <div className="inline-block bg-white/20 backdrop-blur-sm border-2 border-white/50 text-white px-6 py-2 rounded-full font-semibold group-hover:bg-amber-500 group-hover:border-amber-500 transition-all duration-300">
+                        <div style={{
+                          display: 'inline-block',
+                          background: 'rgba(251, 191, 36, 0.9)',
+                          color: '#1a1a1a',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '9999px',
+                          fontWeight: 600,
+                          fontSize: '0.85rem',
+                          minHeight: '2.5rem',
+                          lineHeight: '1.5rem',
+                        }}>
                           Ver más →
                         </div>
                       </div>
@@ -171,49 +271,90 @@ export default function FeaturedCarousel() {
           </div>
         </div>
 
-        {/* Navigation Arrows */}
+        {/* Navigation Arrows - Bigger touch targets */}
         {burgers.length > 1 && (
           <>
             <button
               onClick={goToPrev}
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-900 rounded-full p-3 shadow-lg transition-all hover:scale-110 z-10"
+              style={{
+                position: 'absolute',
+                left: '0.25rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'rgba(255, 255, 255, 0.9)',
+                color: '#1a1a1a',
+                borderRadius: '50%',
+                padding: '0.5rem',
+                border: 'none',
+                cursor: 'pointer',
+                zIndex: 10,
+                minWidth: '2.5rem',
+                minHeight: '2.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
               aria-label="Anterior"
             >
-              <ChevronLeft className="w-6 h-6" />
+              <ChevronLeft style={{ width: '1.25rem', height: '1.25rem' }} />
             </button>
             <button
               onClick={goToNext}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-900 rounded-full p-3 shadow-lg transition-all hover:scale-110 z-10"
+              style={{
+                position: 'absolute',
+                right: '0.25rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'rgba(255, 255, 255, 0.9)',
+                color: '#1a1a1a',
+                borderRadius: '50%',
+                padding: '0.5rem',
+                border: 'none',
+                cursor: 'pointer',
+                zIndex: 10,
+                minWidth: '2.5rem',
+                minHeight: '2.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
               aria-label="Siguiente"
             >
-              <ChevronRight className="w-6 h-6" />
+              <ChevronRight style={{ width: '1.25rem', height: '1.25rem' }} />
             </button>
           </>
         )}
 
-        {/* Dots Navigation */}
+        {/* Dots Navigation - Touch friendly */}
         {burgers.length > 1 && (
-          <div className="flex justify-center gap-2 mt-4">
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '0.5rem',
+            marginTop: '0.75rem',
+            padding: '0.25rem',
+          }}>
             {burgers.map((_, index) => (
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  index === currentIndex
-                    ? 'w-8 bg-amber-500'
-                    : 'w-2 bg-gray-300 hover:bg-gray-400'
-                }`}
+                style={{
+                  height: '0.5rem',
+                  borderRadius: '9999px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  width: index === currentIndex ? '2rem' : '0.5rem',
+                  background: index === currentIndex ? '#fbbf24' : '#4b5563',
+                  minHeight: '2rem', // Touch target invisible pero clickeable
+                  marginTop: '-0.75rem',
+                  paddingTop: '0.75rem',
+                  paddingBottom: '0.75rem',
+                  backgroundClip: 'content-box',
+                }}
                 aria-label={`Ir a slide ${index + 1}`}
               />
             ))}
-          </div>
-        )}
-
-        {/* Autoplay Indicator */}
-        {isAutoPlaying && burgers.length > 1 && (
-          <div className="absolute bottom-8 right-6 text-xs text-white/60 flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            Auto-rotación activa
           </div>
         )}
       </div>
