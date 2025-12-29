@@ -98,7 +98,7 @@ export default function FeaturedCarousel() {
         marginBottom: '0.75rem',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '1.5rem' }}>🌟</span>
+          <span style={{ fontSize: '1.5rem' }}>★</span>
           <h2 style={{ 
             fontSize: '1.25rem', 
             fontWeight: 700, 

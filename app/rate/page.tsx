@@ -406,7 +406,7 @@ export default function RatePage() {
 
       <div className="main">
         <div className="rate-wizard" style={{ maxWidth: '100%', margin: '0 auto' }}>
-          <h2 className="text-xl font-bold mb-4">⭐ Valorar</h2>
+          <h2 className="text-xl font-bold mb-4">★ Valorar</h2>
 
           {/* Progress Dots */}
           <div className="wizard-progress">
@@ -569,7 +569,7 @@ export default function RatePage() {
 
               {/* PAN Section */}
               <div className="form-group" style={{ marginBottom: '1.2rem' }}>
-                <label className="form-label">🥖 Pan</label>
+                <label className="form-label">□ Pan</label>
                 <div className="rating-input" style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem' }}>
                   {[1, 2, 3].map(i =>
                     renderStarButton(i - 1, panRating, () => setSectionRating('pan', i), '1.5rem')
@@ -593,7 +593,7 @@ export default function RatePage() {
 
               {/* CARNE Section */}
               <div className="form-group" style={{ marginBottom: '1.2rem' }}>
-                <label className="form-label">🥩 Carne</label>
+                <label className="form-label">■ Carne</label>
                 <div className="rating-input" style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem' }}>
                   {[1, 2, 3].map(i =>
                     renderStarButton(i - 1, meatRating, () => setSectionRating('meat', i), '1.5rem')
@@ -617,7 +617,7 @@ export default function RatePage() {
 
               {/* TOPPINGS Section */}
               <div className="form-group" style={{ marginBottom: '1.2rem' }}>
-                <label className="form-label">🥗 Toppings</label>
+                <label className="form-label">● Toppings</label>
                 <div className="rating-input" style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem' }}>
                   {[1, 2, 3].map(i =>
                     renderStarButton(i - 1, toppingsRating, () => setSectionRating('toppings', i), '1.5rem')
@@ -644,7 +644,7 @@ export default function RatePage() {
 
               {/* SALSA Section */}
               <div className="form-group" style={{ marginBottom: '1.2rem' }}>
-                <label className="form-label">🍯 Salsa</label>
+                <label className="form-label">◆ Salsa</label>
                 <div className="rating-input" style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem' }}>
                   {[1, 2, 3].map(i =>
                     renderStarButton(i - 1, sauceRating, () => setSectionRating('sauce', i), '1.5rem')
@@ -723,7 +723,7 @@ export default function RatePage() {
                   onClick={() => document.getElementById('ticketInput')?.click()}
                 >
                   <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
-                    {hasTicketUploaded ? '✅' : '📸'}
+                    {hasTicketUploaded ? '✔' : '□'}
                   </div>
                   <p className="text-muted">
                     {hasTicketUploaded 

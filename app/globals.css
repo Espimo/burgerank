@@ -280,14 +280,32 @@ body {
   transition: color var(--transition-fast);
   border-radius: var(--radius-md);
   -webkit-tap-highlight-color: transparent;
+  /* Reset button styles */
+  background: transparent;
+  border: none;
+  outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
 }
 
 .nav-item:active {
   background: rgba(251, 191, 36, 0.1);
 }
 
+.nav-item span[aria-hidden="true"] {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
 .nav-item.active {
   color: var(--primary);
+}
+
+.nav-item span[aria-hidden="true"] {
+  font-size: 1.5rem;
+  line-height: 1;
+  font-weight: bold;
 }
 
 .nav-item span:first-child {
