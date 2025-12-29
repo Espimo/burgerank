@@ -50,7 +50,7 @@ SELECT
   b.id,
   b.name,
   r.name as restaurant_name,
-  r.city,
+  c.name as city,
   b.is_featured,
   b.featured_order,
   b.ranking_score,
@@ -58,5 +58,6 @@ SELECT
   b.total_ratings
 FROM burgers b
 INNER JOIN restaurants r ON b.restaurant_id = r.id
+INNER JOIN cities c ON r.city_id = c.id
 WHERE b.is_featured = true
 ORDER BY b.featured_order ASC;
