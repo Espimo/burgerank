@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
@@ -35,36 +35,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Usar ref para el cliente Supabase (singleton)
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
+  const initRef = useRef(false);
 
-  const supabase = createClient();
+  // Obtener perfil 
+  const fetchProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('[Auth] Error fetching profile:', profileError);
+        return null;
+      }
+      return profile;
+    } catch (err) {
+      console.error('[Auth] Profile fetch error:', err);
+      return null;
+    }
+  }, [supabase]);
 
-  // Obtener usuario al montar el componente
+  // Inicializar auth
   useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+
     const initializeAuth = async () => {
+      console.log('[Auth] Inicializando...');
       try {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
-        if (userError) throw userError;
+        if (userError) {
+          console.log('[Auth] No hay sesión activa');
+          setLoading(false);
+          return;
+        }
         
         if (user) {
+          console.log('[Auth] Usuario encontrado:', user.email);
           setAuthUser(user);
-          
-          // Obtener perfil del usuario
-          const { data: profile, error: profileError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-          
-          if (profileError && profileError.code !== 'PGRST116') {
-            console.error('Error fetching profile:', profileError);
-          } else {
-            setUserProfile(profile);
-          }
+          const profile = await fetchProfile(user.id);
+          if (profile) setUserProfile(profile);
         }
       } catch (err) {
-        console.error('Error initializing auth:', err);
-        setError(err instanceof Error ? err.message : 'Error desconocido');
+        console.error('[Auth] Error initializing:', err);
+        setError(err instanceof Error ? err.message : 'Error de conexión');
       } finally {
         setLoading(false);
       }
@@ -72,20 +93,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth();
 
-    // Escuchar cambios de autenticación
+    // Listener de cambios de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('[Auth] State change:', event);
         if (session?.user) {
           setAuthUser(session.user);
-          
-          // Obtener perfil cuando cambia la sesión
-          const { data: profile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          setUserProfile(profile);
+          const profile = await fetchProfile(session.user.id);
+          if (profile) setUserProfile(profile);
         } else {
           setAuthUser(null);
           setUserProfile(null);
@@ -96,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription?.unsubscribe();
     };
-  }, []);
+  }, [supabase, fetchProfile]);
 
   const signin = async (email: string, password: string) => {
     try {

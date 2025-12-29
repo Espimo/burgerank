@@ -19,7 +19,7 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // Handle errors silently
+            // Handle errors silently - this can happen during SSR
           }
         },
       },
@@ -33,12 +33,9 @@ export function createAdminClient() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   
   if (!serviceRoleKey) {
-    console.error('⚠️ SUPABASE_SERVICE_ROLE_KEY no está configurado');
-    console.error('El admin client usará anon key y puede fallar con RLS');
-    console.error('Configura SUPABASE_SERVICE_ROLE_KEY en las variables de entorno');
+    console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY no configurado - usando anon key');
   }
   
-  // Si no hay service role key, usar anon key (puede fallar con RLS)
   const key = serviceRoleKey || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
   
   return createSupabaseClient(supabaseUrl, key, {

@@ -172,66 +172,44 @@ export default function AdminPanel() {
   const loadAllData = async () => {
     setLoading(true);
     const supabase = createAdminClient();
+    console.log('[AdminPanel] Loading all data...');
+    const startTime = Date.now();
 
     try {
-      // Load cities
-      const { data: citiesData } = await supabase
-        .from('cities')
-        .select('*')
-        .order('name');
-      if (citiesData) setCities(citiesData);
+      // Cargar todo en paralelo para mejor rendimiento
+      const [
+        citiesRes,
+        restaurantsRes,
+        burgersRes,
+        usersRes,
+        promotionsRes,
+        ratingsRes,
+        pendingBurgersRes,
+        pendingRestaurantsRes
+      ] = await Promise.all([
+        supabase.from('cities').select('*').order('name'),
+        supabase.from('restaurants').select('*, city:cities(name)').order('name'),
+        supabase.from('burgers').select('*, restaurant:restaurants(name), city:cities(name)').order('position', { ascending: true, nullsFirst: false }),
+        supabase.from('users').select('id, username, email, points, category, is_admin, created_at').order('created_at', { ascending: false }),
+        supabase.from('restaurant_promotions').select('*, restaurant:restaurants(name)').order('created_at', { ascending: false }),
+        supabase.from('ratings').select('*, user:users(username), burger:burgers(name, restaurant:restaurants(name))').order('created_at', { ascending: false }).limit(50),
+        supabase.from('burgers').select('id, name, created_at, submitted_by, users:submitted_by(username)').eq('status', 'pending').order('created_at', { ascending: false }),
+        supabase.from('restaurants').select('id, name, created_at, submitted_by, users:submitted_by(username)').eq('status', 'pending').order('created_at', { ascending: false })
+      ]);
 
-      // Load restaurants with city
-      const { data: restaurantsData } = await supabase
-        .from('restaurants')
-        .select('*, city:cities(name)')
-        .order('name');
-      if (restaurantsData) setRestaurants(restaurantsData as any);
+      console.log(`[AdminPanel] Data loaded in ${Date.now() - startTime}ms`);
 
-      // Load burgers with restaurant and city
-      const { data: burgersData } = await supabase
-        .from('burgers')
-        .select('*, restaurant:restaurants(name), city:cities(name)')
-        .order('position', { ascending: true, nullsFirst: false });
-      if (burgersData) setBurgers(burgersData as any);
+      // Actualizar estados
+      if (citiesRes.data) setCities(citiesRes.data);
+      if (restaurantsRes.data) setRestaurants(restaurantsRes.data as any);
+      if (burgersRes.data) setBurgers(burgersRes.data as any);
+      if (usersRes.data) setUsers(usersRes.data as any);
+      if (promotionsRes.data) setPromotions(promotionsRes.data as any);
+      if (ratingsRes.data) setRatings(ratingsRes.data as any);
 
-      // Load users
-      const { data: usersData } = await supabase
-        .from('users')
-        .select('id, username, email, points, category, is_admin, created_at')
-        .order('created_at', { ascending: false });
-      if (usersData) setUsers(usersData as any);
-
-      // Load promotions with restaurant
-      const { data: promotionsData } = await supabase
-        .from('restaurant_promotions')
-        .select('*, restaurant:restaurants(name)')
-        .order('created_at', { ascending: false });
-      if (promotionsData) setPromotions(promotionsData as any);
-
-      // Load recent ratings
-      const { data: ratingsData } = await supabase
-        .from('ratings')
-        .select('*, user:users(username), burger:burgers(name, restaurant:restaurants(name))')
-        .order('created_at', { ascending: false })
-        .limit(50);
-      if (ratingsData) setRatings(ratingsData as any);
-
-      // Load pending items (burgers and restaurants awaiting approval)
-      const pendingBurgers = await supabase
-        .from('burgers')
-        .select('id, name, created_at, submitted_by, users:submitted_by(username)')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-
-      const pendingRestaurants = await supabase
-        .from('restaurants')
-        .select('id, name, created_at, submitted_by, users:submitted_by(username)')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-
+      // Procesar pendientes
       const pending: PendingItem[] = [
-        ...(pendingBurgers.data || []).map((b: any) => ({
+        ...(pendingBurgersRes.data || []).map((b: any) => ({
           item_type: 'burger',
           item_id: b.id,
           item_name: b.name,
@@ -239,7 +217,7 @@ export default function AdminPanel() {
           submitter_name: b.users?.username || 'Desconocido',
           created_at: b.created_at
         })),
-        ...(pendingRestaurants.data || []).map((r: any) => ({
+        ...(pendingRestaurantsRes.data || []).map((r: any) => ({
           item_type: 'restaurant',
           item_id: r.id,
           item_name: r.name,
@@ -252,19 +230,19 @@ export default function AdminPanel() {
       setPendingItems(pending);
 
       // Calculate stats
-      const featuredCount = (burgersData || []).filter((b: any) => b.is_featured).length;
+      const featuredCount = (burgersRes.data || []).filter((b: any) => b.is_featured).length;
       
       setStats({
-        totalBurgers: burgersData?.length || 0,
-        totalRestaurants: restaurantsData?.length || 0,
-        totalUsers: usersData?.length || 0,
-        totalRatings: ratingsData?.length || 0,
-        activePromotions: (promotionsData as any[] || []).filter((p: any) => p.is_active).length,
+        totalBurgers: burgersRes.data?.length || 0,
+        totalRestaurants: restaurantsRes.data?.length || 0,
+        totalUsers: usersRes.data?.length || 0,
+        totalRatings: ratingsRes.data?.length || 0,
+        activePromotions: (promotionsRes.data as any[] || []).filter((p: any) => p.is_active).length,
         pendingApprovals: pending.length,
         featuredBurgers: featuredCount
       });
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('[AdminPanel] Error loading data:', error);
     } finally {
       setLoading(false);
     }
@@ -531,7 +509,7 @@ export default function AdminPanel() {
       }
       
       // Find the next available order
-      const orders = (featuredBurgers || []).map(b => b.featured_order).filter(o => o !== null);
+      const orders = (featuredBurgers || []).map((b: any) => b.featured_order).filter((o: any) => o !== null);
       let nextOrder = 1;
       for (let i = 1; i <= 3; i++) {
         if (!orders.includes(i)) {
@@ -1755,7 +1733,12 @@ function ImportCSVSection({ onImportComplete }: { onImportComplete: () => void }
     
     const reader = new FileReader();
     reader.onload = (event) => {
-      setCsvData(event.target?.result as string || '');
+      const content = event.target?.result as string || '';
+      setCsvData(content);
+      console.log(`[CSV] Archivo cargado: ${content.split('\n').length} líneas`);
+    };
+    reader.onerror = () => {
+      alert('Error leyendo el archivo');
     };
     reader.readAsText(file);
   };
@@ -1772,30 +1755,44 @@ function ImportCSVSection({ onImportComplete }: { onImportComplete: () => void }
       return;
     }
     
+    console.log(`[CSV] Iniciando importación de ${rows.length} ${importType}`);
     setImporting(true);
     setResults(null);
     
     try {
+      // Timeout de 60 segundos para importaciones grandes
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60000);
+      
       const response = await fetch('/api/admin/import-csv', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: importType, data: rows })
+        body: JSON.stringify({ type: importType, data: rows }),
+        signal: controller.signal
       });
       
+      clearTimeout(timeout);
+      
       const data = await response.json();
+      console.log(`[CSV] Respuesta:`, data);
       
       if (!response.ok) {
-        alert('Error: ' + data.error);
+        alert('Error: ' + (data.error || 'Error desconocido'));
         return;
       }
       
-      setResults({ success: data.success, errors: data.errors });
+      setResults({ success: data.success, errors: data.errors || [] });
       
       if (data.success > 0) {
         onImportComplete();
       }
-    } catch (error) {
-      alert('Error de conexión');
+    } catch (error: any) {
+      console.error('[CSV] Error:', error);
+      if (error.name === 'AbortError') {
+        alert('La importación tardó demasiado. Intenta con menos registros.');
+      } else {
+        alert('Error de conexión: ' + (error.message || 'Verifica tu conexión'));
+      }
     } finally {
       setImporting(false);
     }

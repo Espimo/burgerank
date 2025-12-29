@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { createAdminClient } from '@/lib/supabase/client';
 import { useAuth } from './AuthContext';
 
@@ -16,49 +16,63 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminLoading, setAdminLoading] = useState(true);
   const { authUser, loading: authLoading } = useAuth();
+  
+  // Usar ref para el cliente (singleton)
+  const supabaseRef = useRef(createAdminClient());
+  const lastCheckedUserId = useRef<string | null>(null);
 
-  const checkAdminStatus = async () => {
+  const checkAdminStatus = useCallback(async () => {
     if (!authUser) {
-      console.log('[AdminContext] No authUser, setting isAdmin=false');
+      console.log('[Admin] No authUser, setting isAdmin=false');
       setIsAdmin(false);
       setAdminLoading(false);
       return;
     }
 
-    console.log('[AdminContext] Checking admin status for user:', authUser.id);
+    // Evitar verificaciones repetidas para el mismo usuario
+    if (lastCheckedUserId.current === authUser.id && !adminLoading) {
+      return;
+    }
+
+    console.log('[Admin] Checking status for:', authUser.id);
+    lastCheckedUserId.current = authUser.id;
 
     try {
-      const supabase = createAdminClient();
-      const { data, error } = await supabase
+      // Query con timeout manual
+      const timeoutPromise = new Promise<null>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 8000)
+      );
+      
+      const queryPromise = supabaseRef.current
         .from('users')
         .select('is_admin')
         .eq('id', authUser.id)
         .single();
 
-      console.log('[AdminContext] Query result:', { data, error });
-
-      if (error) {
-        console.error('[AdminContext] Error checking admin status:', error);
+      const result = await Promise.race([queryPromise, timeoutPromise]);
+      
+      if (!result || 'error' in result && result.error) {
+        console.error('[Admin] Error:', (result as any)?.error?.message || 'Unknown');
         setIsAdmin(false);
-      } else {
-        const adminStatus = data?.is_admin || false;
-        console.log('[AdminContext] Setting isAdmin to:', adminStatus);
+      } else if (result && 'data' in result) {
+        const adminStatus = result.data?.is_admin || false;
+        console.log('[Admin] Status:', adminStatus);
         setIsAdmin(adminStatus);
       }
-    } catch (error) {
-      console.error('[AdminContext] Exception checking admin status:', error);
+    } catch (error: any) {
+      console.error('[Admin] Exception:', error.message);
       setIsAdmin(false);
     } finally {
       setAdminLoading(false);
     }
-  };
+  }, [authUser, adminLoading]);
 
   // Verificar estado de admin cuando cambia el usuario autenticado
   useEffect(() => {
     if (!authLoading) {
       checkAdminStatus();
     }
-  }, [authUser, authLoading]);
+  }, [authUser, authLoading, checkAdminStatus]);
 
   return (
     <AdminContext.Provider value={{ isAdmin, adminLoading, checkAdminStatus }}>
