@@ -16,7 +16,7 @@ SET is_featured = true, featured_order = 1
 WHERE id = (
   SELECT id FROM burgers 
   WHERE is_in_ranking = true 
-    AND is_approved = true
+    AND status = 'approved'
   ORDER BY ranking_score DESC 
   LIMIT 1
 );
@@ -27,7 +27,7 @@ SET is_featured = true, featured_order = 2
 WHERE id = (
   SELECT id FROM burgers 
   WHERE is_in_ranking = true 
-    AND is_approved = true
+    AND status = 'approved'
     AND is_featured = false
   ORDER BY ranking_score DESC 
   LIMIT 1
@@ -39,7 +39,7 @@ SET is_featured = true, featured_order = 3
 WHERE id = (
   SELECT id FROM burgers 
   WHERE is_in_ranking = true 
-    AND is_approved = true
+    AND status = 'approved'
     AND is_featured = false
   ORDER BY ranking_score DESC 
   LIMIT 1
