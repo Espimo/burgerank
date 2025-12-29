@@ -11,18 +11,14 @@ export async function GET() {
       .select(`
         id,
         name,
-        imagen_principal,
+        image_url,
         ranking_score,
         average_rating,
         total_ratings,
         featured_order,
-        restaurant:restaurants (
-          name,
-          city
-        )
+        restaurants(id, name, city_id)
       `)
       .eq('is_featured', true)
-      .eq('is_in_ranking', true)
       .order('featured_order', { ascending: true })
       .limit(3)
 
@@ -31,13 +27,28 @@ export async function GET() {
       return NextResponse.json({ error: 'Error fetching featured burgers' }, { status: 500 })
     }
 
+    // Obtener nombres de ciudades
+    const cityIds = [...new Set((featuredBurgers || []).map((b: any) => b.restaurants?.city_id).filter(Boolean))];
+    let cityMap = new Map<string, string>();
+    
+    if (cityIds.length > 0) {
+      const { data: cities } = await supabase
+        .from('cities')
+        .select('id, name')
+        .in('id', cityIds);
+      
+      if (cities) {
+        cityMap = new Map(cities.map(c => [c.id, c.name]));
+      }
+    }
+
     // Formatear la respuesta
     const formattedBurgers = (featuredBurgers || []).map((burger: any) => ({
       id: burger.id,
       name: burger.name,
-      restaurant_name: burger.restaurant?.name || 'Restaurante',
-      city: burger.restaurant?.city || '',
-      imagen_principal: burger.imagen_principal,
+      restaurant_name: burger.restaurants?.name || 'Restaurante',
+      city: cityMap.get(burger.restaurants?.city_id) || '',
+      imagen_principal: burger.image_url,
       ranking_score: burger.ranking_score,
       simple_average: burger.average_rating,
       total_ratings: burger.total_ratings,

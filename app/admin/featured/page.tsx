@@ -22,6 +22,35 @@ interface FeaturedSlot {
   burger: Burger | null
 }
 
+// Helper function to format burgers with city names
+const formatBurgersWithCities = async (data: any[], supabase: any) => {
+  const cityIds = [...new Set(data.map((b: any) => b.restaurants?.city_id).filter(Boolean))];
+  let cityMap = new Map<string, string>();
+  
+  if (cityIds.length > 0) {
+    const { data: cities } = await supabase
+      .from('cities')
+      .select('id, name')
+      .in('id', cityIds);
+    
+    if (cities) {
+      cityMap = new Map(cities.map((c: any) => [c.id, c.name]));
+    }
+  }
+  
+  return data.map((b: any) => ({
+    id: b.id,
+    name: b.name,
+    restaurant_name: b.restaurants?.name || '',
+    city: cityMap.get(b.restaurants?.city_id) || '',
+    imagen_principal: b.image_url,
+    simple_average: b.average_rating || 0,
+    total_ratings: b.total_ratings || 0,
+    is_featured: b.is_featured,
+    featured_order: b.featured_order,
+  }));
+}
+
 export default function FeaturedManagement() {
   const [featuredSlots, setFeaturedSlots] = useState<FeaturedSlot[]>([
     { order: 1, burger: null },
@@ -49,29 +78,19 @@ export default function FeaturedManagement() {
         .select(`
           id,
           name,
-          imagen_principal,
+          image_url,
           average_rating,
           total_ratings,
           is_featured,
           featured_order,
-          restaurant:restaurants (name, city)
+          restaurants!inner(id, name, city_id)
         `)
         .eq('is_featured', true)
         .order('featured_order', { ascending: true })
 
       if (error) throw error
 
-      const formatted = (data || []).map((b: any) => ({
-        id: b.id,
-        name: b.name,
-        restaurant_name: b.restaurant?.name || '',
-        city: b.restaurant?.city || '',
-        imagen_principal: b.imagen_principal,
-        simple_average: b.average_rating || 0,
-        total_ratings: b.total_ratings || 0,
-        is_featured: b.is_featured,
-        featured_order: b.featured_order,
-      }))
+      const formatted = await formatBurgersWithCities(data || [], supabase)
 
       // Asignar a slots
       const newSlots = [1, 2, 3].map(order => ({
@@ -97,13 +116,13 @@ export default function FeaturedManagement() {
         .select(`
           id,
           name,
-          imagen_principal,
+          image_url,
           average_rating,
           total_ratings,
           is_featured,
           featured_order,
           created_at,
-          restaurant:restaurants (name, city)
+          restaurants!inner(id, name, city_id)
         `)
         .eq('is_in_ranking', true)
         .eq('is_featured', false)
@@ -112,17 +131,7 @@ export default function FeaturedManagement() {
 
       if (error) throw error
 
-      const formatted = (data || []).map((b: any) => ({
-        id: b.id,
-        name: b.name,
-        restaurant_name: b.restaurant?.name || '',
-        city: b.restaurant?.city || '',
-        imagen_principal: b.imagen_principal,
-        simple_average: b.average_rating || 0,
-        total_ratings: b.total_ratings || 0,
-        is_featured: b.is_featured,
-        featured_order: b.featured_order,
-      }))
+      const formatted = await formatBurgersWithCities(data || [], supabase)
 
       setRecommendations(formatted)
     } catch (error) {
@@ -138,12 +147,12 @@ export default function FeaturedManagement() {
         .select(`
           id,
           name,
-          imagen_principal,
+          image_url,
           average_rating,
           total_ratings,
           is_featured,
           featured_order,
-          restaurant:restaurants (name, city)
+          restaurants!inner(id, name, city_id)
         `)
         .eq('is_in_ranking', true)
         .ilike('name', `%${searchQuery}%`)
@@ -152,17 +161,7 @@ export default function FeaturedManagement() {
 
       if (error) throw error
 
-      const formatted = (data || []).map((b: any) => ({
-        id: b.id,
-        name: b.name,
-        restaurant_name: b.restaurant?.name || '',
-        city: b.restaurant?.city || '',
-        imagen_principal: b.imagen_principal,
-        simple_average: b.average_rating || 0,
-        total_ratings: b.total_ratings || 0,
-        is_featured: b.is_featured,
-        featured_order: b.featured_order,
-      }))
+      const formatted = await formatBurgersWithCities(data || [], supabase)
 
       setAvailableBurgers(formatted)
     } catch (error) {
