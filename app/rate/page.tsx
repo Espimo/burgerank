@@ -82,10 +82,10 @@ export default function RatePage() {
         
         setLoadingBurgers(true)
         
-        const [citiesRes, restaurantsRes, burgersRes] = await Promise.all([
-          supabase.from('cities').select('*'),
-          supabase.from('restaurants').select('*'),
-          supabase.from('burgers').select(`
+        // Cargar solo las burgers más populares y recientes (limitado para velocidad)
+        const burgersRes = await supabase
+          .from('burgers')
+          .select(`
             id,
             name,
             description,
@@ -95,26 +95,31 @@ export default function RatePage() {
             tags,
             restaurant_id,
             city_id,
-            restaurants(id, name),
-            cities(id, name)
-          `).eq('status', 'approved')
-        ])
-        
-        if (citiesRes.error) {
-          console.error('Error loading cities:', citiesRes.error)
-        } else if (citiesRes.data) {
-          setCities(citiesRes.data)
-        }
-        
-        if (restaurantsRes.error) {
-          console.error('Error loading restaurants:', restaurantsRes.error)
-        } else if (restaurantsRes.data) {
-          setRestaurants(restaurantsRes.data)
-        }
+            restaurants!inner(id, name, city_id, cities(id, name))
+          `)
+          .eq('status', 'approved')
+          .order('total_ratings', { ascending: false })
+          .limit(100)
         
         if (burgersRes.error) {
           console.error('Error loading burgers:', burgersRes.error)
         } else if (burgersRes.data) {
+          // Extraer ciudades y restaurantes únicos de las burgers cargadas
+          const uniqueCities = new Map()
+          const uniqueRestaurants = new Map()
+          
+          burgersRes.data.forEach((b: any) => {
+            if (b.restaurants?.cities) {
+              uniqueCities.set(b.restaurants.cities.id, b.restaurants.cities)
+            }
+            if (b.restaurants) {
+              uniqueRestaurants.set(b.restaurants.id, b.restaurants)
+            }
+          })
+          
+          setCities(Array.from(uniqueCities.values()))
+          setRestaurants(Array.from(uniqueRestaurants.values()))
+          
           // Transform burgers to our format
           const transformedBurgers: BurgerData[] = burgersRes.data.map((b: any, index: number) => ({
             id: b.id,
@@ -122,7 +127,7 @@ export default function RatePage() {
             description: b.description || '',
             restaurant: b.restaurants?.name || 'Restaurante',
             restaurant_id: b.restaurant_id,
-            city: b.cities?.name || 'Ciudad',
+            city: b.restaurants?.cities?.name || 'Ciudad',
             city_id: b.city_id,
             rating: b.average_rating || 0,
             reviews: b.total_ratings || 0,
@@ -406,7 +411,7 @@ export default function RatePage() {
 
       <div className="main">
         <div className="rate-wizard" style={{ maxWidth: '100%', margin: '0 auto' }}>
-          <h2 className="text-xl font-bold mb-4">★ Valorar</h2>
+          <h2 className="text-xl font-bold mb-4">⭐ Valorar</h2>
 
           {/* Progress Dots */}
           <div className="wizard-progress">
@@ -569,7 +574,7 @@ export default function RatePage() {
 
               {/* PAN Section */}
               <div className="form-group" style={{ marginBottom: '1.2rem' }}>
-                <label className="form-label">□ Pan</label>
+                <label className="form-label">🥖 Pan</label>
                 <div className="rating-input" style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem' }}>
                   {[1, 2, 3].map(i =>
                     renderStarButton(i - 1, panRating, () => setSectionRating('pan', i), '1.5rem')
@@ -593,7 +598,7 @@ export default function RatePage() {
 
               {/* CARNE Section */}
               <div className="form-group" style={{ marginBottom: '1.2rem' }}>
-                <label className="form-label">■ Carne</label>
+                <label className="form-label">🥩 Carne</label>
                 <div className="rating-input" style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem' }}>
                   {[1, 2, 3].map(i =>
                     renderStarButton(i - 1, meatRating, () => setSectionRating('meat', i), '1.5rem')
@@ -617,7 +622,7 @@ export default function RatePage() {
 
               {/* TOPPINGS Section */}
               <div className="form-group" style={{ marginBottom: '1.2rem' }}>
-                <label className="form-label">● Toppings</label>
+                <label className="form-label">🥗 Toppings</label>
                 <div className="rating-input" style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem' }}>
                   {[1, 2, 3].map(i =>
                     renderStarButton(i - 1, toppingsRating, () => setSectionRating('toppings', i), '1.5rem')
@@ -644,7 +649,7 @@ export default function RatePage() {
 
               {/* SALSA Section */}
               <div className="form-group" style={{ marginBottom: '1.2rem' }}>
-                <label className="form-label">◆ Salsa</label>
+                <label className="form-label">🍯 Salsa</label>
                 <div className="rating-input" style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem' }}>
                   {[1, 2, 3].map(i =>
                     renderStarButton(i - 1, sauceRating, () => setSectionRating('sauce', i), '1.5rem')

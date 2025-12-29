@@ -7,9 +7,9 @@ export default function BottomNav() {
   const pathname = usePathname()
 
   const navItems = [
-    { id: 'ranking', icon: '▲', label: 'Ranking', path: '/ranking' },
-    { id: 'rate', icon: '★', label: 'Valorar', path: '/rate' },
-    { id: 'profile', icon: '●', label: 'Perfil', path: '/profile' },
+    { id: 'ranking', icon: '🏆', label: 'Ranking', path: '/ranking' },
+    { id: 'rate', icon: '⭐', label: 'Valorar', path: '/rate' },
+    { id: 'profile', icon: '👤', label: 'Perfil', path: '/profile' },
   ]
 
   const isActive = (path: string) => {

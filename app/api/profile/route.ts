@@ -11,46 +11,60 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
     }
 
-    // Obtener datos del usuario
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    // Ejecutar todas las queries en paralelo para mejor rendimiento
+    const [
+      { data: userData, error: userError },
+      { data: userBadges, error: badgesError },
+      { data: allBadges },
+      { data: ratingsData, error: ratingsError },
+      { data: rewards }
+    ] = await Promise.all([
+      // Obtener datos del usuario
+      supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single(),
+      
+      // Obtener badges del usuario
+      supabase
+        .from('user_badges')
+        .select(`
+          badge_id,
+          unlocked_at,
+          badges(id, name, description, emoji, requirement_type, requirement_value)
+        `)
+        .eq('user_id', user.id),
+      
+      // Obtener todos los badges disponibles
+      supabase
+        .from('badges')
+        .select('*'),
+      
+      // Obtener estadísticas del usuario (limitado a últimas 100 para velocidad)
+      supabase
+        .from('ratings')
+        .select(`
+          id,
+          overall_rating,
+          points_awarded,
+          created_at,
+          burger_id,
+          burgers!inner(id, name, city_id)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(100),
+      
+      // Obtener recompensas disponibles
+      supabase
+        .from('rewards')
+        .select('*')
+        .order('cost_points', { ascending: true })
+    ]);
 
     if (userError) throw userError;
-
-    // Obtener badges del usuario
-    const { data: userBadges, error: badgesError } = await supabase
-      .from('user_badges')
-      .select(`
-        badge_id,
-        unlocked_at,
-        badges(id, name, description, emoji, requirement_type, requirement_value)
-      `)
-      .eq('user_id', user.id);
-
     if (badgesError) throw badgesError;
-
-    // Obtener todos los badges disponibles
-    const { data: allBadges } = await supabase
-      .from('badges')
-      .select('*');
-
-    // Obtener estadísticas del usuario
-    const { data: ratingsData, error: ratingsError } = await supabase
-      .from('ratings')
-      .select(`
-        id,
-        overall_rating,
-        points_awarded,
-        created_at,
-        burger_id,
-        burgers(id, name, city_id)
-      `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
     if (ratingsError) throw ratingsError;
 
     // Calcular estadísticas
@@ -78,12 +92,6 @@ export async function GET(request: NextRequest) {
       rating: r.overall_rating,
       created_at: r.created_at,
     }));
-
-    // Obtener recompensas disponibles
-    const { data: rewards } = await supabase
-      .from('rewards')
-      .select('*')
-      .order('cost_points', { ascending: true });
 
     // Calcular progreso a la siguiente recompensa
     const nextReward = rewards?.find(r => r.cost_points > totalPoints) || null;

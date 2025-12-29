@@ -58,7 +58,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
             ☰
           </button>
           <Link href="/ranking" className="logo-link">
-            <span className="logo">■ BurgeRank</span>
+            <span className="logo">🍔 BurgeRank</span>
           </Link>
         </div>
         
@@ -83,7 +83,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
                 borderRadius: '0.375rem',
               }}
             >
-              ◆
+              🔔
               {unreadCount > 0 && (
                 <span
                   style={{

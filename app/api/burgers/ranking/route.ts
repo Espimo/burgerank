@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         type,
         created_at,
         restaurant_id,
-        restaurants(id, name, city_id, cities(id, name))
+        restaurants!inner(id, name, city_id)
       `)
       .eq('status', 'approved');
 
@@ -85,8 +85,20 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
+    // Obtener ciudades en una query separada para mejor rendimiento
+    const cityIds = [...new Set((burgers || []).map((b: any) => b.restaurants?.city_id).filter(Boolean))];
+    const { data: cities } = await supabase
+      .from('cities')
+      .select('id, name')
+      .in('id', cityIds);
+    
+    // Crear un mapa de ciudades para lookup rápido
+    const cityMap = new Map((cities || []).map(c => [c.id, c]));
+
     // Formatear respuesta con campos adicionales
-    const formattedBurgers = (burgers || []).map((burger: any, index: number) => ({
+    const formattedBurgers = (burgers || []).map((burger: any, index: number) => {
+      const city = cityMap.get(burger.restaurants?.city_id);
+      return {
       id: burger.id,
       name: burger.name,
       description: burger.description || '',
@@ -105,8 +117,13 @@ export async function GET(request: NextRequest) {
       verified_percentage: (burger.total_reviews || burger.total_ratings) > 0 
         ? Math.round(((burger.verified_reviews_count || 0) / (burger.total_reviews || burger.total_ratings || 1)) * 100)
         : 0,
-      restaurant: burger.restaurants,
-    }));
+      restaurant: {
+        id: burger.restaurants?.id,
+        name: burger.restaurants?.name,
+        city_id: burger.restaurants?.city_id,
+        cities: city ? { id: city.id, name: city.name } : null
+      }
+    }});
 
     const responseData = {
       burgers: formattedBurgers,

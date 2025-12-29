@@ -664,7 +664,7 @@ export default function AdminPanel() {
           >
             {mobileMenuOpen ? '✕' : '☰'}
           </button>
-          <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>■ Admin</span>
+          <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>🍔 Admin</span>
           <Link href="/" style={{ 
             color: '#9ca3af', 
             textDecoration: 'none',
@@ -694,20 +694,20 @@ export default function AdminPanel() {
       }}>
         {!isMobile && (
           <div style={styles.sidebarHeader}>
-            <h1 style={styles.logo}>■ BurgeRank</h1>
+            <h1 style={styles.logo}>🍔 BurgeRank</h1>
             <span style={styles.adminBadge}>Admin</span>
           </div>
         )}
         
         <nav style={styles.nav}>
           {[
-            { id: 'dashboard', icon: '▣', label: 'Dashboard' },
-            { id: 'burgers', icon: '■', label: 'Hamburguesas' },
-            { id: 'restaurants', icon: '▤', label: 'Restaurantes' },
-            { id: 'featured', icon: '★', label: 'Destacados' },
-            { id: 'promotions', icon: '◆', label: 'Promociones' },
-            { id: 'pending', icon: '○', label: `Pendientes ${stats.pendingApprovals > 0 ? `(${stats.pendingApprovals})` : ''}` },
-            { id: 'import', icon: '▼', label: 'Importar CSV' },
+            { id: 'dashboard', icon: '📊', label: 'Dashboard' },
+            { id: 'burgers', icon: '🍔', label: 'Hamburguesas' },
+            { id: 'restaurants', icon: '🏪', label: 'Restaurantes' },
+            { id: 'featured', icon: '⭐', label: 'Destacados' },
+            { id: 'promotions', icon: '🎉', label: 'Promociones' },
+            { id: 'pending', icon: '⏳', label: `Pendientes ${stats.pendingApprovals > 0 ? `(${stats.pendingApprovals})` : ''}` },
+            { id: 'import', icon: '📥', label: 'Importar CSV' },
             { id: 'users', icon: '●', label: 'Usuarios' },
             { id: 'ratings', icon: '◇', label: 'Valoraciones' },
           ].map(item => (

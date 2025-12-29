@@ -70,10 +70,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const isActive = (path: string) => pathname === path
 
   const menuItems = [
-    { path: '/ranking', icon: '▲', label: 'Ranking' },
-    { path: '/rate', icon: '★', label: 'Valorar' },
-    { path: '/profile', icon: '●', label: 'Mi Perfil' },
-    { path: '/about', icon: '◆', label: 'Sobre BurgeRank' },
+    { path: '/ranking', icon: '🏆', label: 'Ranking' },
+    { path: '/rate', icon: '⭐', label: 'Valorar' },
+    { path: '/profile', icon: '👤', label: 'Mi Perfil' },
+    { path: '/about', icon: 'ℹ️', label: 'Sobre BurgeRank' },
   ]
 
   // Solo mostrar Admin si el usuario es admin

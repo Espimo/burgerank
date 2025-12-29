@@ -266,7 +266,7 @@ export default function RankingPage() {
 
         {/* Header del Ranking */}
         <div className="ranking-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h2 className="ranking-title" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>▲ Ranking de Hamburguesas</h2>
+          <h2 className="ranking-title" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>🏆 Ranking de Hamburguesas</h2>
           <button
             onClick={() => setShowFilters(!showFilters)}
             style={{
@@ -280,7 +280,7 @@ export default function RankingPage() {
               fontWeight: 600
             }}
           >
-            ☰ Filtros
+            🎛️ Filtros
           </button>
         </div>
 
@@ -305,9 +305,9 @@ export default function RankingPage() {
                 transition: 'all 0.2s'
               }}
             >
-              {mode === 'ranking' && '▲ Ranking'}
-              {mode === 'tendencias' && '★ Tendencias'}
-              {mode === 'nuevas' && '✦ Nuevas'}
+              {mode === 'ranking' && '🏆 Ranking'}
+              {mode === 'tendencias' && '🔥 Tendencias'}
+              {mode === 'nuevas' && '✨ Nuevas'}
             </button>
           ))}
         </div>
@@ -328,7 +328,7 @@ export default function RankingPage() {
               transition: 'all 0.2s'
             }}
           >
-            ● Todas
+            📍 Todas
           </button>
           {cities.slice(0, 4).map(city => (
             <button 
@@ -361,7 +361,7 @@ export default function RankingPage() {
             border: '1px solid #374151'
           }}>
             <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.75rem', color: '#e5e7eb' }}>
-              ☰ Filtros Avanzados
+              🎛️ Filtros Avanzados
             </div>
             
             {/* Filtros de sección */}
@@ -369,7 +369,7 @@ export default function RankingPage() {
               {/* Pan */}
               <div>
                 <label style={{ fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
-                  □ Pan
+                  🍞 Pan
                 </label>
                 <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
                   {panTags.map(tag => (
@@ -395,7 +395,7 @@ export default function RankingPage() {
               {/* Carne */}
               <div>
                 <label style={{ fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
-                  ■ Carne
+                  🥩 Carne
                 </label>
                 <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
                   {carneTags.map(tag => (
@@ -421,7 +421,7 @@ export default function RankingPage() {
               {/* Salsa */}
               <div>
                 <label style={{ fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
-                  ◆ Salsa
+                  🥫 Salsa
                 </label>
                 <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
                   {salsaTags.map(tag => (
@@ -447,7 +447,7 @@ export default function RankingPage() {
               {/* Toppings */}
               <div>
                 <label style={{ fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.25rem' }}>
-                  ● Toppings
+                  🧀 Toppings
                 </label>
                 <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
                   {toppingsTags.map(tag => (
@@ -474,7 +474,7 @@ export default function RankingPage() {
             {/* Filtros dietéticos/accesibilidad */}
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ fontSize: '0.75rem', color: '#9ca3af', display: 'block', marginBottom: '0.5rem' }}>
-                ✦ Opciones Dietéticas
+                ♿ Opciones Dietéticas
               </label>
               <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                 {dietaryOptions.map(option => (
@@ -658,7 +658,7 @@ export default function RankingPage() {
                         </div>
                       </div>
                       <div className="burger-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>● {burger.restaurant?.cities?.name}</span>
+                        <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>📍 {burger.restaurant?.cities?.name}</span>
                         <div className="burger-actions" style={{ display: 'flex', gap: '0.4rem' }}>
                           {/* Botón de afiliación */}
                           <AffiliateCTAInline
