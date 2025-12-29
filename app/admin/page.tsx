@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAdmin } from '../contexts/AdminContext';
 import { useAuth } from '../contexts/AuthContext';
 import { createAdminClient } from '@/lib/supabase/client';
+import { ImageUploader } from '../components/ImageUploader';
 
 // Types
 interface Restaurant {
@@ -1135,22 +1136,13 @@ function Modal({ type, item, restaurants, cities, onClose, onSave }: any) {
                 />
               </div>
               <div style={styles.formGroup}>
-                <label style={styles.label}>🖼️ Imagen URL</label>
-                <input
-                  type="url"
-                  value={formData.image_url || ''}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  style={styles.input}
-                  placeholder="https://ejemplo.com/imagen.jpg"
+                <label style={styles.label}>🖼️ Imagen de Hamburguesa</label>
+                <ImageUploader
+                  onUrlChange={(url) => setFormData({ ...formData, image_url: url })}
+                  currentUrl={formData.image_url}
+                  folder="burgers"
+                  aspect="square"
                 />
-                {formData.image_url && (
-                  <img 
-                    src={formData.image_url} 
-                    alt="Preview" 
-                    style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px', marginTop: '8px' }}
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                  />
-                )}
               </div>
               <div style={styles.formRow}>
                 <div style={styles.formGroup}>
@@ -1308,40 +1300,22 @@ function Modal({ type, item, restaurants, cities, onClose, onSave }: any) {
                 />
               </div>
               <div style={styles.formGroup}>
-                <label style={styles.label}>🖼️ Banner URL (Hero Image)</label>
-                <input
-                  type="url"
-                  value={formData.banner_url || ''}
-                  onChange={(e) => setFormData({ ...formData, banner_url: e.target.value })}
-                  style={styles.input}
-                  placeholder="https://ejemplo.com/banner.jpg"
+                <label style={styles.label}>🖼️ Banner (Hero Image)</label>
+                <ImageUploader
+                  onUrlChange={(url) => setFormData({ ...formData, banner_url: url })}
+                  currentUrl={formData.banner_url}
+                  folder="restaurants"
+                  aspect="banner"
                 />
-                {formData.banner_url && (
-                  <img 
-                    src={formData.banner_url} 
-                    alt="Banner Preview" 
-                    style={{ width: '200px', height: '100px', objectFit: 'cover', borderRadius: '8px', marginTop: '8px' }}
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                  />
-                )}
               </div>
               <div style={styles.formGroup}>
-                <label style={styles.label}>🖼️ Logo URL</label>
-                <input
-                  type="url"
-                  value={formData.logo_url || ''}
-                  onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
-                  style={styles.input}
-                  placeholder="https://ejemplo.com/logo.png"
+                <label style={styles.label}>🖼️ Logo</label>
+                <ImageUploader
+                  onUrlChange={(url) => setFormData({ ...formData, logo_url: url })}
+                  currentUrl={formData.logo_url}
+                  folder="restaurants"
+                  aspect="square"
                 />
-                {formData.logo_url && (
-                  <img 
-                    src={formData.logo_url} 
-                    alt="Logo Preview" 
-                    style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '8px', marginTop: '8px' }}
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                  />
-                )}
               </div>
             </>
           )}

@@ -1,5 +1,47 @@
 # 📋 GUÍA COMPLETA: IMPORTACIÓN DE TOP 50 BURGERS DE MADRID
 
+## ⚡ OPCIÓN RÁPIDA: UPLOAD DIRECTO EN ADMIN
+
+A partir de ahora, **NO necesitas poner URLs de imágenes en el CSV**. Puedes:
+
+### Opción A: Upload directo en el panel admin
+```
+1. Ve a /admin → Crear Hamburguesa
+2. Rellena: Nombre, Restaurante, Descripción
+3. En "🖼️ Imagen de Hamburguesa":
+   → Arrastra imagen O click para seleccionar
+   → Se sube automáticamente a Supabase Storage
+   → Se obtiene URL pública automáticamente
+4. Click "Crear Hamburguesa" ✅
+5. ¡Listo!
+```
+
+**Ventajas:**
+- ✅ No necesitas servicio externo de imágenes
+- ✅ Imágenes se guardan en tu BD (Supabase)
+- ✅ URLs permanentes y seguras
+- ✅ Más rápido que buscar URLs
+- ✅ Control total
+
+### Opción B: Upload directo de restaurante
+```
+1. Ve a /admin → Crear Restaurante
+2. Rellena: Nombre, Dirección, Teléfono
+3. En "🖼️ Banner":
+   → Arrastra imagen
+   → Se sube automáticamente
+4. En "🖼️ Logo":
+   → Arrastra imagen
+   → Se sube automáticamente
+5. Click "Crear Restaurante" ✅
+6. ¡Listo!
+```
+
+### Opción C: Importar desde CSV + URLs externas (Legacy)
+Si aún prefieres usar URLs externas (Imgur, Cloudinary, etc.), sigue la guía de abajo.
+
+---
+
 ## 1. ESTRUCTURA DE DATOS REQUERIDA
 
 ### 📊 ESQUEMA DE DATOS (En orden de importación)
