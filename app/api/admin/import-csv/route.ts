@@ -141,11 +141,11 @@ export async function POST(request: NextRequest) {
         existingRestaurants.add(key); // Evitar duplicados en el mismo batch
 
         validRestaurants.push({
-          name: row.name.trim(),
+          name: row.name.trim().substring(0, 255),
           city_id: cityId,
-          address: row.address?.trim() || null,
-          phone: row.phone?.trim() || null,
-          hours: row.hours?.trim() || null,
+          address: row.address?.trim().substring(0, 500) || null,
+          phone: row.phone?.trim().substring(0, 20) || null,
+          hours: row.hours?.trim().substring(0, 100) || null,
           status: 'approved',
           average_rating: 0,
           total_ratings: 0,
@@ -230,11 +230,11 @@ export async function POST(request: NextRequest) {
           : [];
 
         validBurgers.push({
-          name: row.name.trim(),
+          name: row.name.trim().substring(0, 255),
           restaurant_id: restaurantId,
           city_id: cityId,
-          description: row.description?.trim() || null,
-          type: row.type?.trim() || 'clásica',
+          description: row.description?.trim().substring(0, 1000) || null,
+          type: row.type?.trim().substring(0, 50) || 'clásica',
           tags,
           status: 'approved',
           average_rating: 0,

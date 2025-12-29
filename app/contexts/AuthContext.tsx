@@ -39,7 +39,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Usar ref para el cliente Supabase (singleton)
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
-  const initRef = useRef(false);
 
   // Obtener perfil 
   const fetchProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
@@ -63,13 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Inicializar auth
   useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
+    let isMounted = true;
 
     const initializeAuth = async () => {
       console.log('[Auth] Inicializando...');
       try {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (!isMounted) return;
         
         if (userError) {
           console.log('[Auth] No hay sesión activa');
@@ -81,13 +81,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('[Auth] Usuario encontrado:', user.email);
           setAuthUser(user);
           const profile = await fetchProfile(user.id);
-          if (profile) setUserProfile(profile);
+          if (isMounted && profile) setUserProfile(profile);
         }
       } catch (err) {
         console.error('[Auth] Error initializing:', err);
-        setError(err instanceof Error ? err.message : 'Error de conexión');
+        if (isMounted) setError(err instanceof Error ? err.message : 'Error de conexión');
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
@@ -109,9 +109,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     return () => {
+      isMounted = false;
       subscription?.unsubscribe();
     };
-  }, [supabase, fetchProfile]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const signin = async (email: string, password: string) => {
     try {

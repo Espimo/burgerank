@@ -19,7 +19,6 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   
   // Usar ref para el cliente (singleton)
   const supabaseRef = useRef(createAdminClient());
-  const lastCheckedUserId = useRef<string | null>(null);
 
   const checkAdminStatus = useCallback(async () => {
     if (!authUser) {
@@ -29,13 +28,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Evitar verificaciones repetidas para el mismo usuario
-    if (lastCheckedUserId.current === authUser.id && !adminLoading) {
-      return;
-    }
-
     console.log('[Admin] Checking status for:', authUser.id);
-    lastCheckedUserId.current = authUser.id;
 
     try {
       // Query con timeout manual
@@ -65,7 +58,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setAdminLoading(false);
     }
-  }, [authUser, adminLoading]);
+  }, [authUser]);
 
   // Verificar estado de admin cuando cambia el usuario autenticado
   useEffect(() => {

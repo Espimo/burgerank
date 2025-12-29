@@ -1,12 +1,11 @@
-const CACHE_NAME = 'burgerank-v1';
+const CACHE_NAME = 'burgerank-v2';
 const urlsToCache = [
-  '/',
-  '/ranking',
-  '/rate',
-  '/profile',
   '/offline.html',
   '/manifest.json'
 ];
+
+// Solo cachear assets estáticos, NO páginas HTML
+const STATIC_EXTENSIONS = ['.js', '.css', '.png', '.jpg', '.jpeg', '.svg', '.ico', '.woff', '.woff2'];
 
 // Install event - cache essential resources
 self.addEventListener('install', (event) => {
@@ -42,7 +41,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - network first, fallback to cache
+// Fetch event - network first for everything, cache static assets only
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
@@ -50,33 +49,54 @@ self.addEventListener('fetch', (event) => {
   // Skip chrome-extension and other non-http requests
   if (!event.request.url.startsWith('http')) return;
   
+  const url = new URL(event.request.url);
+  
+  // NEVER intercept API calls - let them go directly to server
+  if (url.pathname.startsWith('/api/')) {
+    return;
+  }
+  
+  // NEVER intercept Supabase calls
+  if (url.hostname.includes('supabase')) {
+    return;
+  }
+  
+  // For navigation requests (HTML pages), always go to network
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => caches.match('/offline.html'))
+    );
+    return;
+  }
+  
+  // Check if this is a static asset we should cache
+  const isStaticAsset = STATIC_EXTENSIONS.some(ext => url.pathname.endsWith(ext));
+  
+  if (isStaticAsset) {
+    // Cache-first for static assets
+    event.respondWith(
+      caches.match(event.request)
+        .then((cached) => {
+          if (cached) return cached;
+          return fetch(event.request).then((response) => {
+            if (response && response.status === 200) {
+              const responseToCache = response.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+            }
+            return response;
+          });
+        })
+    );
+    return;
+  }
+  
+  // For everything else, network first
   event.respondWith(
     fetch(event.request)
-      .then((response) => {
-        // If valid response, clone and cache it
-        if (response && response.status === 200 && response.type === 'basic') {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-        }
-        return response;
-      })
-      .catch(() => {
-        // Network failed, try cache
-        return caches.match(event.request)
-          .then((response) => {
-            if (response) {
-              return response;
-            }
-            // If it's a navigation request, show offline page
-            if (event.request.mode === 'navigate') {
-              return caches.match('/offline.html');
-            }
-            return new Response('Offline', { status: 503 });
-          });
-      })
+      .catch(() => caches.match(event.request))
   );
 });
 
