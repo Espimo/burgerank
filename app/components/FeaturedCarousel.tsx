@@ -85,6 +85,28 @@ export default function FeaturedCarousel() {
   }
 
   if (burgers.length === 0) {
+    // En desarrollo, mostrar mensaje de ayuda
+    if (process.env.NODE_ENV === 'development') {
+      return (
+        <div style={{
+          width: '100%',
+          marginBottom: '1.5rem',
+          padding: '1rem',
+          background: 'rgba(251, 191, 36, 0.1)',
+          border: '1px dashed #fbbf24',
+          borderRadius: '0.5rem',
+          color: '#fbbf24',
+          fontSize: '0.85rem',
+          textAlign: 'center',
+        }}>
+          🌟 <strong>Destacadas:</strong> No hay burgers destacadas. 
+          Marca algunas como destacadas en el panel de admin o ejecuta el script 
+          <code style={{ padding: '0.25rem', background: 'rgba(0,0,0,0.3)', borderRadius: '0.25rem', margin: '0 0.25rem' }}>
+            database/INIT_FEATURED_BURGERS.sql
+          </code>
+        </div>
+      )
+    }
     return null
   }
 
