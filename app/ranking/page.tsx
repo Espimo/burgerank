@@ -284,9 +284,6 @@ export default function RankingPage() {
           </button>
         </div>
 
-        {/* Carousel de Destacadas */}
-        <FeaturedCarousel />
-
         {/* Modos de ordenamiento */}
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
           {(['ranking', 'tendencias', 'nuevas'] as SortMode[]).map(mode => (
@@ -523,6 +520,9 @@ export default function RankingPage() {
             </button>
           </div>
         )}
+
+        {/* Carousel de Destacadas */}
+        <FeaturedCarousel />
 
         {/* Toggle mostrar todas (solo en desarrollo) */}
         <div style={{ marginBottom: '1rem' }}>
