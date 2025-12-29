@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plantilla Importación BurgeRank</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #1a1a1a;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .section:last-child {
+            border-bottom: none;
+        }
+        
+        h2 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .button:hover {
+            background-color: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .button.secondary {
+            background-color: #48bb78;
+        }
+        
+        .button.secondary:hover {
+            background-color: #38a169;
+        }
+        
+        .info-box {
+            background-color: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 13px;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .info-box.warning {
+            background-color: #fff5f5;
+            border-left-color: #f56565;
+        }
+        
+        .info-box.success {
+            background-color: #f0fff4;
+            border-left-color: #48bb78;
+        }
+        
+        ul {
+            margin-left: 20px;
+            margin-top: 10px;
+            color: #555;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+        
+        .feature-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .feature {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            font-size: 13px;
+            color: #555;
+        }
+        
+        .feature-icon {
+            font-size: 16px;
+            min-width: 20px;
+        }
+        
+        code {
+            background-color: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #e74c3c;
+        }
+        
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            color: #999;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍔 BurgeRank - Plantilla Importación</h1>
+        <p class="subtitle">Descarga plantillas Excel pre-formateadas para importar datos masivamente</p>
+        
+        <!-- SECCIÓN 1: CIUDADES -->
+        <div class="section">
+            <h2>📍 Plantilla de Ciudades</h2>
+            <p style="color: #666; margin-bottom: 15px; font-size: 13px;">
+                Descarga la plantilla para importar ciudades. Generalmente no necesitarás cambiarla (Madrid, Barcelona, Valencia, Sevilla, Bilbao ya existen).
+            </p>
+            <button class="button secondary" onclick="descargarCiudades()">
+                📥 Descargar Ciudades (XLSX)
+            </button>
+            <div class="info-box">
+                <strong>Columnas:</strong> name, country<br>
+                <strong>Ejemplo:</strong> Madrid, España
+            </div>
+        </div>
+        
+        <!-- SECCIÓN 2: RESTAURANTES -->
+        <div class="section">
+            <h2>🏪 Plantilla de Restaurantes</h2>
+            <p style="color: #666; margin-bottom: 15px; font-size: 13px;">
+                Descarga la plantilla para importar restaurantes de Madrid. Incluye campos para datos básicos y URLs.
+            </p>
+            <button class="button secondary" onclick="descargarRestaurantes()">
+                📥 Descargar Restaurantes (XLSX)
+            </button>
+            <div class="info-box">
+                <strong>Columnas requeridas:</strong> name, city, address, phone, hours, website<br>
+                <strong>Columnas opcionales:</strong> delivery_url, reservation_url, banner_url, logo_url<br>
+                <strong>Nota:</strong> City debe ser "Madrid" (u otra ciudad que exista)
+            </div>
+        </div>
+        
+        <!-- SECCIÓN 3: HAMBURGUESAS -->
+        <div class="section">
+            <h2>🍔 Plantilla de Hamburguesas</h2>
+            <p style="color: #666; margin-bottom: 15px; font-size: 13px;">
+                Descarga la plantilla para importar hamburguesas. Incluye ejemplos de tags y tipos.
+            </p>
+            <button class="button secondary" onclick="descargarBurgers()">
+                📥 Descargar Hamburguesas (XLSX)
+            </button>
+            <div class="info-box">
+                <strong>Columnas requeridas:</strong> name, restaurant, city, description, type, tags, imagen_principal<br>
+                <strong>Tipos válidos:</strong> clásica, premium, doble, vegana, gourmet, smash<br>
+                <strong>Tags:</strong> Separa con comas (ej: bacon,queso,cebolla,jugosa)
+            </div>
+        </div>
+        
+        <div class="divider">━━━━━━━━━━━━━━━━━━</div>
+        
+        <!-- SECCIÓN 4: INSTRUCCIONES -->
+        <div class="section">
+            <h2>📋 Cómo usar las plantillas</h2>
+            <ol style="margin-left: 20px; color: #666; font-size: 13px; line-height: 2;">
+                <li>Descarga la plantilla Excel (XLSX)</li>
+                <li>Abre el archivo en Excel, Google Sheets o Numbers</li>
+                <li>Rellena los datos (la primera fila ya tiene las columnas)</li>
+                <li>Guarda como <code>.xlsx</code> o <code>.csv</code></li>
+                <li>Ve a <strong>/admin</strong> → <strong>📥 Importar CSV</strong></li>
+                <li>Pega o sube el archivo</li>
+                <li>¡Importar!</li>
+            </ol>
+        </div>
+        
+        <!-- SECCIÓN 5: IMÁGENES -->
+        <div class="section">
+            <h2>🖼️ Gestión de Imágenes</h2>
+            <p style="color: #666; margin-bottom: 15px; font-size: 13px;">
+                Las imágenes NO se importan directamente, necesitas alojarlas en línea y poner las URLs en el CSV.
+            </p>
+            
+            <h3 style="color: #333; font-size: 14px; margin: 15px 0 10px 0;">✅ Opciones RECOMENDADAS:</h3>
+            <div class="feature-list">
+                <div class="feature">
+                    <span class="feature-icon">1️⃣</span>
+                    <div>
+                        <strong>Supabase Storage (MEJOR)</strong><br>
+                        Está integrado con tu BD. Acceso desde el panel admin.<br>
+                        <small>Gratis: 1GB/mes | Muy rápido | Seguro</small>
+                    </div>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">2️⃣</span>
+                    <div>
+                        <strong>Cloudinary (Alternativa fácil)</strong><br>
+                        Perfecto para imágenes. Optimiza automáticamente.<br>
+                        <small>Gratis: 25GB | Rápido | Dashboard bueno</small>
+                    </div>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">3️⃣</span>
+                    <div>
+                        <strong>Imgur (Rápido y simple)</strong><br>
+                        Sube y obtén URL en segundos. No requiere cuenta.<br>
+                        <small>Gratis: ilimitado | Muy rápido | Sin registro</small>
+                    </div>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">4️⃣</span>
+                    <div>
+                        <strong>imgbb (Alternativa a Imgur)</strong><br>
+                        Similar a Imgur pero con mejor interfaz.<br>
+                        <small>Gratis: ilimitado | Rápido | API disponible</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-box warning" style="margin-top: 15px;">
+                <strong>❌ NO usar Google Drive</strong><br>
+                Google Drive requiere permisos especiales y las URLs expiran. Las imágenes no se cargarán correctamente en la app.
+            </div>
+        </div>
+        
+        <!-- SECCIÓN 6: GUÍA RÁPIDA IMÁGENES -->
+        <div class="section">
+            <h2>🚀 Guía rápida: Subir imágenes</h2>
+            
+            <h3 style="color: #333; font-size: 14px; margin: 15px 0 10px 0;">Opción 1: Imgur (LA MÁS FÁCIL)</h3>
+            <ol style="margin-left: 20px; color: #666; font-size: 13px; line-height: 2;">
+                <li>Abre <code>imgur.com</code></li>
+                <li>Click en "New post"</li>
+                <li>Sube tu imagen</li>
+                <li>Click derecho → "Copiar enlace de imagen" (Direct Link)</li>
+                <li>Pega la URL en el CSV (ej: <code>https://i.imgur.com/abc123.jpg</code>)</li>
+            </ol>
+            
+            <h3 style="color: #333; font-size: 14px; margin: 15px 0 10px 0;">Opción 2: Supabase Storage (LA MEJOR)</h3>
+            <ol style="margin-left: 20px; color: #666; font-size: 13px; line-height: 2;">
+                <li>Ve a tu proyecto Supabase → Storage</li>
+                <li>Crea un bucket: <code>burgers</code> (ó <code>restaurants</code>)</li>
+                <li>Sube las imágenes</li>
+                <li>Click en imagen → "Copy URL"</li>
+                <li>Pega en CSV</li>
+            </ol>
+            
+            <h3 style="color: #333; font-size: 14px; margin: 15px 0 10px 0;">Opción 3: Cloudinary (LA MÁS PROFESIONAL)</h3>
+            <ol style="margin-left: 20px; color: #666; font-size: 13px; line-height: 2;">
+                <li>Regístrate en <code>cloudinary.com</code> (es gratis)</li>
+                <li>Dashboard → Media Library → Upload</li>
+                <li>Sube la imagen</li>
+                <li>Click en imagen → Copy URL</li>
+                <li>Pega en CSV</li>
+            </ol>
+        </div>
+        
+        <!-- SECCIÓN 7: WORKFLOW RECOMENDADO -->
+        <div class="section">
+            <h2>📝 Workflow recomendado</h2>
+            <div class="info-box success">
+                <strong>Paso 1: Preparar imágenes</strong><br>
+                Sube todas tus imágenes a Supabase Storage o Imgur y guarda las URLs<br>
+                <br>
+                <strong>Paso 2: Llenar plantillas</strong><br>
+                Descarga las plantillas XLSX, rellena datos + URLs de imágenes<br>
+                <br>
+                <strong>Paso 3: Importar en orden</strong><br>
+                1. Ciudades → 2. Restaurantes → 3. Hamburguesas<br>
+                <br>
+                <strong>Paso 4: Verificar</strong><br>
+                Ve a /ranking y comprueba que todo se ve bien
+            </div>
+        </div>
+        
+        <!-- SECCIÓN 8: EJEMPLO DE URL -->
+        <div class="section">
+            <h2>📎 Ejemplo de CSV con URLs</h2>
+            <p style="color: #666; margin-bottom: 15px; font-size: 13px;">
+                Así debe verse tu CSV con las URLs de imágenes:
+            </p>
+            <pre style="background-color: #f5f5f5; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 11px; line-height: 1.5; border: 1px solid #ddd;">name,restaurant,city,description,type,tags,imagen_principal
+Kevin Bacon,Goiko Grill,Madrid,Carne con bacon,premium,bacon,queso,https://i.imgur.com/abc123.jpg
+La Vegana,TGB,Madrid,Burger vegana,vegana,vegana,tofu,https://i.imgur.com/def456.jpg</pre>
+        </div>
+        
+        <!-- FOOTER -->
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #999; font-size: 12px;">
+            <p>🍔 BurgeRank Panel de Importación</p>
+            <p style="margin-top: 5px;">Versión 1.0 | Diciembre 2025</p>
+        </div>
+    </div>
+    
+    <script>
+        // Función para crear y descargar Excel
+        function crearYDescargarExcel(nombre, columnas, datos) {
+            // Crear workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Crear datos con encabezado
+            const datosConEncabezado = [columnas, ...datos];
+            
+            // Convertir a worksheet
+            const ws = XLSX.utils.aoa_to_sheet(datosConEncabezado);
+            
+            // Establecer anchos de columna
+            ws['!cols'] = columnas.map(() => ({ wch: 20 }));
+            
+            // Agregar worksheet al workbook
+            XLSX.utils.book_append_sheet(wb, ws, "Datos");
+            
+            // Descargar
+            XLSX.writeFile(wb, `${nombre}.xlsx`);
+        }
+        
+        function descargarCiudades() {
+            const columnas = ['name', 'country'];
+            const datos = [
+                ['Madrid', 'España'],
+                ['Barcelona', 'España'],
+                ['Valencia', 'España'],
+                ['Sevilla', 'España'],
+                ['Bilbao', 'España']
+            ];
+            crearYDescargarExcel('BurgeRank-Ciudades', columnas, datos);
+        }
+        
+        function descargarRestaurantes() {
+            const columnas = ['name', 'city', 'address', 'phone', 'hours', 'website', 'delivery_url', 'reservation_url', 'banner_url', 'logo_url'];
+            const datos = [
+                [
+                    'Goiko Grill',
+                    'Madrid',
+                    'Calle Gran Vía 15 28013 Madrid',
+                    '+34 912 123 456',
+                    '12:00-23:00',
+                    'https://goikogrill.es',
+                    'https://ubereats.com/es/store/goiko',
+                    'https://thefork.es/restaurante/goiko',
+                    'https://i.imgur.com/ejemplo-banner.jpg',
+                    'https://i.imgur.com/ejemplo-logo.png'
+                ],
+                [
+                    'TGB Madrid',
+                    'Madrid',
+                    'Calle Velázquez 90 28006 Madrid',
+                    '+34 914 567 890',
+                    '11:30-23:30',
+                    'https://tgbburger.com',
+                    'https://glovo.es/tgb-madrid',
+                    'https://thefork.es/restaurante/tgb',
+                    'https://i.imgur.com/ejemplo-banner2.jpg',
+                    'https://i.imgur.com/ejemplo-logo2.png'
+                ],
+                ['', 'Madrid', '', '', '', '', '', '', '', '']
+            ];
+            crearYDescargarExcel('BurgeRank-Restaurantes', columnas, datos);
+        }
+        
+        function descargarBurgers() {
+            const columnas = ['name', 'restaurant', 'city', 'description', 'type', 'tags', 'imagen_principal'];
+            const datos = [
+                [
+                    'Kevin Bacon',
+                    'Goiko Grill',
+                    'Madrid',
+                    'Carne 100% ternera con bacon ahumado y queso cheddar fundido',
+                    'premium',
+                    'bacon,queso,jugosa,smash,crujiente',
+                    'https://i.imgur.com/ejemplo-burger1.jpg'
+                ],
+                [
+                    'La Vegana',
+                    'TGB Madrid',
+                    'Madrid',
+                    'Patty vegano de garbanzos y setas con veganesa casera',
+                    'vegana',
+                    'vegano,tofu,setas,veganesa,sin-lactosa',
+                    'https://i.imgur.com/ejemplo-burger2.jpg'
+                ],
+                [
+                    'Doble Kevin',
+                    'TGB Madrid',
+                    'Madrid',
+                    'Dos carnes smash con doble queso y bacon doble',
+                    'doble',
+                    'bacon,queso,jugosa,doble-carne,smash',
+                    'https://i.imgur.com/ejemplo-burger3.jpg'
+                ],
+                ['', '', 'Madrid', '', '', '', '']
+            ];
+            crearYDescargarExcel('BurgeRank-Hamburguesas', columnas, datos);
+        }
+    </script>
+</body>
+</html>
