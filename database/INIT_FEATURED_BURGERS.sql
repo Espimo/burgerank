@@ -54,7 +54,7 @@ SELECT
   b.is_featured,
   b.featured_order,
   b.ranking_score,
-  b.simple_average,
+  b.average_rating,
   b.total_ratings
 FROM burgers b
 INNER JOIN restaurants r ON b.restaurant_id = r.id

@@ -13,7 +13,7 @@ export async function GET() {
         name,
         imagen_principal,
         ranking_score,
-        simple_average,
+        average_rating,
         total_ratings,
         featured_order,
         restaurant:restaurants (
@@ -39,7 +39,7 @@ export async function GET() {
       city: burger.restaurant?.city || '',
       imagen_principal: burger.imagen_principal,
       ranking_score: burger.ranking_score,
-      simple_average: burger.simple_average,
+      simple_average: burger.average_rating,
       total_ratings: burger.total_ratings,
       featured_order: burger.featured_order,
     }))
