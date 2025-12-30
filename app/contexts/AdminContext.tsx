@@ -99,13 +99,6 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-  return (
-    <AdminContext.Provider value={{ isAdmin, adminLoading, checkAdminStatus }}>
-      {children}
-    </AdminContext.Provider>
-  );
-}
-
 export function useAdmin() {
   const context = useContext(AdminContext);
   if (context === undefined) {
