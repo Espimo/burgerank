@@ -1,23 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
-  <!-- Dark background -->
-  <rect width="192" height="192" fill="#2d2d2d"/>
+  <!-- Dark circular background -->
+  <circle cx="96" cy="96" r="96" fill="#2d2d2d"/>
   
   <!-- Circle outline -->
-  <circle cx="96" cy="96" r="68" fill="none" stroke="#6b6b6b" stroke-width="2"/>
+  <circle cx="96" cy="96" r="82" fill="none" stroke="#6b6b6b" stroke-width="2"/>
   
   <!-- Top Bun -->
-  <path d="M58 83 Q58 60 96 60 Q134 60 134 83 L134 87 L58 87 Z" fill="#e8922a"/>
-  <path d="M62 82 Q62 63 96 63 Q130 63 130 82 L130 85 L62 85 Z" fill="#f5a83d"/>
+  <path d="M48 78 Q48 52 96 52 Q144 52 144 78 L144 84 L48 84 Z" fill="#e8922a"/>
+  <path d="M52 76 Q52 56 96 56 Q140 56 140 76 L140 82 L52 82 Z" fill="#f5a83d"/>
   
   <!-- Cheese/Filling with stars -->
-  <rect x="54" y="89" width="84" height="21" rx="2" fill="#f5c41a"/>
+  <rect x="43" y="86" width="106" height="26" rx="2" fill="#f5c41a"/>
   
   <!-- Three stars on the cheese -->
-  <path d="M73 99 l2 -6 l2 6 l6 0 l-5 4 l2 6 l-5 -4 l-5 4 l2 -6 l-5 -4 z" fill="#2d2d2d"/>
-  <path d="M96 99 l2 -6 l2 6 l6 0 l-5 4 l2 6 l-5 -4 l-5 4 l2 -6 l-5 -4 z" fill="#2d2d2d"/>
-  <path d="M119 99 l2 -6 l2 6 l6 0 l-5 4 l2 6 l-5 -4 l-5 4 l2 -6 l-5 -4 z" fill="#2d2d2d"/>
+  <path d="M68 99 l2 -7 l2 7 l7 0 l-6 4 l2 7 l-6 -5 l-6 5 l2 -7 l-6 -4 z" fill="#2d2d2d"/>
+  <path d="M96 99 l2 -7 l2 7 l7 0 l-6 4 l2 7 l-6 -5 l-6 5 l2 -7 l-6 -4 z" fill="#2d2d2d"/>
+  <path d="M124 99 l2 -7 l2 7 l7 0 l-6 4 l2 7 l-6 -5 l-6 5 l2 -7 l-6 -4 z" fill="#2d2d2d"/>
   
   <!-- Bottom Bun -->
-  <path d="M58 112 L134 112 L134 116 Q134 131 96 131 Q58 131 58 116 Z" fill="#e8922a"/>
-  <path d="M62 112 L130 112 L130 114 Q130 126 96 126 Q62 126 62 114 Z" fill="#d97d1a"/>
+  <path d="M48 114 L144 114 L144 119 Q144 139 96 139 Q48 139 48 119 Z" fill="#e8922a"/>
+  <path d="M52 114 L140 114 L140 118 Q140 134 96 134 Q52 134 52 118 Z" fill="#d97d1a"/>
 </svg>

@@ -1,26 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Dark background -->
-  <rect width="512" height="512" fill="#2d2d2d"/>
+  <!-- Dark circular background -->
+  <circle cx="256" cy="256" r="256" fill="#2d2d2d"/>
   
   <!-- Circle outline -->
-  <circle cx="256" cy="256" r="180" fill="none" stroke="#6b6b6b" stroke-width="3"/>
+  <circle cx="256" cy="256" r="220" fill="none" stroke="#6b6b6b" stroke-width="4"/>
   
   <!-- Top Bun -->
-  <path d="M156 220 Q156 160 256 160 Q356 160 356 220 L356 230 L156 230 Z" fill="#e8922a"/>
-  <path d="M165 218 Q165 168 256 168 Q347 168 347 218 L347 225 L165 225 Z" fill="#f5a83d"/>
+  <path d="M130 210 Q130 140 256 140 Q382 140 382 210 L382 225 L130 225 Z" fill="#e8922a"/>
+  <path d="M140 206 Q140 150 256 150 Q372 150 372 206 L372 220 L140 220 Z" fill="#f5a83d"/>
   
   <!-- Cheese/Filling with stars -->
-  <rect x="145" y="235" width="222" height="55" rx="4" fill="#f5c41a"/>
+  <rect x="115" y="230" width="282" height="70" rx="5" fill="#f5c41a"/>
   
   <!-- Three stars on the cheese -->
-  <path d="M195 262 l5 -15 l5 15 l15 0 l-12 9 l5 15 l-13 -10 l-13 10 l5 -15 l-12 -9 z" fill="#2d2d2d"/>
-  <path d="M256 262 l5 -15 l5 15 l15 0 l-12 9 l5 15 l-13 -10 l-13 10 l5 -15 l-12 -9 z" fill="#2d2d2d"/>
-  <path d="M317 262 l5 -15 l5 15 l15 0 l-12 9 l5 15 l-13 -10 l-13 10 l5 -15 l-12 -9 z" fill="#2d2d2d"/>
+  <path d="M180 265 l6 -18 l6 18 l19 0 l-15 11 l6 18 l-16 -12 l-16 12 l6 -18 l-15 -11 z" fill="#2d2d2d"/>
+  <path d="M256 265 l6 -18 l6 18 l19 0 l-15 11 l6 18 l-16 -12 l-16 12 l6 -18 l-15 -11 z" fill="#2d2d2d"/>
+  <path d="M332 265 l6 -18 l6 18 l19 0 l-15 11 l6 18 l-16 -12 l-16 12 l6 -18 l-15 -11 z" fill="#2d2d2d"/>
   
   <!-- Bottom Bun -->
-  <path d="M156 295 L356 295 L356 305 Q356 345 256 345 Q156 345 156 305 Z" fill="#e8922a"/>
-  <path d="M165 295 L347 295 L347 302 Q347 335 256 335 Q165 335 165 302 Z" fill="#d97d1a"/>
-  
-  <!-- Small sparkle in corner -->
-  <path d="M445 445 l3 -8 l3 8 l8 0 l-6 5 l3 8 l-8 -6 l-8 6 l3 -8 l-6 -5 z" fill="#9a9a9a"/>
+  <path d="M130 305 L382 305 L382 318 Q382 370 256 370 Q130 370 130 318 Z" fill="#e8922a"/>
+  <path d="M140 305 L372 305 L372 315 Q372 358 256 358 Q140 358 140 315 Z" fill="#d97d1a"/>
 </svg>
