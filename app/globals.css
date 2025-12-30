@@ -243,6 +243,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: none; /* Oculto por defecto en móvil */
 }
 
 /* ========== 6. BOTTOM NAVIGATION (Mobile-first) ========== */
@@ -1112,6 +1113,7 @@ body {
   }
 
   .user-name {
+    display: inline-block; /* Visible en desktop */
     max-width: 150px;
   }
   
