@@ -85,12 +85,14 @@ export default function RankingPage() {
   const [rankedBurgers, setRankedBurgers] = useState<RankedBurger[]>([])
   const [cities, setCities] = useState<CityData[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [showAllBurgers, setShowAllBurgers] = useState(true) // Modo desarrollo: mostrar todas
 
   // Load ranking data from API
   const loadData = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       
       // Build query params for main ranking
       const params = new URLSearchParams()
@@ -100,11 +102,21 @@ export default function RankingPage() {
       params.append('sortBy', sortMode)
       params.append('limit', '50')
       
+      // Timeout para evitar bloqueos
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000)
+      
       // Cargar ranking y ciudades
       const [rankingRes, citiesData] = await Promise.all([
-        fetch(`/api/burgers/ranking?${params.toString()}`),
+        fetch(`/api/burgers/ranking?${params.toString()}`, { signal: controller.signal }),
         createClient().from('cities').select('id, name').eq('status', 'approved')
       ])
+      
+      clearTimeout(timeoutId)
+      
+      if (!rankingRes.ok) {
+        throw new Error('Error al cargar el ranking')
+      }
       
       const rankingData = await rankingRes.json()
       
@@ -115,8 +127,9 @@ export default function RankingPage() {
       if (citiesData.data) {
         setCities(citiesData.data)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading ranking:', error)
+      setError(error.name === 'AbortError' ? 'Tiempo de espera agotado' : 'Error al cargar datos')
     } finally {
       setLoading(false)
     }
@@ -229,6 +242,35 @@ export default function RankingPage() {
             {tag}
           </span>
         ))}
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="container">
+        <TopBar onMenuClick={handleMenuClick} />
+        <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} />
+        <div className="main" style={{ textAlign: 'center', paddingTop: '4rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>❌</div>
+          <p style={{ marginBottom: '1rem' }}>{error}</p>
+          <button
+            onClick={() => loadData()}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#fbbf24',
+              color: '#1a1a1a',
+              border: 'none',
+              borderRadius: '0.5rem',
+              cursor: 'pointer',
+              fontWeight: 600
+            }}
+          >
+            Reintentar
+          </button>
+        </div>
+        <BottomNav />
       </div>
     )
   }

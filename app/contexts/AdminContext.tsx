@@ -19,8 +19,14 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   
   // Usar ref para el cliente (singleton)
   const supabaseRef = useRef(createAdminClient());
+  // Ref para cancelar operaciones pendientes
+  const abortRef = useRef(false);
+  const lastUserIdRef = useRef<string | null>(null);
 
   const checkAdminStatus = useCallback(async () => {
+    // Reset abort flag
+    abortRef.current = false;
+    
     if (!authUser) {
       console.log('[Admin] No authUser, setting isAdmin=false');
       setIsAdmin(false);
@@ -28,44 +34,70 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // Evitar queries duplicadas para el mismo usuario
+    if (lastUserIdRef.current === authUser.id && !adminLoading) {
+      return;
+    }
+    lastUserIdRef.current = authUser.id;
+
     console.log('[Admin] Checking status for:', authUser.id);
+    setAdminLoading(true);
 
     try {
-      // Query con timeout manual
-      const timeoutPromise = new Promise<null>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 8000)
-      );
+      // Query con timeout más corto para evitar bloqueos largos
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       
-      const queryPromise = supabaseRef.current
+      const { data, error } = await supabaseRef.current
         .from('users')
         .select('is_admin')
         .eq('id', authUser.id)
         .single();
-
-      const result = await Promise.race([queryPromise, timeoutPromise]);
       
-      if (!result || 'error' in result && result.error) {
-        console.error('[Admin] Error:', (result as any)?.error?.message || 'Unknown');
+      clearTimeout(timeoutId);
+      
+      // Si la operación fue abortada, no actualizar estado
+      if (abortRef.current) return;
+      
+      if (error) {
+        console.error('[Admin] Error:', error.message);
         setIsAdmin(false);
-      } else if (result && 'data' in result) {
-        const adminStatus = result.data?.is_admin || false;
+      } else {
+        const adminStatus = data?.is_admin || false;
         console.log('[Admin] Status:', adminStatus);
         setIsAdmin(adminStatus);
       }
     } catch (error: any) {
+      if (abortRef.current) return;
       console.error('[Admin] Exception:', error.message);
       setIsAdmin(false);
     } finally {
-      setAdminLoading(false);
+      if (!abortRef.current) {
+        setAdminLoading(false);
+      }
     }
-  }, [authUser]);
+  }, [authUser, adminLoading]);
 
   // Verificar estado de admin cuando cambia el usuario autenticado
   useEffect(() => {
+    // Abortar cualquier operación pendiente cuando cambie el usuario
+    abortRef.current = true;
+    
     if (!authLoading) {
       checkAdminStatus();
     }
-  }, [authUser, authLoading, checkAdminStatus]);
+    
+    return () => {
+      abortRef.current = true;
+    };
+  }, [authUser?.id, authLoading, checkAdminStatus]);
+
+  return (
+    <AdminContext.Provider value={{ isAdmin, adminLoading, checkAdminStatus }}>
+      {children}
+    </AdminContext.Provider>
+  );
+}
 
   return (
     <AdminContext.Provider value={{ isAdmin, adminLoading, checkAdminStatus }}>

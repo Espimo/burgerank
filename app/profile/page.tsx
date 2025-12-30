@@ -76,11 +76,14 @@ export default function ProfilePage() {
   const [publicProfileChecked, setPublicProfileChecked] = useState(false)
   const [saving, setSaving] = useState(false)
   
-  const { authUser } = useAuth()
+  const { authUser, loading: authLoading } = useAuth()
   const router = useRouter()
 
   // Load profile data
   useEffect(() => {
+    // No hacer nada mientras se está cargando el estado de auth
+    if (authLoading) return;
+    
     const loadProfile = async () => {
       if (!authUser) {
         router.push('/auth/signin')
@@ -109,7 +112,7 @@ export default function ProfilePage() {
     }
 
     loadProfile()
-  }, [authUser, router])
+  }, [authUser, authLoading, router])
 
   const handleMenuClick = () => {
     setSidebarOpen(true)
@@ -195,8 +198,8 @@ export default function ProfilePage() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   }
 
-  // Loading state
-  if (loading) {
+  // Loading state - incluir authLoading
+  if (loading || authLoading) {
     return (
       <div className="container">
         <TopBar onMenuClick={handleMenuClick} />

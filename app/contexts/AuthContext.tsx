@@ -63,16 +63,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Inicializar auth
   useEffect(() => {
     let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
 
     const initializeAuth = async () => {
       console.log('[Auth] Inicializando...');
+      
+      // Timeout de seguridad - si tarda más de 10 segundos, terminar
+      timeoutId = setTimeout(() => {
+        if (isMounted && loading) {
+          console.warn('[Auth] Timeout - finalizando loading');
+          setLoading(false);
+        }
+      }, 10000);
+      
       try {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
         if (!isMounted) return;
         
         if (userError) {
-          console.log('[Auth] No hay sesión activa');
+          console.log('[Auth] No hay sesión activa:', userError.message);
           setLoading(false);
           return;
         }
@@ -80,14 +90,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (user) {
           console.log('[Auth] Usuario encontrado:', user.email);
           setAuthUser(user);
-          const profile = await fetchProfile(user.id);
-          if (isMounted && profile) setUserProfile(profile);
+          // Fetch de perfil sin bloquear el loading
+          fetchProfile(user.id)
+            .then(profile => {
+              if (isMounted && profile) setUserProfile(profile);
+            })
+            .catch(err => console.error('[Auth] Profile fetch error:', err));
         }
       } catch (err) {
         console.error('[Auth] Error initializing:', err);
         if (isMounted) setError(err instanceof Error ? err.message : 'Error de conexión');
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          clearTimeout(timeoutId);
+          setLoading(false);
+        }
       }
     };
 
@@ -97,19 +114,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('[Auth] State change:', event);
-        if (session?.user) {
-          setAuthUser(session.user);
-          const profile = await fetchProfile(session.user.id);
-          if (profile) setUserProfile(profile);
-        } else {
-          setAuthUser(null);
-          setUserProfile(null);
+        
+        // IMPORTANTE: No bloquear el estado mientras se procesa
+        try {
+          if (session?.user) {
+            setAuthUser(session.user);
+            // Fetch de perfil sin bloquear
+            fetchProfile(session.user.id)
+              .then(profile => {
+                if (isMounted && profile) setUserProfile(profile);
+              })
+              .catch(err => console.error('[Auth] Profile fetch error in listener:', err));
+          } else {
+            setAuthUser(null);
+            setUserProfile(null);
+          }
+        } catch (err) {
+          console.error('[Auth] Error in auth state change:', err);
         }
       }
     );
 
     return () => {
       isMounted = false;
+      clearTimeout(timeoutId);
       subscription?.unsubscribe();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps

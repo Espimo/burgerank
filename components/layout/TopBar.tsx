@@ -18,6 +18,8 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchUnreadCount = async () => {
       if (!authUser) {
         setUnreadCount(0)
@@ -26,18 +28,22 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
       
       try {
         const response = await fetch('/api/notifications?unread=true&limit=1')
-        if (response.ok) {
+        if (response.ok && isMounted) {
           const data = await response.json()
           setUnreadCount(data.unreadCount || 0)
         }
       } catch (error) {
-        console.error('Error fetching notifications count:', error)
+        // Silenciar errores de red para no bloquear la UI
+        console.debug('Notifications fetch failed:', error)
       }
     }
 
     fetchUnreadCount()
     const interval = setInterval(fetchUnreadCount, 30000)
-    return () => clearInterval(interval)
+    return () => {
+      isMounted = false;
+      clearInterval(interval)
+    }
   }, [authUser])
 
   const handleLogout = async () => {

@@ -40,13 +40,19 @@ export default function FeaturedCarousel() {
 
   const fetchFeaturedBurgers = async () => {
     try {
-      const response = await fetch('/api/featured')
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
+      const response = await fetch('/api/featured', { signal: controller.signal })
+      clearTimeout(timeoutId);
+      
       if (response.ok) {
         const data = await response.json()
         setBurgers(data)
       }
     } catch (error) {
-      console.error('Error fetching featured burgers:', error)
+      // Silenciar errores - el componente simplemente no mostrará el carousel
+      console.debug('Featured burgers fetch failed:', error)
     } finally {
       setIsLoading(false)
     }
