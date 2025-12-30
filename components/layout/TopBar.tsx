@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/app/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import NotificationPanel from '@/app/components/NotificationPanel'
 
 interface TopBarProps {
@@ -63,8 +64,15 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
           >
             ☰
           </button>
-          <Link href="/ranking" className="logo-link">
-            <span className="logo">🍔 BurgeRank</span>
+          <Link href="/ranking" className="logo-link" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Image 
+              src="/icons/logo-small.svg" 
+              alt="BurgeRank Logo" 
+              width={32} 
+              height={32}
+              style={{ borderRadius: '6px' }}
+            />
+            <span className="logo">BurgeRank</span>
           </Link>
         </div>
         

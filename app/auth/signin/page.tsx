@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 
@@ -48,7 +49,16 @@ export default function SigninPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-8 backdrop-blur">
-          <h1 className="text-3xl font-bold text-amber-400 mb-2 text-center">🍔 BurgeRank</h1>
+          <div className="flex justify-center mb-4">
+            <Image 
+              src="/icons/icon-192x192.svg" 
+              alt="BurgeRank Logo" 
+              width={80} 
+              height={80}
+              className="rounded-xl"
+            />
+          </div>
+          <h1 className="text-3xl font-bold text-amber-400 mb-2 text-center">BurgeRank</h1>
           <h2 className="text-xl text-gray-300 mb-6 text-center">Iniciar Sesión</h2>
 
           {error && (

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/app/contexts/AuthContext'
 import { useAdmin } from '@/app/contexts/AdminContext'
+import Image from 'next/image'
 
 interface SidebarProps {
   isOpen: boolean
@@ -100,9 +101,18 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       >
         {/* Header */}
         <div className="sidebar-header">
-          <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fbbf24' }}>
-            🍔 Menú
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Image 
+              src="/icons/logo-small.svg" 
+              alt="BurgeRank Logo" 
+              width={28} 
+              height={28}
+              style={{ borderRadius: '6px' }}
+            />
+            <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fbbf24' }}>
+              Menú
+            </span>
+          </div>
           <button 
             className="sidebar-close" 
             onClick={onClose}
