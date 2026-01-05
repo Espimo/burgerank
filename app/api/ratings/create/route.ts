@@ -49,17 +49,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calcular puntos: SOLO si hay ticket
-    // Si has_ticket = true: base 1 + bonificación por rating
+    // Calcular puntos: PUNTOS FIJOS si hay ticket verificado
+    // Esto evita incentivar calificaciones falsas
+    // Si has_ticket = true: +10 puntos fijos (independiente del rating dado)
     // Si has_ticket = false: 0 puntos
+    const POINTS_PER_VERIFIED_RATING = 10;
     let points = 0;
     const hasTicket = validated.has_ticket || false;
     
     if (hasTicket) {
-      points = 1; // Base point
-      if (validated.overall_rating === 5) points += 5;
-      else if (validated.overall_rating === 4) points += 3;
-      else if (validated.overall_rating === 3) points += 1;
+      // Puntos fijos por subir ticket real - NO depende de la puntuación dada
+      points = POINTS_PER_VERIFIED_RATING;
     }
 
     // Insertar rating

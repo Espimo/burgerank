@@ -612,75 +612,76 @@ export default function RankingPage() {
                   className="card burger-card" 
                   style={{ 
                     display: 'flex', 
-                    flexDirection: 'column',
+                    flexDirection: 'row',
                     marginBottom: '0.75rem', 
                     position: 'relative',
                     cursor: 'pointer',
                     padding: '0',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    minHeight: '120px'
                   }}
                 >
-                  {/* Posición Badge */}
-                  <div 
-                    className="burger-position"
-                    style={{
-                      position: 'absolute',
-                      top: '8px',
-                      left: '8px',
-                      width: '40px',
-                      height: '40px',
-                      background: badge.background,
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 'bold',
-                      fontSize: position <= 3 ? '1.2rem' : '0.9rem',
-                      color: badge.color,
-                      boxShadow: badge.shadow,
-                      zIndex: 10
-                    }}
-                  >
-                    {badge.emoji}
-                  </div>
-
-                  {/* Imagen de la Hamburguesa - Rectangular Horizontal */}
+                  {/* Imagen cuadrada a la izquierda */}
                   <div 
                     className="burger-image"
                     style={{
-                      width: '100%',
+                      width: '120px',
+                      minWidth: '120px',
                       height: '120px',
-                      objectFit: 'cover',
+                      position: 'relative',
                       backgroundColor: '#4b5563',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '3rem',
+                      fontSize: '2.5rem',
                       background: burger.image_url 
                         ? `url(${burger.image_url}) center/cover`
                         : 'linear-gradient(135deg, #92400e 0%, #b45309 100%)'
                     }}
                   >
                     {!burger.image_url && '🍔'}
+                    
+                    {/* Posición Badge - dentro de la imagen */}
+                    <div 
+                      className="burger-position"
+                      style={{
+                        position: 'absolute',
+                        top: '6px',
+                        left: '6px',
+                        width: '32px',
+                        height: '32px',
+                        background: badge.background,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 'bold',
+                        fontSize: position <= 3 ? '1rem' : '0.75rem',
+                        color: badge.color,
+                        boxShadow: badge.shadow,
+                        zIndex: 10
+                      }}
+                    >
+                      {badge.emoji}
+                    </div>
                   </div>
 
-                  {/* Contenido */}
-                  <div className="burger-content" style={{ padding: '1rem', flex: 1 }}>
-                    <div style={{ marginBottom: '0.5rem' }}>
-                      <div className="burger-name" style={{ fontWeight: 700, marginBottom: '0.25rem', fontSize: '1rem' }}>
+                  {/* Contenido a la derecha */}
+                  <div className="burger-content" style={{ padding: '0.75rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
+                    <div>
+                      <div className="burger-name" style={{ fontWeight: 700, marginBottom: '0.15rem', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {burger.name}
                       </div>
-                      <div className="burger-restaurant" style={{ fontSize: '0.8rem', color: '#9ca3af', marginBottom: '0.3rem' }}>
+                      <div className="burger-restaurant" style={{ fontSize: '0.75rem', color: '#9ca3af', marginBottom: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         🏪 {burger.restaurant?.name}
                       </div>
-                      {/* Descripción */}
+                      {/* Descripción corta */}
                       {burger.description && (
                         <div style={{ 
-                          fontSize: '0.8rem', 
-                          color: '#9ca3af', 
-                          marginBottom: '0.4rem',
+                          fontSize: '0.7rem', 
+                          color: '#6b7280', 
                           display: '-webkit-box',
-                          WebkitLineClamp: 2,
+                          WebkitLineClamp: 1,
                           WebkitBoxOrient: 'vertical',
                           overflow: 'hidden',
                           lineHeight: '1.3'
@@ -688,45 +689,36 @@ export default function RankingPage() {
                           {burger.description}
                         </div>
                       )}
-                      {/* Tags */}
-                      {renderTags(burger.tags)}
                     </div>
                     
+                    {/* Rating y acciones */}
                     <div>
-                      <div className="burger-rating" style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
-                        <div className="rating-item" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                          <span className="stars" style={{ color: '#fbbf24' }}>{renderStars(burger.average_rating || 0)}</span>
-                          <span>{(burger.average_rating || 0).toFixed(1)} ({burger.total_reviews || burger.total_ratings || 0})</span>
-                        </div>
+                      <div className="burger-rating" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', marginBottom: '0.4rem' }}>
+                        <span className="stars" style={{ color: '#fbbf24', fontSize: '0.75rem' }}>{renderStars(burger.average_rating || 0)}</span>
+                        <span style={{ fontWeight: 600 }}>{(burger.average_rating || 0).toFixed(1)}</span>
+                        <span style={{ color: '#6b7280', fontSize: '0.7rem' }}>({burger.total_reviews || burger.total_ratings || 0})</span>
                       </div>
-                      <div className="burger-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>📍 {burger.restaurant?.cities?.name}</span>
-                        <div className="burger-actions" style={{ display: 'flex', gap: '0.4rem' }}>
-                          {/* Botón de afiliación */}
-                          <AffiliateCTAInline
-                            restaurantId={burger.restaurant?.id || ''}
-                            sourcePage="ranking"
-                            sourceBurgerId={burger.id}
-                            size="small"
-                          />
+                      <div className="burger-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.3rem' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>📍 {burger.restaurant?.cities?.name}</span>
+                        <div className="burger-actions" style={{ display: 'flex', gap: '0.3rem' }}>
                           <a 
                             href={`/restaurante/${encodeURIComponent(burger.restaurant?.name || '')}`}
                             className="btn-tiny"
                             onClick={(e) => e.stopPropagation()}
                             style={{
-                              padding: '0.4rem 0.8rem',
-                              fontSize: '0.75rem',
+                              padding: '0.25rem 0.5rem',
+                              fontSize: '0.65rem',
                               border: 'none',
                               backgroundColor: '#374151',
                               color: '#e5e7eb',
-                              borderRadius: '0.375rem',
+                              borderRadius: '0.25rem',
                               cursor: 'pointer',
                               fontWeight: 600,
                               transition: 'all 0.2s',
                               textDecoration: 'none'
                             }}
                           >
-                            🏪 Restaurante
+                            🏪 Ver
                           </a>
                           <a 
                             href={authUser ? "/rate" : undefined}
@@ -739,12 +731,12 @@ export default function RankingPage() {
                               }
                             }}
                             style={{
-                              padding: '0.4rem 0.8rem',
-                              fontSize: '0.75rem',
+                              padding: '0.25rem 0.5rem',
+                              fontSize: '0.65rem',
                               border: 'none',
                               backgroundColor: '#fbbf24',
                               color: '#1a1a1a',
-                              borderRadius: '0.375rem',
+                              borderRadius: '0.25rem',
                               cursor: 'pointer',
                               fontWeight: 600,
                               transition: 'all 0.2s',
