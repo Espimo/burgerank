@@ -111,6 +111,7 @@ export function ImageUploader({
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
     const files = e.currentTarget.files;
     if (files && files.length > 0) {
       handleFileSelect(files[0]);
@@ -121,7 +122,15 @@ export function ImageUploader({
     <div className="w-full space-y-4">
       {/* Preview */}
       {preview && (
-        <div className="relative rounded-lg overflow-hidden border-2 border-gray-600" style={{ backgroundColor: '#374151' }}>
+        <div 
+          className="relative rounded-lg overflow-hidden border-2 border-gray-600" 
+          style={{ backgroundColor: '#374151' }}
+          onClick={(e) => {
+            // Prevenir que clicks en la preview abran el selector de archivos
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
           <div className={`relative w-full ${aspectRatios[aspect]} min-h-[150px]`} style={{ backgroundColor: '#1f2937' }}>
             {/* Usar img nativo para data URLs y Image para URLs remotas */}
             {preview.startsWith('data:') ? (
@@ -129,7 +138,7 @@ export function ImageUploader({
                 src={preview}
                 alt="Preview"
                 className="w-full h-full object-cover"
-                style={{ maxHeight: '250px' }}
+                style={{ maxHeight: '250px', pointerEvents: 'none' }}
               />
             ) : (
               <Image
@@ -138,6 +147,7 @@ export function ImageUploader({
                 fill
                 className="object-cover"
                 unoptimized={preview.startsWith('data:')}
+                style={{ pointerEvents: 'none' }}
                 onError={() => {
                   setError('No se puede cargar la imagen');
                 }}
@@ -151,8 +161,9 @@ export function ImageUploader({
               setPreview(null);
               onUrlChange('');
             }}
-            className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 transition-colors"
+            className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 transition-colors z-10"
             type="button"
+            style={{ pointerEvents: 'auto' }}
           >
             <X size={16} />
           </button>
@@ -171,9 +182,15 @@ export function ImageUploader({
           padding: '2rem',
           textAlign: 'center',
           transition: 'all 0.2s',
-          cursor: 'pointer',
+          cursor: uploading ? 'not-allowed' : 'pointer',
         }}
-        onClick={() => !uploading && fileInputRef.current?.click()}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!uploading) {
+            fileInputRef.current?.click();
+          }
+        }}
       >
         <input
           ref={fileInputRef}

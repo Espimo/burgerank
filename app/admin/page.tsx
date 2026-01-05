@@ -1194,11 +1194,31 @@ function Modal({ type, item, restaurants, cities, onClose, onSave }: any) {
   };
 
   return (
-    <div style={styles.modalOverlay}>
-      <div style={styles.modal}>
+    <div 
+      style={styles.modalOverlay}
+      onClick={(e) => {
+        // Cerrar solo si se hace click en el overlay, no en el modal
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div 
+        style={styles.modal}
+        onClick={(e) => {
+          // Prevenir que clicks dentro del modal se propaguen al overlay
+          e.stopPropagation();
+        }}
+      >
         <div style={styles.modalHeader}>
           <h3 style={styles.modalTitle}>{getTitle()}</h3>
-          <button onClick={onClose} style={styles.closeButton}>✕</button>
+          <button 
+            onClick={onClose} 
+            style={styles.closeButton}
+            type="button"
+          >
+            ✕
+          </button>
         </div>
         
         <form onSubmit={handleSubmit} style={styles.form}>
