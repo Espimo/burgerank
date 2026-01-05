@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Upload, X, Loader2, CheckCircle } from 'lucide-react';
 
@@ -24,6 +24,13 @@ export function ImageUploader({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sincronizar preview cuando cambia currentUrl (ej: al editar otro item)
+  useEffect(() => {
+    setPreview(currentUrl || null);
+    setError(null);
+    setSuccess(false);
+  }, [currentUrl]);
 
   const aspectRatios = {
     square: 'aspect-square',
@@ -114,20 +121,33 @@ export function ImageUploader({
     <div className="w-full space-y-4">
       {/* Preview */}
       {preview && (
-        <div className="relative rounded-lg overflow-hidden border-2 border-gray-200">
-          <div className={`relative w-full ${aspectRatios[aspect]} bg-gray-100`}>
-            <Image
-              src={preview}
-              alt="Preview"
-              fill
-              className="object-cover"
-              onError={() => {
-                setError('No se puede cargar la imagen');
-              }}
-            />
+        <div className="relative rounded-lg overflow-hidden border-2 border-gray-600" style={{ backgroundColor: '#374151' }}>
+          <div className={`relative w-full ${aspectRatios[aspect]} min-h-[150px]`} style={{ backgroundColor: '#1f2937' }}>
+            {/* Usar img nativo para data URLs y Image para URLs remotas */}
+            {preview.startsWith('data:') ? (
+              <img
+                src={preview}
+                alt="Preview"
+                className="w-full h-full object-cover"
+                style={{ maxHeight: '250px' }}
+              />
+            ) : (
+              <Image
+                src={preview}
+                alt="Preview"
+                fill
+                className="object-cover"
+                unoptimized={preview.startsWith('data:')}
+                onError={() => {
+                  setError('No se puede cargar la imagen');
+                }}
+              />
+            )}
           </div>
           <button
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               setPreview(null);
               onUrlChange('');
             }}
@@ -139,19 +159,21 @@ export function ImageUploader({
         </div>
       )}
 
-      {/* Upload Area */}
+      {/* Upload Area - Adaptado para tema oscuro */}
       <div
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-          uploading
-            ? 'border-blue-400 bg-blue-50'
-            : error
-            ? 'border-red-400 bg-red-50'
-            : success
-            ? 'border-green-400 bg-green-50'
-            : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-        }`}
+        style={{
+          border: '2px dashed',
+          borderColor: uploading ? '#3b82f6' : error ? '#dc2626' : success ? '#10b981' : '#4b5563',
+          backgroundColor: uploading ? '#1e3a5f' : error ? '#450a0a' : success ? '#052e16' : '#1f2937',
+          borderRadius: '0.5rem',
+          padding: '2rem',
+          textAlign: 'center',
+          transition: 'all 0.2s',
+          cursor: 'pointer',
+        }}
+        onClick={() => !uploading && fileInputRef.current?.click()}
       >
         <input
           ref={fileInputRef}
@@ -163,30 +185,25 @@ export function ImageUploader({
         />
 
         {uploading ? (
-          <div className="flex flex-col items-center gap-2">
-            <Loader2 size={32} className="text-blue-500 animate-spin" />
-            <p className="text-sm text-gray-600">Subiendo imagen...</p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+            <Loader2 size={32} style={{ color: '#3b82f6' }} className="animate-spin" />
+            <p style={{ fontSize: '0.875rem', color: '#93c5fd' }}>Subiendo imagen...</p>
           </div>
         ) : success ? (
-          <div className="flex flex-col items-center gap-2">
-            <CheckCircle size={32} className="text-green-500" />
-            <p className="text-sm text-green-600">¡Imagen subida correctamente!</p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+            <CheckCircle size={32} style={{ color: '#10b981' }} />
+            <p style={{ fontSize: '0.875rem', color: '#6ee7b7' }}>¡Imagen subida correctamente!</p>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2">
-            <Upload size={32} className="text-gray-400" />
-            <p className="text-sm font-medium text-gray-700">
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+            <Upload size={32} style={{ color: '#9ca3af' }} />
+            <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#e5e7eb' }}>
               Arrastra una imagen aquí o{' '}
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="text-blue-500 hover:underline font-semibold"
-                type="button"
-              >
-                selecciona una
-              </button>
+              <span style={{ color: '#fbbf24', fontWeight: 600 }}>
+                haz clic para seleccionar
+              </span>
             </p>
-            <p className="text-xs text-gray-500">
+            <p style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
               JPEG, PNG, WebP o GIF • Máximo {maxSize}MB
             </p>
           </div>
@@ -195,16 +212,26 @@ export function ImageUploader({
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <p className="text-sm text-red-600">{error}</p>
+        <div style={{ 
+          backgroundColor: '#450a0a', 
+          border: '1px solid #dc2626', 
+          borderRadius: '0.5rem', 
+          padding: '0.75rem' 
+        }}>
+          <p style={{ fontSize: '0.875rem', color: '#fca5a5' }}>{error}</p>
         </div>
       )}
 
-      {/* URL Display */}
-      {preview && !uploading && !error && (
-        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-          <p className="text-xs text-gray-500 mb-1">URL de la imagen:</p>
-          <code className="text-xs text-gray-700 break-all">{preview}</code>
+      {/* URL Display - Solo mostrar si es una URL real, no data: */}
+      {preview && !uploading && !error && !preview.startsWith('data:') && (
+        <div style={{ 
+          backgroundColor: '#1f2937', 
+          borderRadius: '0.5rem', 
+          padding: '0.75rem',
+          border: '1px solid #374151'
+        }}>
+          <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginBottom: '0.25rem' }}>URL de la imagen:</p>
+          <code style={{ fontSize: '0.75rem', color: '#10b981', wordBreak: 'break-all' }}>{preview}</code>
         </div>
       )}
     </div>

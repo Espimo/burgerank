@@ -61,6 +61,7 @@ interface Burger {
   position: number | null;
   type: string | null;
   tags: string[] | null;
+  allergens: string[] | null;
   restaurant?: { name: string };
   city?: { name: string };
 }
@@ -262,6 +263,7 @@ export default function AdminPanel() {
           city_id: burger.city_id,
           type: burger.type,
           tags: burger.tags,
+          allergens: burger.allergens,
           position: burger.position,
           image_url: burger.image_url,
           is_featured: burger.is_featured || false,
@@ -284,6 +286,7 @@ export default function AdminPanel() {
           city_id: burger.city_id,
           type: burger.type,
           tags: burger.tags,
+          allergens: burger.allergens,
           position: burger.position,
           image_url: burger.image_url,
           is_featured: burger.is_featured || false,
@@ -1293,6 +1296,57 @@ function Modal({ type, item, restaurants, cities, onClose, onSave }: any) {
                   style={styles.input}
                   placeholder="Premium, Jugosa, Carne Fresca"
                 />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>⚠️ Alérgenos (selecciona los que apliquen)</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  {[
+                    { id: 'gluten', label: '🌾 Gluten', emoji: '🌾' },
+                    { id: 'lactosa', label: '🥛 Lactosa', emoji: '🥛' },
+                    { id: 'huevo', label: '🥚 Huevo', emoji: '🥚' },
+                    { id: 'frutos_secos', label: '🥜 Frutos secos', emoji: '🥜' },
+                    { id: 'soja', label: '🫘 Soja', emoji: '🫘' },
+                    { id: 'marisco', label: '🦐 Marisco', emoji: '🦐' },
+                    { id: 'pescado', label: '🐟 Pescado', emoji: '🐟' },
+                    { id: 'cacahuete', label: '🥜 Cacahuete', emoji: '🥜' },
+                    { id: 'apio', label: '🥬 Apio', emoji: '🥬' },
+                    { id: 'mostaza', label: '🟡 Mostaza', emoji: '🟡' },
+                    { id: 'sesamo', label: '⚪ Sésamo', emoji: '⚪' },
+                    { id: 'sulfitos', label: '🧪 Sulfitos', emoji: '🧪' },
+                  ].map(allergen => {
+                    const isSelected = (formData.allergens || []).includes(allergen.id);
+                    return (
+                      <button
+                        key={allergen.id}
+                        type="button"
+                        onClick={() => {
+                          const current = formData.allergens || [];
+                          const updated = isSelected
+                            ? current.filter((a: string) => a !== allergen.id)
+                            : [...current, allergen.id];
+                          setFormData({ ...formData, allergens: updated });
+                        }}
+                        style={{
+                          padding: '0.5rem 0.75rem',
+                          backgroundColor: isSelected ? '#dc2626' : '#374151',
+                          color: isSelected ? 'white' : '#9ca3af',
+                          border: isSelected ? '2px solid #ef4444' : '1px solid #4b5563',
+                          borderRadius: '0.5rem',
+                          cursor: 'pointer',
+                          fontSize: '0.85rem',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {allergen.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {(formData.allergens || []).length > 0 && (
+                  <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#fbbf24' }}>
+                    Seleccionados: {(formData.allergens || []).join(', ')}
+                  </p>
+                )}
               </div>
             </>
           )}

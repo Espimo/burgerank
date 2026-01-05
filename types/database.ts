@@ -124,6 +124,7 @@ export type Database = {
           position: number | null;
           type: string | null;
           tags: string[] | null;
+          allergens: string[] | null;
           city_id: string;
           average_rating: number;
           total_ratings: number;
@@ -143,6 +144,7 @@ export type Database = {
           position?: number;
           type?: string;
           tags?: string[];
+          allergens?: string[];
           city_id: string;
           average_rating?: number;
           total_ratings?: number;
@@ -161,6 +163,7 @@ export type Database = {
           position?: number;
           type?: string;
           tags?: string[];
+          allergens?: string[];
           city_id?: string;
           average_rating?: number;
           total_ratings?: number;
