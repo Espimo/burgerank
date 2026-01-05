@@ -1248,7 +1248,6 @@ function Modal({ type, item, restaurants, cities, onClose, onSave }: any) {
                   onUrlChange={(url) => setFormData({ ...formData, image_url: url })}
                   currentUrl={formData.image_url}
                   folder="burgers"
-                  aspect="square"
                 />
               </div>
               <div style={styles.formRow}>
@@ -1463,7 +1462,6 @@ function Modal({ type, item, restaurants, cities, onClose, onSave }: any) {
                   onUrlChange={(url) => setFormData({ ...formData, banner_url: url })}
                   currentUrl={formData.banner_url}
                   folder="restaurants"
-                  aspect="banner"
                 />
               </div>
               <div style={styles.formGroup}>
@@ -1472,7 +1470,6 @@ function Modal({ type, item, restaurants, cities, onClose, onSave }: any) {
                   onUrlChange={(url) => setFormData({ ...formData, logo_url: url })}
                   currentUrl={formData.logo_url}
                   folder="restaurants"
-                  aspect="square"
                 />
               </div>
             </>
